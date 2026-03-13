@@ -1,0 +1,18 @@
+# Build folders
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Logs
+*.log
+
+# Database
+*.db
+
+# OS
+Thumbs.db
+desktop.ini
