@@ -1,0 +1,24 @@
+{
+  "runtimeTarget": {
+    "name": ".NETStandard,Version=v2.1/",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETStandard,Version=v2.1": {},
+    ".NETStandard,Version=v2.1/": {
+      "PadelClub.Model/1.0.0": {
+        "runtime": {
+          "PadelClub.Model.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "PadelClub.Model/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

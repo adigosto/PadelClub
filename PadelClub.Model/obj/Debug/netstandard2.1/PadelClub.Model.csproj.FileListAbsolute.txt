@@ -1,0 +1,10 @@
+C:\Users\User\source\repos\PadelClub\PadelClub.Model\bin\Debug\netstandard2.1\PadelClub.Model.deps.json
+C:\Users\User\source\repos\PadelClub\PadelClub.Model\bin\Debug\netstandard2.1\PadelClub.Model.dll
+C:\Users\User\source\repos\PadelClub\PadelClub.Model\bin\Debug\netstandard2.1\PadelClub.Model.pdb
+C:\Users\User\source\repos\PadelClub\PadelClub.Model\obj\Debug\netstandard2.1\PadelClub.Model.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\User\source\repos\PadelClub\PadelClub.Model\obj\Debug\netstandard2.1\PadelClub.Model.AssemblyInfoInputs.cache
+C:\Users\User\source\repos\PadelClub\PadelClub.Model\obj\Debug\netstandard2.1\PadelClub.Model.AssemblyInfo.cs
+C:\Users\User\source\repos\PadelClub\PadelClub.Model\obj\Debug\netstandard2.1\PadelClub.Model.csproj.CoreCompileInputs.cache
+C:\Users\User\source\repos\PadelClub\PadelClub.Model\obj\Debug\netstandard2.1\PadelClub.Model.sourcelink.json
+C:\Users\User\source\repos\PadelClub\PadelClub.Model\obj\Debug\netstandard2.1\PadelClub.Model.dll
+C:\Users\User\source\repos\PadelClub\PadelClub.Model\obj\Debug\netstandard2.1\PadelClub.Model.pdb

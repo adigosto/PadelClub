@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Hash": "rN5VhhAbHZIIpOyTzJmQxhsg8gPAzPEO5ErzOYbnnck=",
+  "Source": "PadelClub.WebAPI",
+  "BasePath": "_content/PadelClub.WebAPI",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": [],
+  "Endpoints": []
+}
