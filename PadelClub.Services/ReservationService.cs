@@ -10,13 +10,10 @@ using Reservation = PadelClub.Services.Database.Reservation;
 
 namespace PadelClub.Services
 {
-    public class ReservationService : BaseCRUDService<ReservationResponse, ReservationSearchObject, Reservation, ReservationRequest>, IReservationService
+    public class ReservationService : BaseCRUDService<ReservationResponse, ReservationSearchObject, Reservation, ReservationRequest, ReservationRequest>, IReservationService
     {
-        private readonly PadelClubContext _dbContext;
-
         public ReservationService(PadelClubContext dbContext) : base(dbContext)
         {
-            _dbContext = dbContext;
         }
 
         protected override IQueryable<Reservation> ApplyFilter(IQueryable<Reservation> query, ReservationSearchObject search)
@@ -32,10 +29,6 @@ namespace PadelClub.Services
                     query = query.Where(r => r.UserId == search.UserId.Value);
                 }
 
-                if (search.UserId.HasValue)
-                {
-                    query = query.Where(r => r.UserId == search.UserId.Value);
-                }
 
                 if (!string.IsNullOrWhiteSpace(search.Status))
                 {
@@ -73,7 +66,7 @@ namespace PadelClub.Services
             return query;
         }
 
-        protected override Reservation MapToEntity(Reservation entity, ReservationRequest request)
+        protected override Reservation MapInsertToEntity(Reservation entity, ReservationRequest request)
         {
             entity.CourtId = request.CourtId;
             entity.UserId = request.UserId;
@@ -84,6 +77,18 @@ namespace PadelClub.Services
             entity.Notes = request.Notes;
 
             return entity;
+        }
+
+        protected override void MapUpdateToEntity(Reservation entity, ReservationRequest request)
+        {
+            entity.CourtId = request.CourtId;
+            entity.UserId = request.UserId;
+            entity.StartTime = request.StartTime;
+            entity.EndTime = request.EndTime;
+            entity.TotalPrice = request.TotalPrice;
+            entity.Status = request.Status;
+            entity.Notes = request.Notes;
+
         }
 
         // public async Task<ReservationResponse> Create(ReservationRequest request)
@@ -137,7 +142,7 @@ namespace PadelClub.Services
         protected override ReservationResponse MapToResponse(Reservation reservation)
         {
             if (reservation == null)
-                return null;
+                throw new ArgumentNullException(nameof(reservation));
 
             return new ReservationResponse
             {

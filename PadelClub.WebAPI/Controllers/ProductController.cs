@@ -1,29 +1,16 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PadelClub.Model;
+using PadelClub.Model.Requests;
+using PadelClub.Model.Responses;
 using PadelClub.Model.SearchObjects;
 using PadelClub.Services;
 
 namespace PadelClub.WebAPI.Controllers
 {
-    [ApiController]
-    [Route("[controller]")]
-    public class ProductController : ControllerBase
+    public class ProductController : BaseCRUDController<ProductResponse, ProductSearchObject, ProductInsertRequest, ProductUpdateRequest>
     {
-        protected readonly IProductService _service;
-        public ProductController(IProductService service)
+        public ProductController(IProductService service) : base(service)
         {
-            _service = service;
-        }
-        [HttpGet()]
-        public IEnumerable<Product> Get([FromQuery]ProductSearchObject? search)
-        {
-            return _service.Get(search);
-        }
-
-        [HttpGet("{id}")]
-        public Product Get(int id)
-        {
-            return _service.Get(id);
         }
     }
 }

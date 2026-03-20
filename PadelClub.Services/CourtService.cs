@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PadelClub.Model;
+using PadelClub.Model.Requests;
 using PadelClub.Model.SearchObjects;
 using PadelClub.Services.Database;
 using System;
@@ -10,118 +11,45 @@ using Court = PadelClub.Services.Database.Court;
 
 namespace PadelClub.Services
 {
-    public class CourtService : ICourtService
+    public class CourtService : BaseCRUDService<CourtResponse, CourtSearchObject, Court, CourtInsertRequest, CourtUpdateRequest>, ICourtService
     {
-        private readonly PadelClubContext _dbContext;
 
-        public CourtService(PadelClubContext dbContext)
+        public CourtService(PadelClubContext dbContext) : base(dbContext)
         {
-            _dbContext = dbContext;
+            
         }
 
-        public async Task<List<CourtResponse>> Get(CourtSearchObject? search)
+        protected override Court MapInsertToEntity(Court entity, CourtInsertRequest request)
         {
-            var query = _dbContext.Courts.AsNoTracking().AsQueryable();
-
-            if (search != null)
-            {
-                if (!string.IsNullOrWhiteSpace(search.Name))
-                {
-                    query = query.Where(c => c.Name.Contains(search.Name));
-                }
-
-                if (search.IsIndoor.HasValue)
-                {
-                    query = query.Where(c => c.IsIndoor == search.IsIndoor.Value);
-                }
-
-                if (search.IsActive.HasValue)
-                {
-                    query = query.Where(c => c.IsActive == search.IsActive.Value);
-                }
-
-                if (!string.IsNullOrWhiteSpace(search.FTS))
-                {
-                    query = query.Where(c => 
-                        c.Name.Contains(search.FTS) ||
-                        (c.Description != null && c.Description.Contains(search.FTS)));
-                }
-            }
-
-            var courts = await query.ToListAsync();
-            return courts.Select(c => MapToResponse(c)!).ToList();
+            entity.Name = request.Name;
+            entity.Description = request.Description;
+            entity.IsIndoor = request.IsIndoor;
+            entity.IsActive = request.IsActive;
+            entity.HourlyRate = request.HourlyRate;
+            entity.MaxPlayers = request.MaxPlayers;
+            return entity;
         }
 
-        public async Task<CourtResponse?> GetById(int id)
+        protected override void MapUpdateToEntity(Court entity, CourtUpdateRequest request)
         {
-            var court = await _dbContext.Courts.FindAsync(id);
-            if (court == null)
-                return null;
-            return MapToResponse(court);
+            entity.Name = request.Name;
+            entity.Description = request.Description;
+            entity.IsIndoor = request.IsIndoor;
+            entity.IsActive = request.IsActive;
+            entity.HourlyRate = request.HourlyRate;
+            entity.MaxPlayers = request.MaxPlayers;
         }
 
-        public async Task<CourtResponse> Create(CourtRequest request)
+        protected override CourtResponse MapToResponse(Court entity)
         {
-            var court = new Court
-            {
-                Name = request.Name,
-                Description = request.Description,
-                IsIndoor = request.IsIndoor,
-                IsActive = request.IsActive,
-                HourlyRate = request.HourlyRate,
-                MaxPlayers = request.MaxPlayers
-            };
-
-            _dbContext.Courts.Add(court);
-            await _dbContext.SaveChangesAsync();
-            return MapToResponse(court)!;
-        }
-
-        public async Task<CourtResponse?> Update(int id, CourtRequest request)
-        {
-            var existingCourt = await _dbContext.Courts.FindAsync(id);
-            if (existingCourt == null)
-                return null;
-
-            existingCourt.Name = request.Name;
-            existingCourt.Description = request.Description;
-            existingCourt.IsIndoor = request.IsIndoor;
-            existingCourt.IsActive = request.IsActive;
-            existingCourt.HourlyRate = request.HourlyRate;
-            existingCourt.MaxPlayers = request.MaxPlayers;
-            existingCourt.UpdatedAt = DateTime.UtcNow;
-
-            await _dbContext.SaveChangesAsync();
-            return MapToResponse(existingCourt);
-        }
-
-        public async Task<bool> Delete(int id)
-        {
-            var court = await _dbContext.Courts.FindAsync(id);
-            if (court == null)
-                return false;
-
-            _dbContext.Courts.Remove(court);
-            await _dbContext.SaveChangesAsync();
-            return true;
-        }
-
-        public CourtResponse? MapToResponse(Court court)
-        {
-            if (court == null)
-                return null;
-
             return new CourtResponse
             {
-                Id = court.Id,
-                Name = court.Name,
-                Description = court.Description,
-                IsIndoor = court.IsIndoor,
-                IsActive = court.IsActive,
-                HourlyRate = court.HourlyRate,
-                MaxPlayers = court.MaxPlayers,
-                CreatedAt = court.CreatedAt,
-                UpdatedAt = court.UpdatedAt
+                Name = entity.Name,
+                Description = entity.Description,
+                IsIndoor = entity.IsIndoor,
+                IsActive = entity.IsActive,
+                HourlyRate = entity.HourlyRate,
+                MaxPlayers = entity.MaxPlayers
             };
         }
     }

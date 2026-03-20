@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PadelClub.Model;
+using PadelClub.Model.Requests;
 using PadelClub.Model.SearchObjects;
 using PadelClub.Services.Database;
 using System;
@@ -10,167 +11,64 @@ using User = PadelClub.Services.Database.User;
 
 namespace PadelClub.Services
 {
-    public class UserService : IUserService
+    public class UserService : BaseCRUDService<UserResponse, UserSearchObject, User, UserInsertRequest, UserUpdateRequest>, IUserService
     {
-        private readonly PadelClubContext _dbContext;
         private readonly IPasswordHasher _passwordHasher;
 
-        public UserService(PadelClubContext dbContext, IPasswordHasher passwordHasher)
+        public UserService(PadelClubContext dbContext, IPasswordHasher passwordHasher) : base(dbContext)
         {
-            _dbContext = dbContext;
             _passwordHasher = passwordHasher;
         }
 
-        public async Task<List<UserResponse>> Get(UserSearchObject? search)
+        protected override User MapInsertToEntity(User entity, UserInsertRequest request)
         {
-            var query = _dbContext.Users.AsNoTracking().AsQueryable();
-
-            if (search != null)
-            {
-                if (!string.IsNullOrWhiteSpace(search.Username))
-                {
-                    query = query.Where(u => u.Username.Contains(search.Username));
-                }
-
-                if (!string.IsNullOrWhiteSpace(search.Email))
-                {
-                    query = query.Where(u => u.Email.Contains(search.Email));
-                }
-
-                if (!string.IsNullOrWhiteSpace(search.FirstName))
-                {
-                    query = query.Where(u => u.FirstName.Contains(search.FirstName));
-                }
-
-                if (!string.IsNullOrWhiteSpace(search.LastName))
-                {
-                    query = query.Where(u => u.LastName.Contains(search.LastName));
-                }
-
-                if (!string.IsNullOrWhiteSpace(search.PhoneNumber))
-                {
-                    query = query.Where(u => u.PhoneNumber != null && u.PhoneNumber.Contains(search.PhoneNumber));
-                }
-
-                if (search.IsActive.HasValue)
-                {
-                    query = query.Where(u => u.IsActive == search.IsActive.Value);
-                }
-
-                if (!string.IsNullOrWhiteSpace(search.FTS))
-                {
-                    query = query.Where(u => 
-                        u.Username.Contains(search.FTS) ||
-                        u.Email.Contains(search.FTS) ||
-                        u.FirstName.Contains(search.FTS) ||
-                        u.LastName.Contains(search.FTS) ||
-                        (u.PhoneNumber != null && u.PhoneNumber.Contains(search.FTS)));
-                }
-            }
-
-            var users = await query.ToListAsync();
-            return users.Select(u => MapToResponse(u)!).ToList();
+            entity.Username = request.Username;
+            entity.Email = request.Email;
+            entity.FirstName = request.FirstName;
+            entity.LastName = request.LastName;
+            entity.PhoneNumber = request.PhoneNumber;
+            entity.PasswordHash = _passwordHasher.HashPassword(request.Password);
+            // PasswordHasher.HashPassword embeds the salt in the returned string, so we keep PasswordSalt in sync.
+            entity.PasswordSalt = ExtractSaltFromPasswordHash(entity.PasswordHash);
+            entity.CreatedAt = DateTime.UtcNow;
+            return entity;
         }
 
-        public async Task<UserResponse?> GetById(int id)
+        protected override void MapUpdateToEntity(User entity, UserUpdateRequest request)
         {
-            var user = await _dbContext.Users.FindAsync(id);
-            if (user == null)
-                return null;
-            return MapToResponse(user);
+            entity.Username = request.Username;
+            entity.Email = request.Email;
+            entity.FirstName = request.FirstName;
+            entity.LastName = request.LastName;
+            entity.PhoneNumber = request.PhoneNumber;
+            entity.IsActive = request.IsActive;
+            entity.UpdatedAt = DateTime.UtcNow;
         }
 
-        public async Task<UserResponse> Create(UserRequest request)
+        protected override UserResponse MapToResponse(User entity)
         {
-            var user = new User
-            {
-                Username = request.Username,
-                Email = request.Email,
-                FirstName = request.FirstName,
-                LastName = request.LastName,
-                PhoneNumber = request.PhoneNumber,
-                IsActive = request.IsActive
-            };
-
-            // Hash password if provided using PBKDF2
-            // PBKDF2 uses a per-user random salt and a high iteration count
-            if (!string.IsNullOrEmpty(request.Password))
-            {
-                user.PasswordHash = _passwordHasher.HashPassword(request.Password);
-                // The PBKDF2 hash format already includes iteration count and salt,
-                // so we don't need a separate salt field. Kept only for backward compatibility.
-                user.PasswordSalt = string.Empty;
-            }
-            else
-            {
-                // Generate a placeholder hash for users without passwords (e.g., OAuth users)
-                user.PasswordHash = "NO_PASSWORD_" + Guid.NewGuid().ToString("N");
-                user.PasswordSalt = string.Empty;
-            }
-
-            _dbContext.Users.Add(user);
-            await _dbContext.SaveChangesAsync();
-            return MapToResponse(user)!;
-        }
-
-        public async Task<UserResponse?> Update(int id, UserRequest request)
-        {
-            var existingUser = await _dbContext.Users.FindAsync(id);
-            if (existingUser == null)
-                return null;
-
-            existingUser.Username = request.Username;
-            existingUser.Email = request.Email;
-            existingUser.FirstName = request.FirstName;
-            existingUser.LastName = request.LastName;
-            existingUser.PhoneNumber = request.PhoneNumber;
-            existingUser.IsActive = request.IsActive;
-            existingUser.UpdatedAt = DateTime.UtcNow;
-
-            // Hash password if provided using PBKDF2
-            // PBKDF2 uses a per-user random salt and a high iteration count
-            if (!string.IsNullOrEmpty(request.Password))
-            {
-                existingUser.PasswordHash = _passwordHasher.HashPassword(request.Password);
-                // The PBKDF2 hash format already includes iteration count and salt,
-                // so we don't need a separate salt field.
-                existingUser.PasswordSalt = string.Empty;
-            }
-            // If password is not provided and user has no existing hash, keep it as is
-            // (don't generate placeholder - user might be using OAuth or other auth methods)
-
-            await _dbContext.SaveChangesAsync();
-            return MapToResponse(existingUser);
-        }
-
-        public async Task<bool> Delete(int id)
-        {
-            var user = await _dbContext.Users.FindAsync(id);
-            if (user == null)
-                return false;
-
-            _dbContext.Users.Remove(user);
-            await _dbContext.SaveChangesAsync();
-            return true;
-        }
-
-        public UserResponse? MapToResponse(User user)
-        {
-            if (user == null)
-                return null;
-
             return new UserResponse
             {
-                Id = user.Id,
-                Username = user.Username,
-                Email = user.Email,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                PhoneNumber = user.PhoneNumber,
-                IsActive = user.IsActive,
-                CreatedAt = user.CreatedAt,
-                UpdatedAt = user.UpdatedAt
+                Username = entity.Username,
+                Email = entity.Email,
+                FirstName = entity.FirstName,
+                LastName = entity.LastName,
+                PhoneNumber = entity.PhoneNumber,
             };
+        }
+
+        private static string ExtractSaltFromPasswordHash(string hashedPassword)
+        {
+            if (string.IsNullOrWhiteSpace(hashedPassword))
+                throw new ArgumentException("Password hash cannot be null/empty.", nameof(hashedPassword));
+
+            var parts = hashedPassword.Split('.');
+            // Expected format: {iterations}.{base64(salt)}.{base64(derivedKey)}
+            if (parts.Length != 3)
+                throw new ArgumentException("Invalid password hash format.", nameof(hashedPassword));
+
+            // parts[1] is base64(salt)
+            return parts[1];
         }
     }
 }

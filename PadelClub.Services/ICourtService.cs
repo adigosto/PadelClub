@@ -1,20 +1,17 @@
 using PadelClub.Model;
+using PadelClub.Model.Requests;
 using PadelClub.Model.SearchObjects;
 using PadelClub.Services.Database;
+using PadelClub.Services.IService;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Court = PadelClub.Services.Database.Court;
 
 namespace PadelClub.Services
 {
-    public interface ICourtService
+    public interface ICourtService : ICRUDService<CourtResponse, CourtSearchObject, CourtInsertRequest, CourtUpdateRequest>
     {
-        Task<List<CourtResponse>> Get(CourtSearchObject? search);
-        Task<CourtResponse?> GetById(int id);
-        Task<CourtResponse> Create(CourtRequest request);
-        Task<CourtResponse?> Update(int id, CourtRequest request);
-        Task<bool> Delete(int id);
-        CourtResponse? MapToResponse(Court court);
+        
     }
 }
 

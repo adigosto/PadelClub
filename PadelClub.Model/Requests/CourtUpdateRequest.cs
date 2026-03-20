@@ -1,6 +1,6 @@
-namespace PadelClub.Model
+namespace PadelClub.Model.Requests
 {
-    public class CourtRequest
+    public class CourtUpdateRequest
     {
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;

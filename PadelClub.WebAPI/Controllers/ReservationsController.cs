@@ -5,9 +5,8 @@ using PadelClub.Services;
 
 namespace PadelClub.WebAPI.Controllers
 {
-    [ApiController]
-    [Route("[controller]")]
-    public class ReservationsController : BaseController<ReservationResponse, ReservationSearchObject>
+
+    public class ReservationsController : BaseCRUDController<ReservationResponse, ReservationSearchObject, ReservationRequest, ReservationRequest>
     {
         public ReservationsController(IReservationService service) : base(service)
         {
