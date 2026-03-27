@@ -1,6 +1,8 @@
+using PadelClub.Model.SearchObjects;
+
 namespace PadelClub.Services.IService
 {
-    public interface ICRUDService<T, TSearch, TInsert, TUpdate> : IService<T, TSearch> where T : class where TSearch : class where TInsert : class where TUpdate : class
+    public interface ICRUDService<T, TSearch, TInsert, TUpdate> : IService<T, TSearch> where T : class where TSearch : BaseSearchObject where TInsert : class where TUpdate : class
     {
         Task<T> CreateAsync(TInsert request);
         

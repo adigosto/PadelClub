@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PadelClub.Model;
+using PadelClub.Model.Responses;
 using PadelClub.Model.SearchObjects;
 using PadelClub.Services.Database;
 using PadelClub.Services.IService;
@@ -11,7 +12,7 @@ using Reservation = PadelClub.Services.Database.Reservation;
 
 namespace PadelClub.Services
 {
-    public abstract class BaseService<T, TSearch, TEntity> : IService<T, TSearch> where T : class where TSearch : class where TEntity : class
+    public abstract class BaseService<T, TSearch, TEntity> : IService<T, TSearch> where T : class where TSearch : BaseSearchObject where TEntity : class
     {
         private readonly PadelClubContext _dbContext;
 
@@ -20,12 +21,36 @@ namespace PadelClub.Services
             _dbContext = dbContext;
         }
 
-        public virtual async Task<List<T>> GetAsync(TSearch search)
+        public virtual async Task<PagedResult<T>> GetAsync(TSearch search)
         {
             var query = _dbContext.Set<TEntity>().AsQueryable();
             query = ApplyFilter(query, search);
+
+            int? totalCount = null;
+            if (search.IncludeTotalCount)
+            {
+                totalCount = await query.CountAsync();
+            }
+
+            var page = search.Page.GetValueOrDefault(1);
+            var pageSize = search.PageSize.GetValueOrDefault(10);
+
+            if (page < 1)
+            {
+                page = 1;
+            }
+
+            if (pageSize > 0)
+            {
+                query = query.Skip((page - 1) * pageSize).Take(pageSize);
+            }
+            
             var list = await query.ToListAsync();
-            return list.Select(MapToResponse).ToList();
+            return new PagedResult<T>
+            {
+                Items = list.Select(MapToResponse).ToList(),
+                TotalCount = totalCount
+            };
         }
 
         protected virtual IQueryable<TEntity> ApplyFilter(IQueryable<TEntity> query, TSearch search)

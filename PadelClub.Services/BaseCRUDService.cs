@@ -13,7 +13,7 @@ namespace PadelClub.Services
     public abstract class BaseCRUDService<T, TSearch, TEntity, TInsert, TUpdate>
         : BaseService<T, TSearch, TEntity>
         where T : class
-        where TSearch : class
+        where TSearch : BaseSearchObject
         where TEntity : class, new()
         where TInsert : class
         where TUpdate : class
