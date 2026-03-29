@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using Mapster;
+using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
 using PadelClub.Model.Requests;
 using PadelClub.Services;
@@ -19,6 +21,11 @@ namespace PadelClub.WebAPI
             builder.Services.AddTransient<IUserService, UserService>();
             builder.Services.AddTransient<ICourtService, CourtService>();
             builder.Services.AddTransient<IReservationService, ReservationService>();
+            
+            var mapsterConfig = TypeAdapterConfig.GlobalSettings;
+            mapsterConfig.Scan(typeof(Program).Assembly);
+            builder.Services.AddSingleton(mapsterConfig);
+            builder.Services.AddScoped<IMapper, ServiceMapper>();
 
             // Configure database services
             builder.Services.AddDatabaseServices(builder.Configuration);
