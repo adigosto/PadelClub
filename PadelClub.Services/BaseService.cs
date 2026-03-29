@@ -1,24 +1,21 @@
 using Microsoft.EntityFrameworkCore;
-using PadelClub.Model;
 using PadelClub.Model.Responses;
 using PadelClub.Model.SearchObjects;
 using PadelClub.Services.Database;
 using PadelClub.Services.IService;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Reservation = PadelClub.Services.Database.Reservation;
+using MapsterMapper;
 
 namespace PadelClub.Services
 {
     public abstract class BaseService<T, TSearch, TEntity> : IService<T, TSearch> where T : class where TSearch : BaseSearchObject where TEntity : class
     {
         private readonly PadelClubContext _dbContext;
+        private readonly IMapper _mapper;
 
-        public BaseService(PadelClubContext dbContext)
+        public BaseService(PadelClubContext dbContext, IMapper mapper)
         {
             _dbContext = dbContext;
+            _mapper = mapper;
         }
 
         public virtual async Task<PagedResult<T>> GetAsync(TSearch search)
@@ -58,7 +55,10 @@ namespace PadelClub.Services
             return query;
         }  
 
-        protected abstract T MapToResponse(TEntity entity);
+        protected virtual T MapToResponse(TEntity entity)
+        {
+            return _mapper.Map<T>(entity);
+        }
 
         public virtual async Task<T?> GetByIdAsync(int id)
         {

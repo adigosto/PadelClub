@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using MapsterMapper;
 using User = PadelClub.Services.Database.User;
 
 namespace PadelClub.Services
@@ -15,46 +16,9 @@ namespace PadelClub.Services
     {
         private readonly IPasswordHasher _passwordHasher;
 
-        public UserService(PadelClubContext dbContext, IPasswordHasher passwordHasher) : base(dbContext)
+        public UserService(PadelClubContext dbContext, IPasswordHasher passwordHasher, IMapper mapper) : base(dbContext, mapper)
         {
             _passwordHasher = passwordHasher;
-        }
-
-        protected override User MapInsertToEntity(User entity, UserInsertRequest request)
-        {
-            entity.Username = request.Username;
-            entity.Email = request.Email;
-            entity.FirstName = request.FirstName;
-            entity.LastName = request.LastName;
-            entity.PhoneNumber = request.PhoneNumber;
-            entity.PasswordHash = _passwordHasher.HashPassword(request.Password);
-            // PasswordHasher.HashPassword embeds the salt in the returned string, so we keep PasswordSalt in sync.
-            entity.PasswordSalt = ExtractSaltFromPasswordHash(entity.PasswordHash);
-            entity.CreatedAt = DateTime.UtcNow;
-            return entity;
-        }
-
-        protected override void MapUpdateToEntity(User entity, UserUpdateRequest request)
-        {
-            entity.Username = request.Username;
-            entity.Email = request.Email;
-            entity.FirstName = request.FirstName;
-            entity.LastName = request.LastName;
-            entity.PhoneNumber = request.PhoneNumber;
-            entity.IsActive = request.IsActive;
-            entity.UpdatedAt = DateTime.UtcNow;
-        }
-
-        protected override UserResponse MapToResponse(User entity)
-        {
-            return new UserResponse
-            {
-                Username = entity.Username,
-                Email = entity.Email,
-                FirstName = entity.FirstName,
-                LastName = entity.LastName,
-                PhoneNumber = entity.PhoneNumber,
-            };
         }
 
         private static string ExtractSaltFromPasswordHash(string hashedPassword)

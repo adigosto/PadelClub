@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Reservation = PadelClub.Services.Database.Reservation;
+using MapsterMapper;
 
 namespace PadelClub.Services
 {
@@ -19,10 +20,12 @@ namespace PadelClub.Services
         where TUpdate : class
     {
         protected readonly PadelClubContext _dbContext;
+        protected readonly IMapper _mapper;
 
-        public BaseCRUDService(PadelClubContext dbContext) : base(dbContext)
+        public BaseCRUDService(PadelClubContext dbContext, IMapper mapper) : base(dbContext, mapper)
         {
             _dbContext = dbContext;
+            _mapper = mapper;
         }
 
 
@@ -38,12 +41,15 @@ namespace PadelClub.Services
             return MapToResponse(entity)!;
         }
 
-        protected virtual async Task BeforeInsert(TEntity entity, TInsert request)
+        protected virtual Task BeforeInsert(TEntity entity, TInsert request)
         {
-
+            return Task.CompletedTask;
         }
 
-        protected abstract TEntity MapInsertToEntity(TEntity entity, TInsert request);
+        protected virtual TEntity MapInsertToEntity(TEntity entity, TInsert request)
+        {
+            return _mapper.Map(request, entity);
+        }
 
         public virtual async Task<T?> UpdateAsync(int id, TUpdate request)
         {
@@ -59,11 +65,15 @@ namespace PadelClub.Services
             return MapToResponse(entity);
         }
 
-        protected virtual async Task BeforeUpdate(TEntity entity, TUpdate request)
+        protected virtual Task BeforeUpdate(TEntity entity, TUpdate request)
         {
-
+            return Task.CompletedTask;
         }
-        protected abstract void MapUpdateToEntity(TEntity entity, TUpdate request);
+        protected virtual void MapUpdateToEntity(TEntity entity, TUpdate request)
+        {
+            _mapper.Map(request, entity);
+        }
+
         public virtual async Task<bool> DeleteAsync(int id)
         {
             var entity = await _dbContext.Set<TEntity>().FindAsync(id);
@@ -77,9 +87,9 @@ namespace PadelClub.Services
             return true;
         }
 
-        protected virtual async Task BeforeDelete(TEntity entity)
+        protected virtual Task BeforeDelete(TEntity entity)
         {
-            
+            return Task.CompletedTask;
         }
 
     }

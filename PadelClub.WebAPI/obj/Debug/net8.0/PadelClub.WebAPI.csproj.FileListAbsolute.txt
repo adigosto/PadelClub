@@ -168,3 +168,6 @@ C:\Users\User\Desktop\PadelClub\PadelClub.WebAPI\obj\Debug\net8.0\refint\PadelCl
 C:\Users\User\Desktop\PadelClub\PadelClub.WebAPI\obj\Debug\net8.0\PadelClub.WebAPI.pdb
 C:\Users\User\Desktop\PadelClub\PadelClub.WebAPI\obj\Debug\net8.0\PadelClub.WebAPI.genruntimeconfig.cache
 C:\Users\User\Desktop\PadelClub\PadelClub.WebAPI\obj\Debug\net8.0\ref\PadelClub.WebAPI.dll
+C:\Users\User\Desktop\PadelClub\PadelClub.WebAPI\bin\Debug\net8.0\Mapster.dll
+C:\Users\User\Desktop\PadelClub\PadelClub.WebAPI\bin\Debug\net8.0\Mapster.Core.dll
+C:\Users\User\Desktop\PadelClub\PadelClub.WebAPI\bin\Debug\net8.0\Mapster.DependencyInjection.dll
