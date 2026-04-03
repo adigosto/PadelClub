@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PadelClub.Model;
 using PadelClub.Model.SearchObjects;
 using PadelClub.Services.Database;
+using PadelClub.Services.IService;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +13,7 @@ using MapsterMapper;
 namespace PadelClub.Services
 {
     public abstract class BaseCRUDService<T, TSearch, TEntity, TInsert, TUpdate>
-        : BaseService<T, TSearch, TEntity>
+        : BaseService<T, TSearch, TEntity>, ICRUDService<T, TSearch, TInsert, TUpdate>
         where T : class
         where TSearch : BaseSearchObject
         where TEntity : class, new()

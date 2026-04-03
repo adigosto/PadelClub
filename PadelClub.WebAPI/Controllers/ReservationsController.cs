@@ -1,12 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using PadelClub.Model;
+using PadelClub.Model.Requests;
 using PadelClub.Model.SearchObjects;
 using PadelClub.Services;
 
 namespace PadelClub.WebAPI.Controllers
 {
 
-    public class ReservationsController : BaseCRUDController<ReservationResponse, ReservationSearchObject, ReservationRequest, ReservationRequest>
+    public class ReservationsController : BaseCRUDController<ReservationResponse, ReservationSearchObject, ReservationInsertRequest, ReservationUpdateRequest>
     {
         public ReservationsController(IReservationService service) : base(service)
         {
@@ -14,14 +15,14 @@ namespace PadelClub.WebAPI.Controllers
 
 
         // [HttpPost]
-        // public async Task<ActionResult<ReservationResponse>> Create(ReservationRequest request)
+        // public async Task<ActionResult<ReservationResponse>> Create(ReservationInsertRequest request)
         // {
         //     var reservationResponse = await _service.Create(request);
         //     return CreatedAtAction(nameof(GetById), new { id = reservationResponse.Id }, reservationResponse);
         // }
 
         // [HttpPut("{id:int}")]
-        // public async Task<ActionResult<ReservationResponse>> Update(int id, ReservationRequest request)
+        // public async Task<ActionResult<ReservationResponse>> Update(int id, ReservationUpdateRequest request)
         // {
         //     var reservationResponse = await _service.Update(id, request);
         //     if (reservationResponse == null) return NotFound();

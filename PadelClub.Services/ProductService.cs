@@ -19,6 +19,27 @@ namespace PadelClub.Services
         public ProductService(PadelClubContext dbContext, IMapper mapper) : base(dbContext, mapper)
         {
         }
-        
+
+        protected override IQueryable<DbProduct> ApplyFilter(IQueryable<DbProduct> query, ProductSearchObject search)
+        {
+            if (!string.IsNullOrWhiteSpace(search.Name))
+            {
+                query = query.Where(x => x.Name.Contains(search.Name));
+            }
+            if (!string.IsNullOrWhiteSpace(search.NameGTE))
+            {
+                query = query.Where(x => x.Name.StartsWith(search.NameGTE));
+            }
+
+            if (!string.IsNullOrWhiteSpace(search.FTS))
+            {
+                query = query.Where(x =>
+                    x.Name.Contains(search.FTS) ||
+                    x.Description.Contains(search.FTS));
+            }
+
+            return base.ApplyFilter(query, search);
+        }
+
     }
 }

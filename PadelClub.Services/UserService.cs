@@ -21,6 +21,51 @@ namespace PadelClub.Services
             _passwordHasher = passwordHasher;
         }
 
+        protected override IQueryable<User> ApplyFilter(IQueryable<User> query, UserSearchObject search)
+        {
+            if (!string.IsNullOrWhiteSpace(search.Username))
+            {
+                query = query.Where(x => x.Username.Contains(search.Username));
+            }
+
+            if (!string.IsNullOrWhiteSpace(search.Email))
+            {
+                query = query.Where(x => x.Email.Contains(search.Email));
+            }
+
+            if (!string.IsNullOrWhiteSpace(search.FirstName))
+            {
+                query = query.Where(x => x.FirstName.Contains(search.FirstName));
+            }
+
+            if (!string.IsNullOrWhiteSpace(search.LastName))
+            {
+                query = query.Where(x => x.LastName.Contains(search.LastName));
+            }
+
+            if (!string.IsNullOrWhiteSpace(search.PhoneNumber))
+            {
+                query = query.Where(x => x.PhoneNumber != null && x.PhoneNumber.Contains(search.PhoneNumber));
+            }
+
+            if (search.IsActive.HasValue)
+            {
+                query = query.Where(x => x.IsActive == search.IsActive.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(search.FTS))
+            {
+                query = query.Where(x =>
+                    x.Username.Contains(search.FTS) ||
+                    x.Email.Contains(search.FTS) ||
+                    x.FirstName.Contains(search.FTS) ||
+                    x.LastName.Contains(search.FTS) ||
+                    (x.PhoneNumber != null && x.PhoneNumber.Contains(search.FTS)));
+            }
+
+            return base.ApplyFilter(query, search);
+        }
+
         private static string ExtractSaltFromPasswordHash(string hashedPassword)
         {
             if (string.IsNullOrWhiteSpace(hashedPassword))

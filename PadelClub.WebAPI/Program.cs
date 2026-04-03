@@ -21,6 +21,15 @@ namespace PadelClub.WebAPI
             builder.Services.AddTransient<IUserService, UserService>();
             builder.Services.AddTransient<ICourtService, CourtService>();
             builder.Services.AddTransient<IReservationService, ReservationService>();
+            builder.Services.AddTransient<ITournamentService, TournamentService>();
+            builder.Services.AddTransient<ITournamentParticipantService, TournamentParticipantService>();
+            builder.Services.AddTransient<IProductTypeService, ProductTypeService>();
+            builder.Services.AddTransient<IProductCategoryService, ProductCategoryService>();
+            builder.Services.AddTransient<IPaymentService, PaymentService>();
+            builder.Services.AddTransient<IOrderService, OrderService>();
+            builder.Services.AddTransient<IOrderItemService, OrderItemService>();
+            builder.Services.AddTransient<IMembershipService, MembershipService>();
+            builder.Services.AddTransient<IMatchParticipantService, MatchParticipantService>();
             
             var mapsterConfig = TypeAdapterConfig.GlobalSettings;
             mapsterConfig.Scan(typeof(Program).Assembly);
@@ -408,7 +417,7 @@ namespace PadelClub.WebAPI
                     ImageUrl = null
                 }).GetAwaiter().GetResult();
 
-                var markerReservation = reservationService.CreateAsync(new PadelClub.Model.ReservationRequest
+                var markerReservation = reservationService.CreateAsync(new ReservationInsertRequest
                 {
                     CourtId = markerCourt.Id,
                     UserId = markerUser.Id,
@@ -455,7 +464,7 @@ namespace PadelClub.WebAPI
                     ImageUrl = null
                 }).GetAwaiter().GetResult();
 
-                var tempReservation = reservationService.CreateAsync(new PadelClub.Model.ReservationRequest
+                var tempReservation = reservationService.CreateAsync(new ReservationInsertRequest
                 {
                     CourtId = tempCourt.Id,
                     UserId = tempUser.Id,
@@ -498,7 +507,7 @@ namespace PadelClub.WebAPI
                     ImageUrl = null
                 }).GetAwaiter().GetResult();
 
-                reservationService.UpdateAsync(tempReservation.Id, new PadelClub.Model.ReservationRequest
+                reservationService.UpdateAsync(tempReservation.Id, new ReservationUpdateRequest
                 {
                     CourtId = tempCourt.Id,
                     UserId = tempUser.Id,

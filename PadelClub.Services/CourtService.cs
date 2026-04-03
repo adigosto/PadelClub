@@ -20,6 +20,33 @@ namespace PadelClub.Services
             
         }
 
+        protected override IQueryable<Court> ApplyFilter(IQueryable<Court> query, CourtSearchObject search)
+        {
+            if (!string.IsNullOrWhiteSpace(search.Name))
+            {
+                query = query.Where(x => x.Name.Contains(search.Name));
+            }
+
+            if (search.IsIndoor.HasValue)
+            {
+                query = query.Where(x => x.IsIndoor == search.IsIndoor.Value);
+            }
+
+            if (search.IsActive.HasValue)
+            {
+                query = query.Where(x => x.IsActive == search.IsActive.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(search.FTS))
+            {
+                query = query.Where(x =>
+                    x.Name.Contains(search.FTS) ||
+                    x.Description.Contains(search.FTS));
+            }
+
+            return base.ApplyFilter(query, search);
+        }
+
     }
 }
 
