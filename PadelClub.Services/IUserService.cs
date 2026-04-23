@@ -11,7 +11,7 @@ namespace PadelClub.Services
 {
     public interface IUserService : ICRUDService<UserResponse, UserSearchObject, UserInsertRequest, UserUpdateRequest>
     {
-        
+        Task<UserResponse?> AuthenticateAsync(UserLoginRequest request);
     }
 }
 

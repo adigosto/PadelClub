@@ -10,6 +10,8 @@ namespace PadelClub.Services.Database
 
         // Core Entities
         public DbSet<User> Users { get; set; } = null!;
+        public DbSet<Role> Roles { get; set; } = null!;
+        public DbSet<UserRole> UserRoles { get; set; } = null!;
         public DbSet<Court> Courts { get; set; } = null!;
         public DbSet<Reservation> Reservations { get; set; } = null!;
         public DbSet<Product> Products { get; set; } = null!;
@@ -30,6 +32,8 @@ namespace PadelClub.Services.Database
             base.OnModelCreating(modelBuilder);
 
             ConfigureUser(modelBuilder);
+            ConfigureRole(modelBuilder);
+            ConfigureUserRole(modelBuilder);
             ConfigureCourt(modelBuilder);
             ConfigureReservation(modelBuilder);
             ConfigureProduct(modelBuilder);
@@ -89,6 +93,56 @@ namespace PadelClub.Services.Database
 
                 entity.Property(e => e.CreatedAt)
                     .HasDefaultValueSql("GETUTCDATE()");
+            });
+        }
+
+        private void ConfigureRole(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Role>(entity =>
+            {
+                entity.ToTable("Roles");
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Description)
+                    .HasMaxLength(200);
+
+                entity.Property(e => e.IsActive)
+                    .HasDefaultValue(true);
+
+                entity.Property(e => e.CreatedAt)
+                    .HasDefaultValueSql("GETUTCDATE()");
+
+                entity.HasIndex(e => e.Name)
+                    .IsUnique();
+            });
+        }
+
+        private void ConfigureUserRole(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<UserRole>(entity =>
+            {
+                entity.ToTable("UserRoles");
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.DateAssigned)
+                    .HasDefaultValueSql("GETUTCDATE()");
+
+                entity.HasOne(e => e.User)
+                    .WithMany(u => u.UserRoles)
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Role)
+                    .WithMany(r => r.UserRoles)
+                    .HasForeignKey(e => e.RoleId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => new { e.UserId, e.RoleId })
+                    .IsUnique();
             });
         }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace PadelClub.Model
 {
@@ -13,6 +14,7 @@ namespace PadelClub.Model
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public List<RoleResponse> Roles { get; set; } = new List<RoleResponse>();
     }
 }
 

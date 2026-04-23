@@ -24,6 +24,8 @@ namespace PadelClub.Services.Database
         public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
         public virtual ICollection<TournamentParticipant> TournamentParticipants { get; set; } = new List<TournamentParticipant>();
         public virtual ICollection<MatchParticipant> MatchParticipants { get; set; } = new List<MatchParticipant>();
+
+        public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
     }
 }
 

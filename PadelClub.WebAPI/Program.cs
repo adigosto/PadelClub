@@ -2,10 +2,13 @@ using System;
 using System.Linq;
 using Mapster;
 using MapsterMapper;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using PadelClub.Model.Requests;
 using PadelClub.Services;
 using PadelClub.Services.Database;
+using PadelClub.WebAPI.Filters;
 
 namespace PadelClub.WebAPI
 {
@@ -30,6 +33,7 @@ namespace PadelClub.WebAPI
             builder.Services.AddTransient<IOrderItemService, OrderItemService>();
             builder.Services.AddTransient<IMembershipService, MembershipService>();
             builder.Services.AddTransient<IMatchParticipantService, MatchParticipantService>();
+            builder.Services.AddTransient<IRoleService, RoleService>();
             
             var mapsterConfig = TypeAdapterConfig.GlobalSettings;
             mapsterConfig.Scan(typeof(Program).Assembly);
@@ -38,6 +42,9 @@ namespace PadelClub.WebAPI
 
             // Configure database services
             builder.Services.AddDatabaseServices(builder.Configuration);
+            
+            builder.Services.AddAuthentication("BasicAuthentication")
+                .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
 
             builder.Services.AddControllers()
                 .AddJsonOptions(options =>
@@ -49,14 +56,28 @@ namespace PadelClub.WebAPI
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+                c.AddSecurityDefinition("BasicAuthentication", new OpenApiSecurityScheme
                 {
-                    Title = "PadelClub API",
-                    Version = "v1"
+                    Description = "Basic Authorization using the Bearer scheme.",
+                    Name = "Authorization",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "basic"
                 });
-                
-                // Use full type names to avoid conflicts
-                c.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "BasicAuthentication"
+                            }
+                        },
+                        new string[] { }
+                    }
+                });
             });
 
             var app = builder.Build();
@@ -76,6 +97,7 @@ namespace PadelClub.WebAPI
                         try
                         {
                             db.Database.EnsureCreated();
+                            EnsureRoleSchema(db, logger);
                             
                             // Seed initial data if needed
                             SeedInitialData(db, logger);
@@ -93,6 +115,7 @@ namespace PadelClub.WebAPI
                         try
                         {
                             db.Database.EnsureCreated();
+                            EnsureRoleSchema(db, logger);
                         }
                         catch (Exception dbEx)
                         {
@@ -357,6 +380,53 @@ namespace PadelClub.WebAPI
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error seeding initial data.");
+            }
+        }
+
+        private static void EnsureRoleSchema(PadelClubContext db, ILogger logger)
+        {
+            const string ensureRolesTableSql = @"
+IF OBJECT_ID(N'dbo.Roles', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[Roles]
+    (
+        [Id] INT IDENTITY(1,1) NOT NULL,
+        [Name] NVARCHAR(50) NOT NULL,
+        [Description] NVARCHAR(200) NULL,
+        [CreatedAt] DATETIME2 NOT NULL CONSTRAINT [DF_Roles_CreatedAt] DEFAULT (GETUTCDATE()),
+        [IsActive] BIT NOT NULL CONSTRAINT [DF_Roles_IsActive] DEFAULT ((1)),
+        CONSTRAINT [PK_Roles] PRIMARY KEY CLUSTERED ([Id] ASC)
+    );
+
+    CREATE UNIQUE INDEX [IX_Roles_Name] ON [dbo].[Roles]([Name]);
+END";
+
+            const string ensureUserRolesTableSql = @"
+IF OBJECT_ID(N'dbo.UserRoles', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[UserRoles]
+    (
+        [Id] INT IDENTITY(1,1) NOT NULL,
+        [UserId] INT NOT NULL,
+        [RoleId] INT NOT NULL,
+        [DateAssigned] DATETIME2 NOT NULL CONSTRAINT [DF_UserRoles_DateAssigned] DEFAULT (GETUTCDATE()),
+        CONSTRAINT [PK_UserRoles] PRIMARY KEY CLUSTERED ([Id] ASC),
+        CONSTRAINT [FK_UserRoles_Users_UserId] FOREIGN KEY ([UserId]) REFERENCES [dbo].[Users]([Id]) ON DELETE CASCADE,
+        CONSTRAINT [FK_UserRoles_Roles_RoleId] FOREIGN KEY ([RoleId]) REFERENCES [dbo].[Roles]([Id]) ON DELETE NO ACTION
+    );
+
+    CREATE UNIQUE INDEX [IX_UserRoles_UserId_RoleId] ON [dbo].[UserRoles]([UserId], [RoleId]);
+    CREATE INDEX [IX_UserRoles_RoleId] ON [dbo].[UserRoles]([RoleId]);
+END";
+
+            try
+            {
+                db.Database.ExecuteSqlRaw(ensureRolesTableSql);
+                db.Database.ExecuteSqlRaw(ensureUserRolesTableSql);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to ensure role schema. Role endpoints may not be available until schema is fixed.");
             }
         }
 

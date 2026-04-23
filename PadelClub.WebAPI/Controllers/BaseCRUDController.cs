@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PadelClub.Model;
 using PadelClub.Model.SearchObjects;
 using PadelClub.Services;
@@ -17,20 +18,49 @@ namespace PadelClub.WebAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<T> Create([FromBody] TInsert request)
+        public virtual async Task<ActionResult<T>> Create([FromBody] TInsert request)
         {
-            return await _crudService.CreateAsync(request);
+            try
+            {
+                var result = await _crudService.CreateAsync(request);
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ex.Message);
+            }
+            catch (DbUpdateException)
+            {
+                return Conflict("A record with the same unique value already exists.");
+            }
         }
         
         [HttpPut("{id:int}")]
-        public async Task<T?> Update(int id, [FromBody] TUpdate request)
+        public virtual async Task<ActionResult<T?>> Update(int id, [FromBody] TUpdate request)
         {
-            return await _crudService.UpdateAsync(id, request);
+            try
+            {
+                var result = await _crudService.UpdateAsync(id, request);
+                if (result == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ex.Message);
+            }
+            catch (DbUpdateException)
+            {
+                return Conflict("A record with the same unique value already exists.");
+            }
         }
         
 
         [HttpDelete("{id}")]
-        public async Task<bool> Delete(int id)
+        public virtual async Task<ActionResult<bool>> Delete(int id)
         {
             return await _crudService.DeleteAsync(id);
         }
