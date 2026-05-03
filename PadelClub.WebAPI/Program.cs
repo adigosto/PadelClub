@@ -8,6 +8,7 @@ using Microsoft.OpenApi.Models;
 using PadelClub.Model.Requests;
 using PadelClub.Services;
 using PadelClub.Services.Database;
+using PadelClub.Services.ProductStateMachine;
 using PadelClub.WebAPI.Filters;
 
 namespace PadelClub.WebAPI
@@ -34,6 +35,11 @@ namespace PadelClub.WebAPI
             builder.Services.AddTransient<IMembershipService, MembershipService>();
             builder.Services.AddTransient<IMatchParticipantService, MatchParticipantService>();
             builder.Services.AddTransient<IRoleService, RoleService>();
+            builder.Services.AddTransient<BaseProductState>();
+            builder.Services.AddTransient<InitialProductState>();
+            builder.Services.AddTransient<DraftProductState>();
+            builder.Services.AddTransient<ActiveProductState>();
+            builder.Services.AddTransient<DeactivatedProductState>();
             
             var mapsterConfig = TypeAdapterConfig.GlobalSettings;
             mapsterConfig.Scan(typeof(Program).Assembly);
@@ -46,7 +52,12 @@ namespace PadelClub.WebAPI
             builder.Services.AddAuthentication("BasicAuthentication")
                 .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
 
-            builder.Services.AddControllers()
+            builder.Services.AddControllers(
+                x =>
+                {
+                    x.Filters.Add<ExceptionFilter>(); // Global exception filter
+                }
+            )
                 .AddJsonOptions(options =>
                 {
                     // Handle circular references in navigation properties
@@ -82,52 +93,21 @@ namespace PadelClub.WebAPI
 
             var app = builder.Build();
 
-            // Initialize database (with error handling that doesn't block Swagger)
-            try
+            using (var scope = app.Services.CreateScope())
             {
-                using (var scope = app.Services.CreateScope())
+                var db = scope.ServiceProvider.GetRequiredService<PadelClubContext>();
+                var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+                try
                 {
-                    var db = scope.ServiceProvider.GetRequiredService<PadelClubContext>();
-                    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-                    
-                    // In development, create the database if it doesn't exist
-                    if (app.Environment.IsDevelopment())
-                    {
-                        logger.LogInformation("Development environment detected. Ensuring database is up to date...");
-                        try
-                        {
-                            db.Database.EnsureCreated();
-                            EnsureRoleSchema(db, logger);
-                            
-                            // Seed initial data if needed
-                            SeedInitialData(db, logger);
-                            
-                            // Run an automated CRUD smoke test once (development only)
-                            RunCrudSmokeTestsIfNeeded(db, scope.ServiceProvider, logger);
-                        }
-                        catch (Exception dbEx)
-                        {
-                            logger.LogWarning(dbEx, "Database initialization failed, but continuing. Swagger should still work.");
-                        }
-                    }
-                    else
-                    {
-                        try
-                        {
-                            db.Database.EnsureCreated();
-                            EnsureRoleSchema(db, logger);
-                        }
-                        catch (Exception dbEx)
-                        {
-                            logger.LogWarning(dbEx, "Database initialization failed, but continuing.");
-                        }
-                    }
+                    db.Database.Migrate();
+                    SeedInitialData(db, logger);
                 }
-            }
-            catch (Exception ex)
-            {
-                var logger = app.Services.GetRequiredService<ILogger<Program>>();
-                logger.LogError(ex, "An error occurred while initializing the database. The application will continue, but database operations may fail.");
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "An error occurred while applying database migrations.");
+                    throw;
+                }
             }
 
             // Configure the HTTP request pipeline.
@@ -311,6 +291,7 @@ namespace PadelClub.WebAPI
                             StockQuantity = 12,
                             ImageUrl = null,
                             IsActive = true,
+                            ProductState = "DraftProductState",
                             ProductCategoryId = equipmentCategoryId,
                             ProductTypeId = racketsTypeId
                         },
@@ -322,6 +303,7 @@ namespace PadelClub.WebAPI
                             StockQuantity = 100,
                             ImageUrl = null,
                             IsActive = true,
+                            ProductState = "DraftProductState",
                             ProductCategoryId = equipmentCategoryId,
                             ProductTypeId = ballsTypeId
                         },
@@ -333,6 +315,7 @@ namespace PadelClub.WebAPI
                             StockQuantity = 20,
                             ImageUrl = null,
                             IsActive = true,
+                            ProductState = "DraftProductState",
                             ProductCategoryId = merchandiseCategoryId,
                             ProductTypeId = shoesTypeId
                         }

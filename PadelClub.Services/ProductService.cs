@@ -10,15 +10,18 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MapsterMapper;
+using PadelClub.Model.Exceptions;
+using PadelClub.Services.ProductStateMachine;
 
 namespace PadelClub.Services
 {
     using DbProduct = PadelClub.Services.Database.Product;
-
     public class ProductService : BaseCRUDService<ProductResponse, ProductSearchObject, DbProduct, ProductInsertRequest, ProductUpdateRequest>, IProductService
     {
-        public ProductService(PadelClubContext dbContext, IMapper mapper) : base(dbContext, mapper)
+        protected readonly BaseProductState _baseProductState;
+        public ProductService(PadelClubContext dbContext, IMapper mapper, BaseProductState baseProductState) : base(dbContext, mapper)
         {
+            _baseProductState = baseProductState;
         }
 
         protected override async Task BeforeInsert(DbProduct entity, ProductInsertRequest request)
@@ -110,5 +113,46 @@ namespace PadelClub.Services
             return fallbackId;
         }
 
+        public override async Task<ProductResponse> CreateAsync(ProductInsertRequest request)
+        {
+            var baseState = _baseProductState.GetProductState("InitialProductState");
+            var result = await baseState.CreateAsync(request);
+
+            return result;
+        }
+
+        public override async Task<ProductResponse?> UpdateAsync(int id, ProductUpdateRequest request)
+        {
+            var entity = await _dbContext.Products.FindAsync(id);
+            if (entity == null)
+                return null;
+            var baseState = _baseProductState.GetProductState(entity.ProductState);
+            return await baseState.UpdateAsync(id, request);
+        }
+
+        public async Task<ProductResponse?> ActivateAsync(int id)
+        {
+            var entity = await _dbContext.Products.FindAsync(id);
+            if (entity == null)
+                return null;
+
+            var baseState = _baseProductState.GetProductState(entity.ProductState);
+            return await baseState.ActivateAsync(id);
+        }
+
+        public async Task<ProductResponse?> DeactivateAsync(int id)
+        {
+            var entity = await _dbContext.Products.FindAsync(id);
+            if (entity == null)
+                return null;
+
+            if (entity.ProductState != nameof(ActiveProductState))
+                throw new UserException("Only products in ActiveProductState can be deactivated.");
+
+            entity.ProductState = nameof(DeactivatedProductState);
+            await _dbContext.SaveChangesAsync();
+
+            return _mapper.Map<ProductResponse>(entity);
+        }
     }
 }

@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PadelClub.WebAPI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+dd74fe3143a16106218316d373c2457164f38145")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c723a5c95ba704c7c6c280edb8553d47ff712aae")]
 [assembly: System.Reflection.AssemblyProductAttribute("PadelClub.WebAPI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PadelClub.WebAPI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

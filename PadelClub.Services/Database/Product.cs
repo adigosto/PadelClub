@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace PadelClub.Services.Database
 {
@@ -21,6 +22,8 @@ namespace PadelClub.Services.Database
         public virtual ProductType ProductType { get; set; } = null!;
         public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
         public virtual ICollection<Asset> Assets { get; set; } = new List<Asset>();
+        [MaxLength(1000)]
+        public string ProductState { get; set; } = string.Empty;
     }
 }
 

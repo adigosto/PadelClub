@@ -64,7 +64,58 @@ namespace PadelClub.WebAPI.Controllers
         {
             return await _crudService.DeleteAsync(id);
         }
-        
+
+        protected async Task<ActionResult<T?>> ActivateAsyncMethod(int id)
+        {
+            try
+            {
+                var result = await ((dynamic)_crudService).ActivateAsync(id);
+                if (result == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ex.Message);
+            }
+            catch (DbUpdateException)
+            {
+                return Conflict("A record with the same unique value already exists.");
+            }
+            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException)
+            {
+                return BadRequest("This service does not support activation.");
+            }
+        }
+
+        protected async Task<ActionResult<T?>> DeactivateAsyncMethod(int id)
+        {
+            try
+            {
+                var result = await ((dynamic)_crudService).DeactivateAsync(id);
+                if (result == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ex.Message);
+            }
+            catch (DbUpdateException)
+            {
+                return Conflict("A record with the same unique value already exists.");
+            }
+            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException)
+            {
+                return BadRequest("This service does not support deactivation.");
+            }
+        }
 
     }
 }

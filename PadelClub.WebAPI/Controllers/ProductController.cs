@@ -20,5 +20,17 @@ namespace PadelClub.WebAPI.Controllers
         {
             return await _crudService.CreateAsync(request);
         }
+
+        [HttpPut("{id}/activate")]
+        public async Task<ActionResult<ProductResponse?>> ActivateAsync(int id)
+        {
+            return await ActivateAsyncMethod(id);
+        }
+
+        [HttpPut("{id}/deactivate")]
+        public async Task<ActionResult<ProductResponse?>> DeactivateAsync(int id)
+        {
+            return await DeactivateAsyncMethod(id);
+        }
     }
 }
