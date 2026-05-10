@@ -139,6 +139,10 @@
               "target": "Package",
               "version": "[4.0.3, )"
             },
+            "EasyNetQ": {
+              "target": "Package",
+              "version": "[8.1.4, )"
+            },
             "Mapster.DependencyInjection": {
               "target": "Package",
               "version": "[10.0.6, )"

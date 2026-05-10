@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using MapsterMapper;
 using PadelClub.Model.Exceptions;
 using PadelClub.Services.ProductStateMachine;
+using EasyNetQ;
 
 namespace PadelClub.Services
 {
@@ -19,9 +20,11 @@ namespace PadelClub.Services
     public class ProductService : BaseCRUDService<ProductResponse, ProductSearchObject, DbProduct, ProductInsertRequest, ProductUpdateRequest>, IProductService
     {
         protected readonly BaseProductState _baseProductState;
-        public ProductService(PadelClubContext dbContext, IMapper mapper, BaseProductState baseProductState) : base(dbContext, mapper)
+         private readonly IBus _bus;
+        public ProductService(PadelClubContext dbContext, IMapper mapper, BaseProductState baseProductState, IBus bus) : base(dbContext, mapper)
         {
             _baseProductState = baseProductState;
+            _bus = bus;
         }
 
         protected override async Task BeforeInsert(DbProduct entity, ProductInsertRequest request)

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using EasyNetQ;
 using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Authentication;
@@ -40,7 +41,13 @@ namespace PadelClub.WebAPI
             builder.Services.AddTransient<DraftProductState>();
             builder.Services.AddTransient<ActiveProductState>();
             builder.Services.AddTransient<DeactivatedProductState>();
-            
+
+
+
+            // Register EasyNetQ
+            builder.Services.AddEasyNetQ("host=localhost");
+
+
             var mapsterConfig = TypeAdapterConfig.GlobalSettings;
             mapsterConfig.Scan(typeof(Program).Assembly);
             builder.Services.AddSingleton(mapsterConfig);
@@ -48,7 +55,7 @@ namespace PadelClub.WebAPI
 
             // Configure database services
             builder.Services.AddDatabaseServices(builder.Configuration);
-            
+
             builder.Services.AddAuthentication("BasicAuthentication")
                 .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
 

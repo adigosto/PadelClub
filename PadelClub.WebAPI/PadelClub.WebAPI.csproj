@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+    <GenerateFrameworkReference>false</GenerateFrameworkReference>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>b02e46fc-fdee-4912-94a2-3c829ffdeffe</UserSecretsId>
@@ -24,5 +26,15 @@
     <ProjectReference Include="..\PadelClub.Model\PadelClub.Model.csproj" />
     <ProjectReference Include="..\PadelClub.Services\PadelClub.Services.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="PadelClub.Subscriber\**\*.cs" />
+    <EmbeddedResource Remove="PadelClub.Subscriber\**\*" />
+    <None Remove="PadelClub.Subscriber\**\*" />
+  </ItemGroup>
+
+  <PropertyGroup>
+  <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+</PropertyGroup>
 
 </Project>
