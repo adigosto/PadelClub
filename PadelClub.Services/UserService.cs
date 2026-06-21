@@ -246,7 +246,8 @@ namespace PadelClub.Services
                 return false;
 
             // Support combined hasher format: {iterations}.{base64(salt)}.{base64(derivedKey)}.
-            if (passwordHash.Contains('.') && string.IsNullOrWhiteSpace(passwordSalt))
+            // Some rows also have PasswordSalt populated, so detect by hash format only.
+            if (passwordHash.Contains('.'))
             {
                 return _passwordHasher.VerifyPassword(password, passwordHash);
             }

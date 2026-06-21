@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading;
 using EasyNetQ;
 using Mapster;
 using MapsterMapper;
@@ -76,7 +77,7 @@ namespace PadelClub.WebAPI
             {
                 c.AddSecurityDefinition("BasicAuthentication", new OpenApiSecurityScheme
                 {
-                    Description = "Basic Authorization using the Bearer scheme.",
+                    Description = "Basic Authorization. Enter your username and password.",
                     Name = "Authorization",
                     In = ParameterLocation.Header,
                     Type = SecuritySchemeType.Http,
@@ -105,16 +106,8 @@ namespace PadelClub.WebAPI
                 var db = scope.ServiceProvider.GetRequiredService<PadelClubContext>();
                 var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
-                try
-                {
-                    db.Database.Migrate();
-                    SeedInitialData(db, logger);
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "An error occurred while applying database migrations.");
-                    throw;
-                }
+                ApplyMigrationsWithRetry(db, logger);
+                SeedInitialData(db, logger);
             }
 
             // Configure the HTTP request pipeline.
@@ -134,6 +127,7 @@ namespace PadelClub.WebAPI
 
             app.UseHttpsRedirection();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             // Redirect root to Swagger in development
@@ -598,6 +592,36 @@ END";
             catch (Exception ex)
             {
                 logger.LogError(ex, "CRUD smoke test failed.");
+            }
+        }
+
+        private static void ApplyMigrationsWithRetry(PadelClubContext db, ILogger logger)
+        {
+            const int maxAttempts = 10;
+            const int delayMilliseconds = 3000;
+
+            for (var attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                try
+                {
+                    db.Database.Migrate();
+                    return;
+                }
+                catch (Exception ex) when (attempt < maxAttempts)
+                {
+                    logger.LogWarning(
+                        ex,
+                        "Database migration attempt {Attempt} of {MaxAttempts} failed. Retrying in {DelayMilliseconds}ms.",
+                        attempt,
+                        maxAttempts,
+                        delayMilliseconds);
+                    Thread.Sleep(delayMilliseconds);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "An error occurred while applying database migrations.");
+                    throw;
+                }
             }
         }
     }

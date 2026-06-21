@@ -12,7 +12,7 @@ using PadelClub.Services.Database;
 namespace PadelClub.Services.Database.Migrations
 {
     [DbContext(typeof(PadelClubContext))]
-    [Migration("20260502092146_InitialCreate")]
+    [Migration("20260514105859_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />

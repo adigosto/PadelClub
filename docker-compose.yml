@@ -1,0 +1,47 @@
+name: padelclub
+
+services:
+  padelclub-sql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "YourStrong!Passw0rd"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    expose:
+      - 1433
+    networks:
+      - padelclub-2026
+    volumes:
+      - sql_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-C", "-S", "localhost", "-U", "sa", "-P", "YourStrong!Passw0rd", "-Q", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
+
+  padelclub-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ConnectionStrings__DefaultConnection: "Server=padelclub-sql;Database=PadelClub;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;MultipleActiveResultSets=True"
+    ports:
+      - "5001:5001"
+    restart: on-failure
+    networks:
+      - padelclub-2026
+    depends_on:
+      padelclub-sql:
+        condition: service_healthy
+
+networks:
+  padelclub-2026:
+    driver: bridge
+
+volumes:
+  sql_data:

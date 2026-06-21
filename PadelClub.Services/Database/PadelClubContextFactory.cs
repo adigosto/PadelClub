@@ -10,7 +10,7 @@ namespace PadelClub.Services.Database
             var optionsBuilder = new DbContextOptionsBuilder<PadelClubContext>();
 
             optionsBuilder.UseSqlServer(
-                "Server=DESKTOP-MPRVV8J;Database=PadelClub;Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True");
+                "Server=host.docker.internal,1433;Database=PadelClub;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;MultipleActiveResultSets=True");
 
             return new PadelClubContext(optionsBuilder.Options);
         }
