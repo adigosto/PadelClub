@@ -27,6 +27,15 @@
             }
         },
         {
+            "name": "Flutter (Android Emulator)",
+            "type": "dart",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/UI/padelclub_desktop",
+            "program": "lib/main.dart",
+            "deviceId": "emulator-5554",
+            "flutterMode": "debug"
+        },
+        {
             "name": ".NET Core Attach",
             "type": "coreclr",
             "request": "attach"

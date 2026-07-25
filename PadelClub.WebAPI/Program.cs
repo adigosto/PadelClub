@@ -106,8 +106,17 @@ namespace PadelClub.WebAPI
                 var db = scope.ServiceProvider.GetRequiredService<PadelClubContext>();
                 var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
-                ApplyMigrationsWithRetry(db, logger);
-                SeedInitialData(db, logger);
+                try
+                {
+                    ApplyMigrationsWithRetry(db, logger);
+                    SeedInitialData(db, logger);
+                }
+                catch (Exception ex) when (app.Environment.IsDevelopment())
+                {
+                    logger.LogWarning(
+                        ex,
+                        "Skipping database bootstrap because SQL Server is unavailable. The API will start, but database-backed endpoints may fail until the database is online.");
+                }
             }
 
             // Configure the HTTP request pipeline.

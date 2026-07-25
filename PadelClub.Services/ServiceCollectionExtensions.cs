@@ -20,7 +20,7 @@ namespace PadelClub.Services
         {
             // Get connection string from configuration
             var connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? "Server=host.docker.internal,1433;Database=PadelClub;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;MultipleActiveResultSets=True";
+                ?? "Server=localhost;Database=PadelClub;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=True";
 
             // Register DbContext with SQL Server provider
             services.AddDbContext<PadelClubContext>(options =>

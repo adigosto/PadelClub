@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Options;
+using PadelClub.Model;
 using PadelClub.Model.Requests;
 using PadelClub.Services;
 using System.Net.Http.Headers;
@@ -47,11 +49,25 @@ namespace PadelClub.WebAPI.Filters
             var username = credentials[0];
             var password = credentials[1];
 
-            var user = await _userService.AuthenticateAsync(new UserLoginRequest
+            UserResponse? user;
+            try
             {
-                Username = username,
-                Password = password
-            });
+                user = await _userService.AuthenticateAsync(new UserLoginRequest
+                {
+                    Username = username,
+                    Password = password
+                });
+            }
+            catch (SqlException ex)
+            {
+                Logger.LogWarning(ex, "Basic authentication failed because the database is unavailable.");
+                return AuthenticateResult.Fail("Authentication service is unavailable.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                Logger.LogWarning(ex, "Basic authentication failed while validating credentials.");
+                return AuthenticateResult.Fail("Authentication failed.");
+            }
 
             if (user == null)
                 return AuthenticateResult.Fail("Invalid username or password");
