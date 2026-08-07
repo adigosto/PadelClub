@@ -1,11 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'package:padelclub_desktop/core/di/injection.dart';
+import 'package:padelclub_desktop/dashboard_page.dart';
+import 'package:padelclub_desktop/features/product/presentation/providers/product_provider.dart';
 import 'package:padelclub_desktop/providers/auth_provider.dart';
-import 'package:padelclub_desktop/providers/product_provider.dart';
-import 'screens/product_list.dart';
-import 'dashboard_page.dart';
 
 void main() {
-  runApp(const PadelClubApp());
+  sl.init();
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<ProductProvider>(
+          create: (context) => sl.loggedProductProvider,
+        ),
+      ],
+      child: const PadelClubApp(),
+    ),
+  );
 }
 
 class PadelClubApp extends StatelessWidget {
@@ -34,7 +46,10 @@ class PadelClubApp extends StatelessWidget {
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 18,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,
@@ -104,16 +119,30 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _signIn() {
+  Future<void> _signIn() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (context) => const DashboardPage(),
-      ),
-    );
+    AuthProvider.username = _emailController.text.trim();
+    AuthProvider.password = _passwordController.text;
+
+    try {
+      await sl.loggedProductProvider.get();
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const DashboardPage()),
+      );
+    } on Exception catch (error) {
+      if (!mounted) return;
+      showDialog<void>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Sign in failed'),
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+    }
   }
 
   @override
@@ -154,7 +183,10 @@ class _LoginPageState extends State<LoginPage> {
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
-                                  colors: [Color(0xFF2E6BD7), Color(0xFF1F7A63)],
+                                  colors: [
+                                    Color(0xFF2E6BD7),
+                                    Color(0xFF1F7A63),
+                                  ],
                                 ),
                                 borderRadius: BorderRadius.circular(18),
                               ),
@@ -186,20 +218,16 @@ class _LoginPageState extends State<LoginPage> {
                           const SizedBox(height: 28),
                           TextFormField(
                             controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            autofillHints: const [AutofillHints.email],
+                            autofillHints: const [AutofillHints.username],
                             textInputAction: TextInputAction.next,
                             decoration: const InputDecoration(
-                              labelText: 'Email address',
-                              prefixIcon: Icon(Icons.email_outlined),
+                              labelText: 'Username',
+                              prefixIcon: Icon(Icons.person_outline_rounded),
                             ),
                             validator: (value) {
                               final text = value?.trim() ?? '';
                               if (text.isEmpty) {
-                                return 'Enter your email address';
-                              }
-                              if (!text.contains('@') || !text.contains('.')) {
-                                return 'Enter a valid email address';
+                                return 'Enter your username';
                               }
                               return null;
                             },
@@ -253,9 +281,7 @@ class _LoginPageState extends State<LoginPage> {
                               const Expanded(
                                 child: Text(
                                   'Remember me on this device',
-                                  style: TextStyle(
-                                    color: Color(0xFF4F6059),
-                                  ),
+                                  style: TextStyle(color: Color(0xFF4F6059)),
                                 ),
                               ),
                               TextButton(
@@ -269,28 +295,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           const SizedBox(height: 8),
                           ElevatedButton(
-                            onPressed: () async {
-                              AuthProvider.username = _emailController.text;
-                              AuthProvider.password = _passwordController.text;
-                              try {
-                                debugPrint("Username: ${AuthProvider.username}, Password: ${AuthProvider.password}");
-                                var productProvider = ProductProvider();
-                                var products = await productProvider.get();
-                                debugPrint(products.toString());
-                                if (!context.mounted) return;
-                                Navigator.push(context, MaterialPageRoute(builder: (context) => const ProductListScreen()));
-                              } on Exception catch (e) {
-                                if (!context.mounted) return;
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: Text(e.toString()),
-                                  ),
-                                );
-                              } catch (e) {
-                                debugPrint(e.toString());
-                              }
-                            },
+                            onPressed: _signIn,
                             child: const Text('Sign in'),
                           ),
                           const SizedBox(height: 16),
@@ -329,8 +334,10 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                           const SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 4,
                             children: [
                               const Text(
                                 "Don't have an account?",
@@ -374,18 +381,12 @@ class _LoginBackground extends StatelessWidget {
           Positioned(
             top: -50,
             right: -30,
-            child: _BackgroundOrb(
-              size: 180,
-              color: const Color(0x332E6BD7),
-            ),
+            child: _BackgroundOrb(size: 180, color: const Color(0x332E6BD7)),
           ),
           Positioned(
             bottom: -70,
             left: -40,
-            child: _BackgroundOrb(
-              size: 220,
-              color: const Color(0x222E6BD7),
-            ),
+            child: _BackgroundOrb(size: 220, color: const Color(0x222E6BD7)),
           ),
           const Positioned(
             top: 96,
@@ -412,19 +413,13 @@ class _BackgroundOrb extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-      ),
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
     );
   }
 }
 
 class _BackgroundAccent extends StatelessWidget {
-  const _BackgroundAccent({
-    required this.title,
-    required this.subtitle,
-  });
+  const _BackgroundAccent({required this.title, required this.subtitle});
 
   final String title;
   final String subtitle;
@@ -437,17 +432,17 @@ class _BackgroundAccent extends StatelessWidget {
         Text(
           title,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w900,
-                letterSpacing: -0.8,
-                color: const Color(0xFF2E6BD7),
-              ),
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.8,
+            color: const Color(0xFF2E6BD7),
+          ),
         ),
         const SizedBox(height: 6),
         Text(
           subtitle,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF4E638C),
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF4E638C)),
         ),
       ],
     );
@@ -467,24 +462,56 @@ class MyHomePage extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         title: Text(title),
       ),
-      body: const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.emoji_events_outlined, size: 64),
-              SizedBox(height: 16),
-              Text(
-                'Logged in successfully',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFEFF6F1), Color(0xFFDCEBE3)],
+          ),
+        ),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.95),
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x14000000),
+                    blurRadius: 20,
+                    offset: Offset(0, 12),
+                  ),
+                ],
               ),
-              SizedBox(height: 8),
-              Text(
-                'This is a clean placeholder home screen for the PadelClub app.',
-                textAlign: TextAlign.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(
+                    Icons.emoji_events_outlined,
+                    size: 64,
+                    color: Color(0xFF1F7A63),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Welcome to PadelClub',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF27423A),
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Your club dashboard is ready to guide bookings, products, and match activity.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Color(0xFF5C6B64)),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

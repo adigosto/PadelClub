@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:padelclub_desktop/features/product/presentation/screens/product_list_screen.dart';
+
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
@@ -32,7 +34,10 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                       const Spacer(),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(18),
@@ -40,7 +45,11 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                         child: const Row(
                           children: [
-                            Icon(Icons.battery_std_rounded, size: 16, color: Color(0xFF2E6BD7)),
+                            Icon(
+                              Icons.battery_std_rounded,
+                              size: 16,
+                              color: Color(0xFF2E6BD7),
+                            ),
                             SizedBox(width: 8),
                             Text(
                               '100%',
@@ -58,7 +67,8 @@ class _DashboardPageState extends State<DashboardPage> {
                   Center(
                     child: Text(
                       'Rezultati i igrači',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
                             fontWeight: FontWeight.w900,
                             letterSpacing: -0.9,
                             color: const Color(0xFF17233A),
@@ -75,9 +85,15 @@ class _DashboardPageState extends State<DashboardPage> {
                     child: const TextField(
                       decoration: InputDecoration(
                         hintText: 'Pretražite mečeve, igrače...',
-                        prefixIcon: Icon(Icons.search_rounded, color: Color(0xFF2E6BD7)),
+                        prefixIcon: Icon(
+                          Icons.search_rounded,
+                          color: Color(0xFF2E6BD7),
+                        ),
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
                       ),
                     ),
                   ),
@@ -98,7 +114,10 @@ class _DashboardPageState extends State<DashboardPage> {
                   const SizedBox(height: 12),
                   Row(
                     children: const [
-                      Icon(Icons.emoji_events_rounded, color: Color(0xFFF2B705)),
+                      Icon(
+                        Icons.emoji_events_rounded,
+                        color: Color(0xFFF2B705),
+                      ),
                       SizedBox(width: 8),
                       Text(
                         'Najnoviji mečevi',
@@ -143,7 +162,10 @@ class _DashboardPageState extends State<DashboardPage> {
                   const SizedBox(height: 18),
                   Row(
                     children: const [
-                      Icon(Icons.military_tech_rounded, color: Color(0xFFF2B705)),
+                      Icon(
+                        Icons.military_tech_rounded,
+                        color: Color(0xFFF2B705),
+                      ),
                       SizedBox(width: 8),
                       Text(
                         'Najbolji igrači',
@@ -180,6 +202,12 @@ class _DashboardPageState extends State<DashboardPage> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedNavIndex,
         onDestinationSelected: (index) {
+          if (index == 3) {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ProductListScreen()),
+            );
+            return;
+          }
           setState(() {
             _selectedNavIndex = index;
           });
@@ -345,13 +373,13 @@ class _MatchCard extends StatelessWidget {
             children: [
               Text(
                 timeLabel,
-                style: const TextStyle(
-                  color: Color(0xFF667085),
-                  fontSize: 12,
-                ),
+                style: const TextStyle(color: Color(0xFF667085), fontSize: 12),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: statusColor,
                   borderRadius: BorderRadius.circular(999),
@@ -401,9 +429,9 @@ class _MatchCard extends StatelessWidget {
             child: Text(
               score,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: const Color(0xFF17233A),
-                  ),
+                fontWeight: FontWeight.w900,
+                color: const Color(0xFF17233A),
+              ),
             ),
           ),
           const SizedBox(height: 10),
@@ -440,7 +468,9 @@ class _TeamColumn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      crossAxisAlignment: alignEnd
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
       children: [
         Text(
           name,
@@ -455,10 +485,7 @@ class _TeamColumn extends StatelessWidget {
         Text(
           subtitle,
           textAlign: alignEnd ? TextAlign.right : TextAlign.left,
-          style: const TextStyle(
-            color: Color(0xFF667085),
-            fontSize: 11,
-          ),
+          style: const TextStyle(color: Color(0xFF667085), fontSize: 11),
         ),
       ],
     );
@@ -496,7 +523,10 @@ class _PlayerCard extends StatelessWidget {
             backgroundColor: avatarColor,
             child: Text(
               name.substring(0, 1).toUpperCase(),
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -514,7 +544,10 @@ class _PlayerCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   title,
-                  style: const TextStyle(color: Color(0xFF667085), fontSize: 12),
+                  style: const TextStyle(
+                    color: Color(0xFF667085),
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -532,10 +565,7 @@ class _PlayerCard extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 rank,
-                style: const TextStyle(
-                  color: Color(0xFF98A2B3),
-                  fontSize: 12,
-                ),
+                style: const TextStyle(color: Color(0xFF98A2B3), fontSize: 12),
               ),
             ],
           ),

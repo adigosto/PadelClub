@@ -6,8 +6,9 @@ set(EPHEMERAL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ephemeral")
 # Configuration provided via flutter tool.
 include(${EPHEMERAL_DIR}/generated_config.cmake)
 
-# TODO: Move the rest of this into files in ephemeral. See
-# https://github.com/flutter/flutter/issues/57146.
+# Note: Remaining build glue is intentionally kept here by the Flutter tool.
+# The `ephemeral/` directory contains generated pieces; changes to this file
+# are not required for typical app development and are managed by the Flutter tool.
 set(WRAPPER_ROOT "${EPHEMERAL_DIR}/cpp_client_wrapper")
 
 # Set fallback configurations for older versions of the flutter tool.
