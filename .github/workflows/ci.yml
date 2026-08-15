@@ -19,7 +19,7 @@ jobs:
       - run: dotnet restore PadelClub.sln
       - run: dotnet build PadelClub.sln --configuration Release --no-restore
       - run: dotnet test PadelClub.sln --configuration Release --no-build --logger trx --results-directory TestResults
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: api-test-results
