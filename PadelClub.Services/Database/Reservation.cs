@@ -14,11 +14,15 @@ namespace PadelClub.Services.Database
         public string? Notes { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
+        public Guid? SeriesId { get; set; }
+        public DateTime? CancelledAt { get; set; }
+        public bool IsNoShow { get; set; }
 
         // Navigation properties
         public virtual Court Court { get; set; } = null!;
         public virtual User User { get; set; } = null!;
         public virtual Payment? Payment { get; set; }
+        public virtual ICollection<AccountCredit> Credits { get; set; } = new List<AccountCredit>();
     }
 }
 

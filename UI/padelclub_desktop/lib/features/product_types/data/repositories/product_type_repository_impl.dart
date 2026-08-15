@@ -8,7 +8,9 @@ class ProductTypeRepositoryImpl implements ProductTypeRepository {
   ProductTypeRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<List<ProductType>> getProductTypes({Map<String, dynamic>? filter}) async {
+  Future<List<ProductType>> getProductTypes({
+    Map<String, dynamic>? filter,
+  }) async {
     return await remoteDataSource.getProductTypes(filter: filter);
   }
 }

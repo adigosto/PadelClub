@@ -19,10 +19,12 @@ namespace PadelClub.Services
         private const int KeySize = 32;
         private const int Iterations = 100_000;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly INotificationService _notificationService;
 
-        public UserService(PadelClubContext dbContext, IPasswordHasher passwordHasher, IMapper mapper) : base(dbContext, mapper)
+        public UserService(PadelClubContext dbContext, IPasswordHasher passwordHasher, IMapper mapper, INotificationService notificationService) : base(dbContext, mapper)
         {
             _passwordHasher = passwordHasher;
+            _notificationService = notificationService;
         }
 
         protected override IQueryable<User> ApplyFilter(IQueryable<User> query, UserSearchObject search)
@@ -162,14 +164,34 @@ namespace PadelClub.Services
         public override async Task<UserResponse> CreateAsync(UserInsertRequest request)
         {
             var created = await base.CreateAsync(request);
+            await _notificationService.CreateAsync(new NotificationInsertRequest
+            {
+                Title = "Welcome to PadelClub",
+                Message = "Your account is ready. You can now reserve courts, join matches, and follow club activity.",
+                Type = "Users",
+                RecipientUserIds = new List<int> { created.Id }
+            });
             return await GetByIdAsync(created.Id) ?? created;
         }
 
         public override async Task<UserResponse?> UpdateAsync(int id, UserUpdateRequest request)
         {
+            var previousEmail = await _dbContext.Users.AsNoTracking().Where(x => x.Id == id).Select(x => x.Email).SingleOrDefaultAsync();
             var updated = await base.UpdateAsync(id, request);
             if (updated == null)
                 return null;
+
+            if (previousEmail != null && !string.Equals(previousEmail, request.Email, StringComparison.OrdinalIgnoreCase))
+            {
+                await _dbContext.Users.Where(x => x.Id == id)
+                    .ExecuteUpdateAsync(x => x.SetProperty(u => u.EmailVerifiedAt, (DateTime?)null));
+                await _dbContext.AuthTokens.Where(x => x.UserId == id && x.Purpose == "email-verify" && x.ConsumedAt == null && x.RevokedAt == null)
+                    .ExecuteUpdateAsync(x => x.SetProperty(t => t.RevokedAt, DateTime.UtcNow));
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.Password))
+                await _dbContext.AuthTokens.Where(x => x.UserId == id && x.Purpose == "refresh" && x.RevokedAt == null)
+                    .ExecuteUpdateAsync(x => x.SetProperty(t => t.RevokedAt, DateTime.UtcNow));
 
             return await GetByIdAsync(id) ?? updated;
         }
@@ -227,6 +249,7 @@ namespace PadelClub.Services
         private UserResponse MapUserToResponse(User user)
         {
             var response = _mapper.Map<UserResponse>(user);
+            response.IsEmailVerified = user.EmailVerifiedAt.HasValue;
             response.Roles = user.UserRoles
                 .Where(x => x.Role != null && x.Role.IsActive)
                 .Select(x => new RoleResponse
@@ -273,4 +296,3 @@ namespace PadelClub.Services
         }
     }
 }
-

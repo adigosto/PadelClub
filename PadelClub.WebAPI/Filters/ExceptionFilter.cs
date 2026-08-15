@@ -1,5 +1,6 @@
 namespace PadelClub.WebAPI.Filters
 {
+    using Microsoft.EntityFrameworkCore;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.AspNetCore.Mvc.Filters;
     using PadelClub.Model.Exceptions;
@@ -16,24 +17,47 @@ namespace PadelClub.WebAPI.Filters
 
         public override void OnException(ExceptionContext context)
         {
-            if (context.Exception is UserException)
+            string key;
+            string message;
+            HttpStatusCode status;
+            if (context.Exception is UserException or ArgumentException or InvalidOperationException)
             {
-                context.ModelState.AddModelError("userError", context.Exception.Message);
-                context.HttpContext.Response.StatusCode  = (int)HttpStatusCode.BadRequest;
+                key = "validationError";
+                message = context.Exception.Message;
+                status = HttpStatusCode.BadRequest;
+            }
+            else if (context.Exception is KeyNotFoundException)
+            {
+                key = "notFound";
+                message = context.Exception.Message;
+                status = HttpStatusCode.NotFound;
+            }
+            else if (context.Exception is DbUpdateException)
+            {
+                key = "conflict";
+                message = "The operation conflicts with existing data.";
+                status = HttpStatusCode.Conflict;
             }
             else
             {
-                context.ModelState.AddModelError("ERROR", "Server side error, please check logs for more details.");
-                context.HttpContext.Response.StatusCode  = (int)HttpStatusCode.InternalServerError;
+                key = "serverError";
+                message = "An unexpected server error occurred. Reference the correlation ID when contacting support.";
+                status = HttpStatusCode.InternalServerError;
+                _logger.LogError(context.Exception, "Unhandled API exception. CorrelationId: {CorrelationId}", context.HttpContext.TraceIdentifier);
             }
 
-            var list = context.ModelState.Where(x => x.Value.Errors.Count > 0)
-                .ToDictionary(x => x.Key, y => y.Value.Errors.Select(z => z.ErrorMessage).ToArray());
+            context.ModelState.AddModelError(key, message);
+            context.HttpContext.Response.StatusCode = (int)status;
+
+            var list = context.ModelState.Where(x => x.Value?.Errors.Count > 0)
+                .ToDictionary(x => x.Key, y => y.Value!.Errors.Select(z => z.ErrorMessage).ToArray());
 
             context.Result = new JsonResult(new
             {
-                errors = list
+                errors = list,
+                correlationId = context.HttpContext.TraceIdentifier
             });
+            context.ExceptionHandled = true;
         }
     }
 }

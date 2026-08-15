@@ -25,12 +25,12 @@ class ProductModel extends Product {
 
   @override
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'description': description,
-        'price': price,
-        'stockQuantity': stockQuantity,
-        'productState': productState,
-        'imageUrl': imageUrl,
-      };
+    'id': id,
+    'name': name,
+    'description': description,
+    'price': price,
+    'stockQuantity': stockQuantity,
+    'productState': productState,
+    'imageUrl': imageUrl,
+  };
 }

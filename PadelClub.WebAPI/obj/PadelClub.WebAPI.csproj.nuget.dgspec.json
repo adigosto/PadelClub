@@ -241,6 +241,14 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "FirebaseAdmin": {
+              "target": "Package",
+              "version": "[3.6.0, )"
+            },
+            "MailKit": {
+              "target": "Package",
+              "version": "[4.17.0, )"
+            },
             "Mapster": {
               "target": "Package",
               "version": "[10.0.6, )"
@@ -248,6 +256,10 @@
             "Mapster.DependencyInjection": {
               "target": "Package",
               "version": "[10.0.6, )"
+            },
+            "Microsoft.AspNetCore.Authentication.JwtBearer": {
+              "target": "Package",
+              "version": "[8.0.10, )"
             },
             "Microsoft.EntityFrameworkCore.Design": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
@@ -258,6 +270,10 @@
             "Microsoft.VisualStudio.Azure.Containers.Tools.Targets": {
               "target": "Package",
               "version": "[1.21.0, )"
+            },
+            "Stripe.net": {
+              "target": "Package",
+              "version": "[51.0.0, )"
             },
             "Swashbuckle.AspNetCore": {
               "target": "Package",

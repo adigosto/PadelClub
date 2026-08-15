@@ -12,11 +12,18 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
   final http.Client client;
   final String baseUrl;
 
-  PaymentRemoteDataSourceImpl({required this.client, this.baseUrl = const String.fromEnvironment('baseUrl', defaultValue: 'http://localhost:5001/api')});
+  PaymentRemoteDataSourceImpl({
+    required this.client,
+    this.baseUrl = const String.fromEnvironment(
+      'baseUrl',
+      defaultValue: 'http://localhost:5000',
+    ),
+  });
 
   @override
   Future<List<PaymentModel>> getPayments({Map<String, dynamic>? filter}) async {
-    var url = '$baseUrl/Payments';
+    var url =
+        '$baseUrl/Payments${AuthProvider.currentUserIsAdministrator ? '' : '/mine'}';
     if (filter != null && filter.isNotEmpty) {
       var query = getQueryString(filter);
       url = '$url?$query';
@@ -25,13 +32,19 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
     final response = await client.get(uri, headers: createHeaders());
     if (isValidResponse(response)) {
       final data = jsonDecode(response.body) as List<dynamic>;
-      return data.map((e) => PaymentModel.fromJson(e as Map<String, dynamic>)).toList();
+      return data
+          .map((e) => PaymentModel.fromJson(e as Map<String, dynamic>))
+          .toList();
     } else {
       throw Exception('Something went wrong');
     }
   }
 
-  String getQueryString(Map params, {String prefix = '&', bool inRecursion = false}) {
+  String getQueryString(
+    Map params, {
+    String prefix = '&',
+    bool inRecursion = false,
+  }) {
     String query = '';
     params.forEach((key, value) {
       if (inRecursion) {
@@ -52,7 +65,11 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
       } else if (value is List || value is Map) {
         if (value is List) value = value.asMap();
         value.forEach((k, v) {
-          query += getQueryString({k: v}, prefix: '$prefix$key', inRecursion: true);
+          query += getQueryString(
+            {k: v},
+            prefix: '$prefix$key',
+            inRecursion: true,
+          );
         });
       }
     });
@@ -66,10 +83,6 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
   }
 
   Map<String, String> createHeaders() {
-    final basicAuth = 'Basic ${base64Encode(utf8.encode('${AuthProvider.username}: ${AuthProvider.password}'))}';
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': basicAuth,
-    };
+    return AuthProvider.authenticatedHeaders();
   }
 }

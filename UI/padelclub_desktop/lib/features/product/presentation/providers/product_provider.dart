@@ -19,9 +19,9 @@ class ProductProvider extends ChangeNotifier {
 
   static String _defaultBaseUrl() {
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:5001';
+      return 'http://10.0.2.2:5000';
     }
-    return 'http://localhost:5001';
+    return 'http://localhost:5000';
   }
 
   Future<SearchResult<Product>> get({Map<String, dynamic>? filter}) async {
@@ -81,8 +81,6 @@ class ProductProvider extends ChangeNotifier {
   }
 
   Map<String, String> createHeaders() {
-    final basicAuth =
-        'Basic ${base64Encode(utf8.encode('${AuthProvider.username}:${AuthProvider.password}'))}';
-    return {'Content-Type': 'application/json', 'Authorization': basicAuth};
+    return AuthProvider.authenticatedHeaders();
   }
 }

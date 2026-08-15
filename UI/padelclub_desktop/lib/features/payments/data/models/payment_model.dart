@@ -1,7 +1,12 @@
 import 'package:padelclub_desktop/features/payments/domain/entities/payment.dart';
 
 class PaymentModel extends Payment {
-  PaymentModel({super.id, required super.orderId, required super.amount, required super.date});
+  PaymentModel({
+    super.id,
+    required super.orderId,
+    required super.amount,
+    required super.date,
+  });
 
   factory PaymentModel.fromJson(Map<String, dynamic> json) {
     return PaymentModel(
@@ -13,9 +18,9 @@ class PaymentModel extends Payment {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'orderId': orderId,
-        'amount': amount,
-        'date': date.toIso8601String(),
-      };
+    'id': id,
+    'orderId': orderId,
+    'amount': amount,
+    'date': date.toIso8601String(),
+  };
 }

@@ -13,5 +13,10 @@ namespace PadelClub.Model
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public string Status { get; set; } = "Active";
+        public bool AutoRenew { get; set; }
+        public bool CancelAtPeriodEnd { get; set; }
+        public DateTime? SuspendedAt { get; set; }
+        public DateTime? CancelledAt { get; set; }
     }
 }

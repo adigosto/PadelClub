@@ -8,7 +8,9 @@ class MembershipRepositoryImpl implements MembershipRepository {
   MembershipRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<List<Membership>> getMemberships({Map<String, dynamic>? filter}) async {
+  Future<List<Membership>> getMemberships({
+    Map<String, dynamic>? filter,
+  }) async {
     return await remoteDataSource.getMemberships(filter: filter);
   }
 }

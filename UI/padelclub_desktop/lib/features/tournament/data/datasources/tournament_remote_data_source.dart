@@ -13,10 +13,18 @@ class TournamentRemoteDataSourceImpl implements TournamentRemoteDataSource {
   final http.Client client;
   final String baseUrl;
 
-  TournamentRemoteDataSourceImpl({required this.client, this.baseUrl = const String.fromEnvironment('baseUrl', defaultValue: 'http://localhost:5001/api')});
+  TournamentRemoteDataSourceImpl({
+    required this.client,
+    this.baseUrl = const String.fromEnvironment(
+      'baseUrl',
+      defaultValue: 'http://localhost:5000',
+    ),
+  });
 
   @override
-  Future<List<TournamentModel>> getTournaments({Map<String, dynamic>? filter}) async {
+  Future<List<TournamentModel>> getTournaments({
+    Map<String, dynamic>? filter,
+  }) async {
     var url = '$baseUrl/Tournament';
     if (filter != null && filter.isNotEmpty) {
       var query = getQueryString(filter);
@@ -28,14 +36,20 @@ class TournamentRemoteDataSourceImpl implements TournamentRemoteDataSource {
 
     if (isValidResponse(response)) {
       final data = jsonDecode(response.body) as List<dynamic>;
-      final items = data.map((e) => TournamentModel.fromJson(e as Map<String, dynamic>)).toList();
+      final items = data
+          .map((e) => TournamentModel.fromJson(e as Map<String, dynamic>))
+          .toList();
       return items;
     } else {
       throw Exception('Failed to load tournaments');
     }
   }
 
-  String getQueryString(Map<String, dynamic> params, {String prefix = '?', bool inRecursion = false}) {
+  String getQueryString(
+    Map<String, dynamic> params, {
+    String prefix = '?',
+    bool inRecursion = false,
+  }) {
     String query = '';
     params.forEach((key, value) {
       final effectivePrefix = inRecursion ? '&' : prefix;
@@ -68,10 +82,6 @@ class TournamentRemoteDataSourceImpl implements TournamentRemoteDataSource {
   }
 
   Map<String, String> createHeaders() {
-    final basicAuth = 'Basic ${base64Encode(utf8.encode('${AuthProvider.username}: ${AuthProvider.password}'))}';
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': basicAuth,
-    };
+    return AuthProvider.authenticatedHeaders();
   }
 }

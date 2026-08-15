@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import 'package:padelclub_desktop/features/product/presentation/screens/product_list_screen.dart';
+import 'package:padelclub_desktop/features/home/presentation/screens/mobile_home_screen.dart';
+import 'package:padelclub_desktop/layouts/master_screen.dart';
+import 'package:padelclub_desktop/providers/auth_provider.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -10,60 +13,27 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  int _selectedNavIndex = 1;
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FD),
-      body: Stack(
+    if (usesDesktopManagement(context)) {
+      return context.watch<AuthProvider>().isAdministrator
+          ? const _ManagementOverview()
+          : const _DesktopAccessDenied();
+    }
+    return const MobileHomeScreen();
+    /* Legacy mobile search composition retained temporarily for Phase 5 extraction.
+    return MasterScreen(
+      title: 'PadelClub',
+      section: AppSection.home,
+      child: Stack(
         children: [
           const _DashboardBackground(),
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 36),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 18,
-                        color: Color(0xFF25324D),
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: const Color(0xFFD8E2F1)),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(
-                              Icons.battery_std_rounded,
-                              size: 16,
-                              color: Color(0xFF2E6BD7),
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              '100%',
-                              style: TextStyle(
-                                color: Color(0xFF25324D),
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
                   Center(
                     child: Text(
                       'Rezultati i igrači',
@@ -199,44 +169,224 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedNavIndex,
-        onDestinationSelected: (index) {
-          if (index == 3) {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ProductListScreen()),
+    );
+  }
+}
+
+    */
+  }
+}
+
+class _DesktopAccessDenied extends StatelessWidget {
+  const _DesktopAccessDenied();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF4F6FA),
+      body: Center(
+        child: SizedBox(
+          width: 420,
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.admin_panel_settings_outlined,
+                    size: 58,
+                    color: Color(0xFF2F64E7),
+                  ),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'Management access required',
+                    style: TextStyle(fontSize: 23, fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'The desktop application is reserved for club staff. This account does not currently have an administrator role.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Color(0xFF667085)),
+                  ),
+                  const SizedBox(height: 22),
+                  FilledButton.icon(
+                    onPressed: () {
+                      context.read<AuthProvider>().logout();
+                      Navigator.of(
+                        context,
+                      ).pushNamedAndRemoveUntil('/', (_) => false);
+                    },
+                    icon: const Icon(Icons.logout_rounded),
+                    label: const Text('Sign out and go back'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ManagementOverview extends StatelessWidget {
+  const _ManagementOverview();
+
+  @override
+  Widget build(BuildContext context) {
+    return MasterScreen(
+      title: 'Management overview',
+      section: AppSection.home,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(30, 26, 30, 40),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 980;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _OverviewHero(
+                  onReservations: () =>
+                      Navigator.pushNamed(context, '/reservations'),
+                ),
+                const SizedBox(height: 20),
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: compact ? 2 : 4,
+                  childAspectRatio: compact ? 2.5 : 2.15,
+                  crossAxisSpacing: 14,
+                  mainAxisSpacing: 14,
+                  children: const [
+                    _ManagementMetric(
+                      icon: Icons.calendar_month_rounded,
+                      label: "Today's bookings",
+                      value: '18',
+                      color: Color(0xFF2F64E7),
+                      trend: '+3 from yesterday',
+                    ),
+                    _ManagementMetric(
+                      icon: Icons.stadium_rounded,
+                      label: 'Court occupancy',
+                      value: '76%',
+                      color: Color(0xFF1F7A63),
+                      trend: 'Peak at 18:00',
+                    ),
+                    _ManagementMetric(
+                      icon: Icons.people_alt_rounded,
+                      label: 'Active members',
+                      value: '248',
+                      color: Color(0xFF7657C8),
+                      trend: '+12 this month',
+                    ),
+                    _ManagementMetric(
+                      icon: Icons.payments_rounded,
+                      label: "Today's revenue",
+                      value: '684 KM',
+                      color: Color(0xFFD17A32),
+                      trend: '82% collected',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                if (compact) ...[
+                  const _TodaySchedule(),
+                  const SizedBox(height: 16),
+                  const _CourtStatus(),
+                ] else
+                  const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 3, child: _TodaySchedule()),
+                      SizedBox(width: 16),
+                      Expanded(flex: 2, child: _CourtStatus()),
+                    ],
+                  ),
+                const SizedBox(height: 20),
+                _QuickActions(
+                  onReservations: () =>
+                      Navigator.pushNamed(context, '/reservations'),
+                  onCourts: () => Navigator.pushNamed(context, '/courts'),
+                  onProducts: () => Navigator.pushNamed(context, '/products'),
+                  onMembers: () => Navigator.pushNamed(context, '/members'),
+                ),
+              ],
             );
-            return;
-          }
-          setState(() {
-            _selectedNavIndex = index;
-          });
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'Početna',
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _ManagementMetric extends StatelessWidget {
+  const _ManagementMetric({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+    this.trend,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+  final String? trend;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(11),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.search_rounded),
-            selectedIcon: Icon(Icons.search_rounded),
-            label: 'Pretraga',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month_rounded),
-            label: 'Rezervacije',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.shopping_cart_outlined),
-            selectedIcon: Icon(Icons.shopping_cart_rounded),
-            label: 'Shop',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(Icons.person_rounded),
-            label: 'Profil',
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Color(0xFF667085),
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
+                  ),
+                ),
+                if (trend != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    trend!,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ],
       ),
@@ -244,6 +394,358 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 }
 
+class _OverviewHero extends StatelessWidget {
+  const _OverviewHero({required this.onReservations});
+  final VoidCallback onReservations;
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(26),
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        colors: [Color(0xFF173B8F), Color(0xFF2563EB), Color(0xFF208A78)],
+      ),
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: const [
+        BoxShadow(
+          color: Color(0x242563EB),
+          blurRadius: 24,
+          offset: Offset(0, 10),
+        ),
+      ],
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text(
+                'Good morning, Admin',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 25,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              SizedBox(height: 7),
+              Text(
+                'Your club is running smoothly. Court demand is strongest between 18:00 and 21:00 today.',
+                style: TextStyle(color: Color(0xFFDCE7FF), fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 20),
+        FilledButton.icon(
+          onPressed: onReservations,
+          style: FilledButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Color(0xFF1D4ED8),
+          ),
+          icon: const Icon(Icons.add_rounded),
+          label: const Text('New reservation'),
+        ),
+      ],
+    ),
+  );
+}
+
+class _TodaySchedule extends StatelessWidget {
+  const _TodaySchedule();
+  @override
+  Widget build(BuildContext context) => _DashboardPanel(
+    title: "Today's schedule",
+    subtitle: 'Upcoming court activity',
+    child: Column(
+      children: const [
+        _ScheduleRow(
+          time: '16:00',
+          court: 'Court Central',
+          player: 'Casey Player',
+          status: 'Confirmed',
+          color: Color(0xFF2563EB),
+        ),
+        Divider(height: 1),
+        _ScheduleRow(
+          time: '17:00',
+          court: 'Court North',
+          player: 'Amar & team',
+          status: 'Paid',
+          color: Color(0xFF10B981),
+        ),
+        Divider(height: 1),
+        _ScheduleRow(
+          time: '18:00',
+          court: 'Court Central',
+          player: 'League training',
+          status: 'Recurring',
+          color: Color(0xFF7657C8),
+        ),
+        Divider(height: 1),
+        _ScheduleRow(
+          time: '19:00',
+          court: 'Court North',
+          player: 'Open match',
+          status: '4 players',
+          color: Color(0xFFD17A32),
+        ),
+      ],
+    ),
+  );
+}
+
+class _ScheduleRow extends StatelessWidget {
+  const _ScheduleRow({
+    required this.time,
+    required this.court,
+    required this.player,
+    required this.status,
+    required this.color,
+  });
+  final String time, court, player, status;
+  final Color color;
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 14),
+    child: Row(
+      children: [
+        SizedBox(
+          width: 58,
+          child: Text(
+            time,
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF17233A),
+            ),
+          ),
+        ),
+        Container(
+          width: 3,
+          height: 34,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 13),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(court, style: const TextStyle(fontWeight: FontWeight.w800)),
+              const SizedBox(height: 2),
+              Text(
+                player,
+                style: const TextStyle(fontSize: 12, color: Color(0xFF667085)),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: .1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            status,
+            style: TextStyle(
+              fontSize: 11,
+              color: color,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _CourtStatus extends StatelessWidget {
+  const _CourtStatus();
+  @override
+  Widget build(BuildContext context) => _DashboardPanel(
+    title: 'Court status',
+    subtitle: 'Live operating overview',
+    child: Column(
+      children: const [
+        _CourtRow(
+          name: 'Court Central',
+          detail: 'Occupied until 17:00',
+          progress: .72,
+          color: Color(0xFF2563EB),
+        ),
+        SizedBox(height: 18),
+        _CourtRow(
+          name: 'Court North',
+          detail: 'Available now',
+          progress: .48,
+          color: Color(0xFF10B981),
+        ),
+        SizedBox(height: 22),
+        _NoticeRow(
+          icon: Icons.build_circle_outlined,
+          text: 'No maintenance blocks today',
+          color: Color(0xFF1F7A63),
+        ),
+        SizedBox(height: 10),
+        _NoticeRow(
+          icon: Icons.schedule_rounded,
+          text: '6 open slots remaining',
+          color: Color(0xFF2F64E7),
+        ),
+      ],
+    ),
+  );
+}
+
+class _CourtRow extends StatelessWidget {
+  const _CourtRow({
+    required this.name,
+    required this.detail,
+    required this.progress,
+    required this.color,
+  });
+  final String name, detail;
+  final double progress;
+  final Color color;
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          Expanded(
+            child: Text(
+              name,
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+          Text(
+            '${(progress * 100).round()}%',
+            style: TextStyle(color: color, fontWeight: FontWeight.w900),
+          ),
+        ],
+      ),
+      const SizedBox(height: 4),
+      Text(
+        detail,
+        style: const TextStyle(fontSize: 12, color: Color(0xFF667085)),
+      ),
+      const SizedBox(height: 9),
+      ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: LinearProgressIndicator(
+          value: progress,
+          minHeight: 7,
+          backgroundColor: const Color(0xFFEDF1F7),
+          color: color,
+        ),
+      ),
+    ],
+  );
+}
+
+class _NoticeRow extends StatelessWidget {
+  const _NoticeRow({
+    required this.icon,
+    required this.text,
+    required this.color,
+  });
+  final IconData icon;
+  final String text;
+  final Color color;
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Icon(icon, size: 19, color: color),
+      const SizedBox(width: 9),
+      Text(
+        text,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+      ),
+    ],
+  );
+}
+
+class _DashboardPanel extends StatelessWidget {
+  const _DashboardPanel({
+    required this.title,
+    required this.subtitle,
+    required this.child,
+  });
+  final String title, subtitle;
+  final Widget child;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(22),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: const Color(0xFFE2E8F0)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          subtitle,
+          style: const TextStyle(fontSize: 12, color: Color(0xFF667085)),
+        ),
+        const SizedBox(height: 12),
+        child,
+      ],
+    ),
+  );
+}
+
+class _QuickActions extends StatelessWidget {
+  const _QuickActions({
+    required this.onReservations,
+    required this.onCourts,
+    required this.onProducts,
+    required this.onMembers,
+  });
+  final VoidCallback onReservations, onCourts, onProducts, onMembers;
+  @override
+  Widget build(BuildContext context) => _DashboardPanel(
+    title: 'Quick actions',
+    subtitle: 'Jump straight into daily operations',
+    child: Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: [
+        FilledButton.icon(
+          onPressed: onReservations,
+          icon: const Icon(Icons.calendar_month_rounded),
+          label: const Text('Reservations'),
+        ),
+        OutlinedButton.icon(
+          onPressed: onCourts,
+          icon: const Icon(Icons.stadium_outlined),
+          label: const Text('Courts'),
+        ),
+        OutlinedButton.icon(
+          onPressed: onProducts,
+          icon: const Icon(Icons.inventory_2_outlined),
+          label: const Text('Products'),
+        ),
+        OutlinedButton.icon(
+          onPressed: onMembers,
+          icon: const Icon(Icons.people_alt_outlined),
+          label: const Text('Members'),
+        ),
+      ],
+    ),
+  );
+}
+
+// ignore: unused_element
 class _DashboardBackground extends StatelessWidget {
   const _DashboardBackground();
 
@@ -291,7 +793,9 @@ class _Orb extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _FilterPill extends StatelessWidget {
+  // ignore: unused_element_parameter
   const _FilterPill({required this.label, this.selected = false});
 
   final String label;
@@ -319,6 +823,7 @@ class _FilterPill extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _MatchCard extends StatelessWidget {
   const _MatchCard({
     required this.timeLabel,
@@ -492,6 +997,7 @@ class _TeamColumn extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _PlayerCard extends StatelessWidget {
   const _PlayerCard({
     required this.name,

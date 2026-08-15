@@ -3,78 +3,55 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:padelclub_desktop/features/users/domain/entities/user.dart';
+import 'package:padelclub_desktop/core/network/api_config.dart';
 import 'package:padelclub_desktop/features/users/data/models/user_model.dart';
+import 'package:padelclub_desktop/features/users/domain/entities/user.dart';
 import 'package:padelclub_desktop/providers/auth_provider.dart';
 
 class UserProvider extends ChangeNotifier {
-  static String? _baseUrl;
+  List<User> users = const [];
+  bool isLoading = false;
+  String? errorMessage;
 
-  UserProvider({String? baseUrl}) {
-    _baseUrl = baseUrl ?? const String.fromEnvironment('_baseUrl', defaultValue: 'http://localhost:5001/api');
-  }
+  Future<void> loadUsers() async {
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
 
-  Future<List<User>> get({Map<String, dynamic>? filter}) async {
-    var url = '$_baseUrl/User';
-    debugPrint('Filter: $filter');
-    if (filter != null && filter.isNotEmpty) {
-      var query = getQueryString(filter);
-      debugPrint('Query: $query');
-      url += query;
-    }
-    debugPrint('URL: $url');
-
-    final uri = Uri.parse(url);
-    final response = await http.get(uri, headers: createHeaders());
-
-    if (isValidResponse(response)) {
-        final data = jsonDecode(response.body) as List<dynamic>;
-        final items = data
-          .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-        return items.map((m) => User(id: m.id, name: m.name)).toList();
-    } else {
-      throw Exception('Failed to load users');
-    }
-  }
-
-  String getQueryString(Map<String, dynamic> params, {String prefix = '?', bool inRecursion = false}) {
-    String query = '';
-    params.forEach((key, value) {
-      final effectivePrefix = inRecursion ? '&' : prefix;
-      if (value is String || value is int || value is double || value is bool) {
-        var encoded = value;
-        if (value is String) {
-          encoded = Uri.encodeComponent(value);
-        }
-        query += '$effectivePrefix$key=$encoded';
-      } else if (value is DateTime) {
-        query += '$effectivePrefix$key=${value.toIso8601String()}';
-      } else if (value is List || value is Map) {
-        if (value is List) value = value.asMap();
-        value.forEach((k, v) {
-          query += getQueryString({k: v}, prefix: '&', inRecursion: true);
-        });
-      }
-    });
-    return query;
-  }
-
-  bool isValidResponse(http.Response response) {
-    if (response.statusCode <= 299) {
-      return true;
-    } else if (response.statusCode == 401) {
-      throw Exception('Not authorized');
-    } else {
-      throw Exception('Something went wrong, please try again later!');
+    try {
+      final uri = Uri.parse('${ApiConfig.baseUrl}/Users').replace(
+        queryParameters: {'PageSize': '200', 'IncludeTotalCount': 'true'},
+      );
+      final response = await http.get(
+        uri,
+        headers: AuthProvider.authenticatedHeaders(),
+      );
+      _ensureSuccess(response);
+      final decoded = jsonDecode(response.body);
+      final items = decoded is List<dynamic>
+          ? decoded
+          : (decoded as Map<String, dynamic>)['items'] as List<dynamic>? ??
+                const [];
+      users = items
+          .map((item) => UserModel.fromJson(item as Map<String, dynamic>))
+          .toList(growable: false);
+    } catch (error) {
+      errorMessage = error.toString().replaceFirst('Exception: ', '');
+    } finally {
+      isLoading = false;
+      notifyListeners();
     }
   }
 
-  Map<String, String> createHeaders() {
-    final basicAuth = 'Basic ${base64Encode(utf8.encode('${AuthProvider.username}: ${AuthProvider.password}'))}';
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': basicAuth,
-    };
+  void _ensureSuccess(http.Response response) {
+    if (response.statusCode >= 200 && response.statusCode < 300) return;
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw Exception('You are not authorized to view users.');
+    }
+    throw Exception(
+      response.body.trim().isEmpty
+          ? 'Users could not be loaded.'
+          : response.body.replaceAll('"', ''),
+    );
   }
 }

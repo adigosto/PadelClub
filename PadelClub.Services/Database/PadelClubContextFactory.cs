@@ -10,7 +10,7 @@ namespace PadelClub.Services.Database
             var optionsBuilder = new DbContextOptionsBuilder<PadelClubContext>();
 
             optionsBuilder.UseSqlServer(
-                "Server=localhost;Database=PadelClub;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=True");
+                "Server=localhost;Database=PadelClub;Trusted_Connection=True;TrustServerCertificate=True");
 
             return new PadelClubContext(optionsBuilder.Options);
         }

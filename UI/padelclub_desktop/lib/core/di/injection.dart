@@ -85,7 +85,8 @@ class InjectionContainer {
   late final GetTournaments getTournamentsUseCase;
   late final TournamentProvider tournamentProvider;
 
-  late final TournamentParticipantRemoteDataSource tournamentParticipantRemoteDataSource;
+  late final TournamentParticipantRemoteDataSource
+  tournamentParticipantRemoteDataSource;
   late final TournamentParticipantRepository tournamentParticipantRepository;
   late final GetTournamentParticipants getTournamentParticipantsUseCase;
   late final TournamentParticipantProvider tournamentParticipantProvider;
@@ -136,17 +137,28 @@ class InjectionContainer {
   void init() {
     httpClient = http.Client();
     productRemoteDataSource = ProductRemoteDataSourceImpl(client: httpClient);
-    productRepository = ProductRepositoryImpl(remoteDataSource: productRemoteDataSource);
+    productRepository = ProductRepositoryImpl(
+      remoteDataSource: productRemoteDataSource,
+    );
     getProductsUseCase = GetProducts(productRepository);
     loggedProductProvider = LoggedProductProvider();
-    tournamentRemoteDataSource = TournamentRemoteDataSourceImpl(client: httpClient);
-    tournamentRepository = TournamentRepositoryImpl(remoteDataSource: tournamentRemoteDataSource);
+    tournamentRemoteDataSource = TournamentRemoteDataSourceImpl(
+      client: httpClient,
+    );
+    tournamentRepository = TournamentRepositoryImpl(
+      remoteDataSource: tournamentRemoteDataSource,
+    );
     getTournamentsUseCase = GetTournaments(tournamentRepository);
     tournamentProvider = TournamentProvider();
 
-    tournamentParticipantRemoteDataSource = TournamentParticipantRemoteDataSourceImpl(client: httpClient);
-    tournamentParticipantRepository = TournamentParticipantRepositoryImpl(remoteDataSource: tournamentParticipantRemoteDataSource);
-    getTournamentParticipantsUseCase = GetTournamentParticipants(tournamentParticipantRepository);
+    tournamentParticipantRemoteDataSource =
+        TournamentParticipantRemoteDataSourceImpl(client: httpClient);
+    tournamentParticipantRepository = TournamentParticipantRepositoryImpl(
+      remoteDataSource: tournamentParticipantRemoteDataSource,
+    );
+    getTournamentParticipantsUseCase = GetTournamentParticipants(
+      tournamentParticipantRepository,
+    );
     tournamentParticipantProvider = TournamentParticipantProvider();
 
     roleRemoteDataSource = RoleRemoteDataSourceImpl(client: httpClient);
@@ -154,43 +166,75 @@ class InjectionContainer {
     getRolesUseCase = GetRoles(roleRepository);
     roleProvider = RoleProvider();
 
-    reservationRemoteDataSource = ReservationRemoteDataSourceImpl(client: httpClient);
-    reservationRepository = ReservationRepositoryImpl(remoteDataSource: reservationRemoteDataSource);
+    reservationRemoteDataSource = ReservationRemoteDataSourceImpl(
+      client: httpClient,
+    );
+    reservationRepository = ReservationRepositoryImpl(
+      remoteDataSource: reservationRemoteDataSource,
+    );
     getReservationsUseCase = GetReservations(reservationRepository);
     reservationProvider = ReservationProvider();
-    productTypeRemoteDataSource = ProductTypeRemoteDataSourceImpl(client: httpClient);
-    productTypeRepository = ProductTypeRepositoryImpl(remoteDataSource: productTypeRemoteDataSource);
+    productTypeRemoteDataSource = ProductTypeRemoteDataSourceImpl(
+      client: httpClient,
+    );
+    productTypeRepository = ProductTypeRepositoryImpl(
+      remoteDataSource: productTypeRemoteDataSource,
+    );
     getProductTypesUseCase = GetProductTypes(productTypeRepository);
     productTypeProvider = ProductTypeProvider();
 
-    productCategoryRemoteDataSource = ProductCategoryRemoteDataSourceImpl(client: httpClient);
-    productCategoryRepository = ProductCategoryRepositoryImpl(remoteDataSource: productCategoryRemoteDataSource);
-    getProductCategoriesUseCase = GetProductCategories(productCategoryRepository);
+    productCategoryRemoteDataSource = ProductCategoryRemoteDataSourceImpl(
+      client: httpClient,
+    );
+    productCategoryRepository = ProductCategoryRepositoryImpl(
+      remoteDataSource: productCategoryRemoteDataSource,
+    );
+    getProductCategoriesUseCase = GetProductCategories(
+      productCategoryRepository,
+    );
     productCategoryProvider = ProductCategoryProvider();
 
     paymentRemoteDataSource = PaymentRemoteDataSourceImpl(client: httpClient);
-    paymentRepository = PaymentRepositoryImpl(remoteDataSource: paymentRemoteDataSource);
+    paymentRepository = PaymentRepositoryImpl(
+      remoteDataSource: paymentRemoteDataSource,
+    );
     getPaymentsUseCase = GetPayments(paymentRepository);
     paymentProvider = PaymentProvider();
 
     orderRemoteDataSource = OrderRemoteDataSourceImpl(client: httpClient);
-    orderRepository = OrderRepositoryImpl(remoteDataSource: orderRemoteDataSource);
+    orderRepository = OrderRepositoryImpl(
+      remoteDataSource: orderRemoteDataSource,
+    );
     getOrdersUseCase = GetOrders(orderRepository);
     orderProvider = OrderProvider();
 
-    orderItemRemoteDataSource = OrderItemRemoteDataSourceImpl(client: httpClient);
-    orderItemRepository = OrderItemRepositoryImpl(remoteDataSource: orderItemRemoteDataSource);
+    orderItemRemoteDataSource = OrderItemRemoteDataSourceImpl(
+      client: httpClient,
+    );
+    orderItemRepository = OrderItemRepositoryImpl(
+      remoteDataSource: orderItemRemoteDataSource,
+    );
     getOrderItemsUseCase = GetOrderItems(orderItemRepository);
     orderItemProvider = OrderItemProvider();
 
-    membershipRemoteDataSource = MembershipRemoteDataSourceImpl(client: httpClient);
-    membershipRepository = MembershipRepositoryImpl(remoteDataSource: membershipRemoteDataSource);
+    membershipRemoteDataSource = MembershipRemoteDataSourceImpl(
+      client: httpClient,
+    );
+    membershipRepository = MembershipRepositoryImpl(
+      remoteDataSource: membershipRemoteDataSource,
+    );
     getMembershipsUseCase = GetMemberships(membershipRepository);
     membershipProvider = MembershipProvider();
 
-    matchParticipantRemoteDataSource = MatchParticipantRemoteDataSourceImpl(client: httpClient);
-    matchParticipantRepository = MatchParticipantRepositoryImpl(remoteDataSource: matchParticipantRemoteDataSource);
-    getMatchParticipantsUseCase = GetMatchParticipants(matchParticipantRepository);
+    matchParticipantRemoteDataSource = MatchParticipantRemoteDataSourceImpl(
+      client: httpClient,
+    );
+    matchParticipantRepository = MatchParticipantRepositoryImpl(
+      remoteDataSource: matchParticipantRemoteDataSource,
+    );
+    getMatchParticipantsUseCase = GetMatchParticipants(
+      matchParticipantRepository,
+    );
     matchParticipantProvider = MatchParticipantProvider();
   }
 }

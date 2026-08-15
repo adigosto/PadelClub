@@ -5,17 +5,28 @@ import 'package:padelclub_desktop/features/match_participants/data/models/match_
 import 'package:padelclub_desktop/providers/auth_provider.dart';
 
 abstract class MatchParticipantRemoteDataSource {
-  Future<List<MatchParticipantModel>> getMatchParticipants({Map<String, dynamic>? filter});
+  Future<List<MatchParticipantModel>> getMatchParticipants({
+    Map<String, dynamic>? filter,
+  });
 }
 
-class MatchParticipantRemoteDataSourceImpl implements MatchParticipantRemoteDataSource {
+class MatchParticipantRemoteDataSourceImpl
+    implements MatchParticipantRemoteDataSource {
   final http.Client client;
   final String baseUrl;
 
-  MatchParticipantRemoteDataSourceImpl({required this.client, this.baseUrl = const String.fromEnvironment('baseUrl', defaultValue: 'http://localhost:5001/api')});
+  MatchParticipantRemoteDataSourceImpl({
+    required this.client,
+    this.baseUrl = const String.fromEnvironment(
+      'baseUrl',
+      defaultValue: 'http://localhost:5000',
+    ),
+  });
 
   @override
-  Future<List<MatchParticipantModel>> getMatchParticipants({Map<String, dynamic>? filter}) async {
+  Future<List<MatchParticipantModel>> getMatchParticipants({
+    Map<String, dynamic>? filter,
+  }) async {
     var url = '$baseUrl/MatchParticipants';
     if (filter != null && filter.isNotEmpty) {
       var query = getQueryString(filter);
@@ -25,13 +36,19 @@ class MatchParticipantRemoteDataSourceImpl implements MatchParticipantRemoteData
     final response = await client.get(uri, headers: createHeaders());
     if (isValidResponse(response)) {
       final data = jsonDecode(response.body) as List<dynamic>;
-      return data.map((e) => MatchParticipantModel.fromJson(e as Map<String, dynamic>)).toList();
+      return data
+          .map((e) => MatchParticipantModel.fromJson(e as Map<String, dynamic>))
+          .toList();
     } else {
       throw Exception('Something went wrong');
     }
   }
 
-  String getQueryString(Map params, {String prefix = '&', bool inRecursion = false}) {
+  String getQueryString(
+    Map params, {
+    String prefix = '&',
+    bool inRecursion = false,
+  }) {
     String query = '';
     params.forEach((key, value) {
       if (inRecursion) {
@@ -52,7 +69,11 @@ class MatchParticipantRemoteDataSourceImpl implements MatchParticipantRemoteData
       } else if (value is List || value is Map) {
         if (value is List) value = value.asMap();
         value.forEach((k, v) {
-          query += getQueryString({k: v}, prefix: '$prefix$key', inRecursion: true);
+          query += getQueryString(
+            {k: v},
+            prefix: '$prefix$key',
+            inRecursion: true,
+          );
         });
       }
     });
@@ -66,10 +87,6 @@ class MatchParticipantRemoteDataSourceImpl implements MatchParticipantRemoteData
   }
 
   Map<String, String> createHeaders() {
-    final basicAuth = 'Basic ${base64Encode(utf8.encode('${AuthProvider.username}: ${AuthProvider.password}'))}';
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': basicAuth,
-    };
+    return AuthProvider.authenticatedHeaders();
   }
 }

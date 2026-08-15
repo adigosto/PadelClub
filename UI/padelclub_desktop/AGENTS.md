@@ -5,6 +5,8 @@ This file defines the UI and implementation style for the PadelClub Flutter app.
 ## Reference Fidelity
 
 - When a user provides a Figma frame, screenshot, or any visual mockup, treat it as the primary source of truth for the UI.
+- Unless the user explicitly asks for a redesign, preserve the app's established visual system and use mockups to create a recognizable family resemblance rather than a pixel-perfect copy.
+- Borrow the reference's hierarchy, navigation model, density, and recurring component shapes first; do not copy low-fidelity artifacts, placeholder graphics, or accidental spacing literally.
 - Match the reference layout, spacing, alignment, hierarchy, sizing, radius, shadows, iconography, and density before adding new interpretation.
 - Reuse the same visual patterns across nearby screens so the app feels intentional and consistent instead of template-driven.
 - If a request is ambiguous, choose the option that stays closest to the provided design reference and existing PadelClub patterns.
@@ -47,6 +49,7 @@ Do not drift back to default Flutter purple unless the user explicitly asks for 
 - Use subtle gradients or layered backgrounds instead of flat single-color screens.
 - White content surfaces with green and blue accents are encouraged when the screen needs a more informational, app-like feel.
 - For desktop/admin layouts, blue can become the dominant structural color in the top bar and active navigation, while green stays present in actions and status accents.
+- Keep the existing responsive shell and navigation approach unless the task specifically requests changing it. A mockup with top tabs may influence active-tab styling and information hierarchy without forcing replacement of an established desktop sidebar.
 - Make primary actions obvious and visually dominant.
 - Keep forms clean, readable, and easy to scan.
 
@@ -66,6 +69,10 @@ Do not drift back to default Flutter purple unless the user explicitly asks for 
 - For results or discovery pages, use search fields, pill filters, status badges, and bottom navigation patterns that feel like a modern mobile app.
 - For desktop admin pages, use a strong blue top navigation bar, a white workspace canvas, compact page titles, search and filter rows, and card or table layouts with clear action columns.
 - Notifications and management dashboards should feel like the screenshot: top nav tabs, page title with subtitle, filter chips, compact search controls, status pills, and clean table rows or cards.
+- Desktop management screens may echo the mockup through saturated blue branding, pill-like selected navigation, a thin divider under the page heading, compact outlined filters, restrained tables, green create actions, colored status dots, and small edit/delete action surfaces.
+- Mobile player screens may echo the mockup through a persistent four- or five-item bottom navigation bar, compact icon-and-label destinations, horizontally scrollable review cards, and a two-column gallery or shortcut grid.
+- Keep mobile cards and gallery tiles softly rounded and tactile. Replace mockup placeholder emoji or clip-art with consistent Material icons or real imagery while retaining the same quick visual meaning.
+- Treat the mockups as one product family: reuse labels, icon meanings, selection states, and spacing rhythm across mobile and desktop, while allowing desktop to be denser and more operational.
 
 ## Motion And Depth
 
@@ -132,6 +139,7 @@ To prevent dependency leaks and maintain high refactorability, follow these impo
 - When adding new screens, match the established PadelClub palette and tone.
 - If a screen resembles a results or search dashboard, echo the screenshot style: clean white background, strong header, search bar, filter pills, card list, and a bottom navigation bar.
 - If a screen resembles a desktop admin view, echo the screenshot style: blue top app bar, left-aligned app branding, horizontal section navigation, white content surface, notification or management table, and compact action buttons.
+- Adapt these motifs inside the current component language before inventing a separate theme. Prefer small, reusable changes to shared navigation, chips, cards, tables, and action buttons over screen-specific restyling.
 
 ## Product Feature Implementation Pattern
 
@@ -149,6 +157,8 @@ When working on the product feature, follow this implementation shape unless the
 - Do not introduce random accent colors without a clear reason.
 - Do not revert to default starter-template UI.
 - Do not drift away from Figma or screenshot references when they are available.
+- Do not discard a polished existing screen merely because a supplied mockup uses a different shell or is lower fidelity; translate its recognizable cues into the current design.
+- Do not reproduce visible mockup artifacts such as browser scrollbars, clipped content, inconsistent emoji, or overly tiny text.
 - Do not use cluttered layouts, oversized borders, or loud gradients.
 - Do not sacrifice readability for decoration.
 - **Do not violate layer boundaries**: Never import data-layer code or concrete repositories into the domain or presentation layers (except when registering dependencies).

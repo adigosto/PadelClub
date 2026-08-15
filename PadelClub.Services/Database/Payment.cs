@@ -16,6 +16,13 @@ namespace PadelClub.Services.Database
         public string? TransactionId { get; set; }
         public DateTime PaymentDate { get; set; } = DateTime.UtcNow;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public string Provider { get; set; } = "Manual";
+        public string Currency { get; set; } = "bam";
+        public string? IdempotencyKey { get; set; }
+        public decimal RefundedAmount { get; set; }
+        public string? ReceiptUrl { get; set; }
+        public string? FailureMessage { get; set; }
+        public DateTime? ReconciledAt { get; set; }
 
         // Navigation properties
         public virtual User User { get; set; } = null!;

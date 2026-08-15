@@ -22,11 +22,11 @@ class MatchParticipantModel extends MatchParticipant {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'matchId': matchId,
-        'userId': userId,
-        'teamNumber': teamNumber,
-        'role': role,
-        'createdAt': createdAt.toIso8601String(),
-      };
+    'id': id,
+    'matchId': matchId,
+    'userId': userId,
+    'teamNumber': teamNumber,
+    'role': role,
+    'createdAt': createdAt.toIso8601String(),
+  };
 }

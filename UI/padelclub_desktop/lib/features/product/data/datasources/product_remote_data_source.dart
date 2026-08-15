@@ -17,7 +17,7 @@ class ProductRemoteDataSourceImpl implements ProductRemoteDataSource {
     required this.client,
     this.baseUrl = const String.fromEnvironment(
       "baseUrl",
-      defaultValue: "http://localhost:5001",
+      defaultValue: "http://localhost:5000",
     ),
   });
 
@@ -91,8 +91,6 @@ class ProductRemoteDataSourceImpl implements ProductRemoteDataSource {
   }
 
   Map<String, String> createHeaders() {
-    String basicAuth =
-        'Basic ${base64Encode(utf8.encode("${AuthProvider.username}:${AuthProvider.password}"))}';
-    return {"Content-Type": "application/json", "Authorization": basicAuth};
+    return AuthProvider.authenticatedHeaders();
   }
 }

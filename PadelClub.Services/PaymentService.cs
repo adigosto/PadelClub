@@ -1,4 +1,5 @@
 using MapsterMapper;
+using Microsoft.EntityFrameworkCore;
 using PadelClub.Model;
 using PadelClub.Model.Requests;
 using PadelClub.Model.SearchObjects;
@@ -9,8 +10,41 @@ namespace PadelClub.Services
 {
     public class PaymentService : BaseCRUDService<PaymentResponse, PaymentSearchObject, DbPayment, PaymentInsertRequest, PaymentUpdateRequest>, IPaymentService
     {
-        public PaymentService(PadelClubContext dbContext, IMapper mapper) : base(dbContext, mapper)
+        private readonly INotificationService _notificationService;
+
+        public PaymentService(PadelClubContext dbContext, IMapper mapper, INotificationService notificationService) : base(dbContext, mapper)
         {
+            _notificationService = notificationService;
+        }
+
+        public override async Task<PaymentResponse> CreateAsync(PaymentInsertRequest request)
+        {
+            var created = await base.CreateAsync(request);
+            await NotifyPaymentAsync(created, "Payment received");
+            return created;
+        }
+
+        public override async Task<PaymentResponse?> UpdateAsync(int id, PaymentUpdateRequest request)
+        {
+            var previousStatus = await _dbContext.Payments
+                .Where(x => x.Id == id)
+                .Select(x => x.Status)
+                .FirstOrDefaultAsync();
+            var updated = await base.UpdateAsync(id, request);
+            if (updated != null && !string.Equals(previousStatus, updated.Status, StringComparison.OrdinalIgnoreCase))
+                await NotifyPaymentAsync(updated, "Payment status updated");
+            return updated;
+        }
+
+        private Task<NotificationResponse> NotifyPaymentAsync(PaymentResponse payment, string title)
+        {
+            return _notificationService.CreateAsync(new NotificationInsertRequest
+            {
+                Title = title,
+                Message = $"Your {payment.Amount:F2} KM payment is {payment.Status.ToLowerInvariant()}.",
+                Type = "Payments",
+                RecipientUserIds = new List<int> { payment.UserId }
+            });
         }
 
         protected override IQueryable<DbPayment> ApplyFilter(IQueryable<DbPayment> query, PaymentSearchObject search)

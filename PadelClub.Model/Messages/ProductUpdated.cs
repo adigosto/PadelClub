@@ -4,6 +4,6 @@ namespace PadelClub.Model.Messages
 {
     public class ProductUpdated
     {
-        public ProductResponse Product { get; set; }
+        public ProductResponse Product { get; set; } = new();
     }
 }

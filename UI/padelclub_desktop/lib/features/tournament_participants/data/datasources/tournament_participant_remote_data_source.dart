@@ -5,17 +5,28 @@ import 'package:padelclub_desktop/features/tournament_participants/data/models/t
 import 'package:padelclub_desktop/providers/auth_provider.dart';
 
 abstract class TournamentParticipantRemoteDataSource {
-  Future<List<TournamentParticipantModel>> getTournamentParticipants({Map<String, dynamic>? filter});
+  Future<List<TournamentParticipantModel>> getTournamentParticipants({
+    Map<String, dynamic>? filter,
+  });
 }
 
-class TournamentParticipantRemoteDataSourceImpl implements TournamentParticipantRemoteDataSource {
+class TournamentParticipantRemoteDataSourceImpl
+    implements TournamentParticipantRemoteDataSource {
   final http.Client client;
   final String baseUrl;
 
-  TournamentParticipantRemoteDataSourceImpl({required this.client, this.baseUrl = const String.fromEnvironment('baseUrl', defaultValue: 'http://localhost:5001/api')});
+  TournamentParticipantRemoteDataSourceImpl({
+    required this.client,
+    this.baseUrl = const String.fromEnvironment(
+      'baseUrl',
+      defaultValue: 'http://localhost:5000',
+    ),
+  });
 
   @override
-  Future<List<TournamentParticipantModel>> getTournamentParticipants({Map<String, dynamic>? filter}) async {
+  Future<List<TournamentParticipantModel>> getTournamentParticipants({
+    Map<String, dynamic>? filter,
+  }) async {
     var url = '$baseUrl/TournamentParticipants';
     if (filter != null && filter.isNotEmpty) {
       var query = getQueryString(filter);
@@ -25,13 +36,22 @@ class TournamentParticipantRemoteDataSourceImpl implements TournamentParticipant
     final response = await client.get(uri, headers: createHeaders());
     if (isValidResponse(response)) {
       final data = jsonDecode(response.body) as List<dynamic>;
-      return data.map((e) => TournamentParticipantModel.fromJson(e as Map<String, dynamic>)).toList();
+      return data
+          .map(
+            (e) =>
+                TournamentParticipantModel.fromJson(e as Map<String, dynamic>),
+          )
+          .toList();
     } else {
       throw Exception('Something went wrong');
     }
   }
 
-  String getQueryString(Map params, {String prefix = '&', bool inRecursion = false}) {
+  String getQueryString(
+    Map params, {
+    String prefix = '&',
+    bool inRecursion = false,
+  }) {
     String query = '';
     params.forEach((key, value) {
       var k = key;
@@ -53,7 +73,11 @@ class TournamentParticipantRemoteDataSourceImpl implements TournamentParticipant
       } else if (value is List || value is Map) {
         if (value is List) value = value.asMap();
         value.forEach((kk, vv) {
-          query += getQueryString({kk: vv}, prefix: '$prefix$k', inRecursion: true);
+          query += getQueryString(
+            {kk: vv},
+            prefix: '$prefix$k',
+            inRecursion: true,
+          );
         });
       }
     });
@@ -67,10 +91,6 @@ class TournamentParticipantRemoteDataSourceImpl implements TournamentParticipant
   }
 
   Map<String, String> createHeaders() {
-    final basicAuth = 'Basic ${base64Encode(utf8.encode('${AuthProvider.username}: ${AuthProvider.password}'))}';
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': basicAuth,
-    };
+    return AuthProvider.authenticatedHeaders();
   }
 }

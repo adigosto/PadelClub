@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
     environment:
       ACCEPT_EULA: "Y"
-      SA_PASSWORD: "YourStrong!Passw0rd"
+      SA_PASSWORD: "${MSSQL_SA_PASSWORD:-YourStrong!Passw0rd}"
       MSSQL_PID: "Developer"
     ports:
       - "1433:1433"
@@ -16,8 +16,9 @@ services:
       - padelclub-2026
     volumes:
       - sql_data:/var/opt/mssql
+      - ./backups:/var/opt/mssql/backup
     healthcheck:
-      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-C", "-S", "localhost", "-U", "sa", "-P", "YourStrong!Passw0rd", "-Q", "SELECT 1"]
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$SA_PASSWORD\" -Q \"SELECT 1\""]
       interval: 10s
       timeout: 5s
       retries: 15
@@ -29,15 +30,38 @@ services:
       dockerfile: Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: "Development"
-      ConnectionStrings__DefaultConnection: "Server=padelclub-sql;Database=PadelClub;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;MultipleActiveResultSets=True"
+      ConnectionStrings__DefaultConnection: "Server=padelclub-sql;Database=PadelClub;User Id=sa;Password=${MSSQL_SA_PASSWORD:-YourStrong!Passw0rd};TrustServerCertificate=True"
+      Stripe__SecretKey: "${STRIPE_SECRET_KEY:-}"
+      Stripe__WebhookSecret: "${STRIPE_WEBHOOK_SECRET:-}"
+      Stripe__Currency: "${STRIPE_CURRENCY:-bam}"
+      Notifications__FirebaseProjectId: "${FIREBASE_PROJECT_ID:-}"
+      Notifications__FirebaseServiceAccountJson: "${FIREBASE_SERVICE_ACCOUNT_JSON:-}"
+      Notifications__Smtp__Host: "${SMTP_HOST:-padelclub-mailpit}"
+      Notifications__Smtp__Port: "${SMTP_PORT:-1025}"
+      Notifications__Smtp__UseStartTls: "${SMTP_STARTTLS:-false}"
+      Notifications__Smtp__Username: "${SMTP_USERNAME:-}"
+      Notifications__Smtp__Password: "${SMTP_PASSWORD:-}"
+      Notifications__Smtp__FromAddress: "${SMTP_FROM_ADDRESS:-noreply@padelclub.local}"
     ports:
-      - "5001:5001"
+      - "5000:5001"
     restart: on-failure
     networks:
       - padelclub-2026
+    volumes:
+      - api_keys:/root/.aspnet/DataProtection-Keys
     depends_on:
       padelclub-sql:
         condition: service_healthy
+      padelclub-mailpit:
+        condition: service_started
+
+  padelclub-mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+    networks:
+      - padelclub-2026
 
 networks:
   padelclub-2026:
@@ -45,3 +69,4 @@ networks:
 
 volumes:
   sql_data:
+  api_keys:

@@ -3,5 +3,9 @@ class TournamentParticipant {
   int tournamentId;
   int userId;
 
-  TournamentParticipant({this.id, required this.tournamentId, required this.userId});
+  TournamentParticipant({
+    this.id,
+    required this.tournamentId,
+    required this.userId,
+  });
 }

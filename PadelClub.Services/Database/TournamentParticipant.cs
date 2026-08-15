@@ -10,6 +10,8 @@ namespace PadelClub.Services.Database
         public string Status { get; set; } = "Registered"; // Registered, Confirmed, Withdrawn
         public DateTime RegisteredAt { get; set; } = DateTime.UtcNow;
         public DateTime? ConfirmedAt { get; set; }
+        public int? TeamNumber { get; set; }
+        public int? Seed { get; set; }
 
         // Navigation properties
         public virtual Tournament Tournament { get; set; } = null!;

@@ -24,6 +24,6 @@ namespace PadelClub.Services.Database
         public virtual ICollection<Asset> Assets { get; set; } = new List<Asset>();
         [MaxLength(1000)]
         public string ProductState { get; set; } = string.Empty;
+        public virtual ICollection<InventoryMovement> InventoryMovements { get; set; } = new List<InventoryMovement>();
     }
 }
-

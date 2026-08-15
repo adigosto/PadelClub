@@ -10,7 +10,10 @@ class LoggedProductProvider extends ProductProvider {
   @override
   Future<SearchResult<Product>> get({Map<String, dynamic>? filter}) async {
     final stopwatch = Stopwatch()..start();
-    developer.log('Starting product fetch request', name: 'LoggedProductProvider');
+    developer.log(
+      'Starting product fetch request',
+      name: 'LoggedProductProvider',
+    );
 
     try {
       final result = await super.get(filter: filter);

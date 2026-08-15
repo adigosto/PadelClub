@@ -13,10 +13,16 @@ namespace PadelClub.Services.Database
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
+        public string Status { get; set; } = "Active";
+        public bool AutoRenew { get; set; }
+        public bool CancelAtPeriodEnd { get; set; }
+        public DateTime? SuspendedAt { get; set; }
+        public DateTime? CancelledAt { get; set; }
 
         // Navigation properties
         public virtual User User { get; set; } = null!;
         public virtual Payment? Payment { get; set; }
+        public virtual ICollection<MembershipEvent> Events { get; set; } = new List<MembershipEvent>();
     }
 }
 

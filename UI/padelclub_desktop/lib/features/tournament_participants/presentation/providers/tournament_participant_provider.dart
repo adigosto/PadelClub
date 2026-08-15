@@ -11,10 +11,17 @@ class TournamentParticipantProvider extends ChangeNotifier {
   static String? _baseUrl;
 
   TournamentParticipantProvider({String? baseUrl}) {
-    _baseUrl = baseUrl ?? const String.fromEnvironment('_baseUrl', defaultValue: 'http://localhost:5001/api');
+    _baseUrl =
+        baseUrl ??
+        const String.fromEnvironment(
+          'baseUrl',
+          defaultValue: 'http://localhost:5000',
+        );
   }
 
-  Future<List<TournamentParticipant>> get({Map<String, dynamic>? filter}) async {
+  Future<List<TournamentParticipant>> get({
+    Map<String, dynamic>? filter,
+  }) async {
     var url = '$_baseUrl/TournamentParticipants';
     if (filter != null && filter.isNotEmpty) {
       var query = getQueryString(filter);
@@ -26,14 +33,31 @@ class TournamentParticipantProvider extends ChangeNotifier {
 
     if (isValidResponse(response)) {
       final data = jsonDecode(response.body) as List<dynamic>;
-      final items = data.map((e) => TournamentParticipantModel.fromJson(e as Map<String, dynamic>)).toList();
-      return items.map((m) => TournamentParticipant(id: m.id, tournamentId: m.tournamentId, userId: m.userId)).toList();
+      final items = data
+          .map(
+            (e) =>
+                TournamentParticipantModel.fromJson(e as Map<String, dynamic>),
+          )
+          .toList();
+      return items
+          .map(
+            (m) => TournamentParticipant(
+              id: m.id,
+              tournamentId: m.tournamentId,
+              userId: m.userId,
+            ),
+          )
+          .toList();
     } else {
       throw Exception('Failed to load tournament participants');
     }
   }
 
-  String getQueryString(Map<String, dynamic> params, {String prefix = '?', bool inRecursion = false}) {
+  String getQueryString(
+    Map<String, dynamic> params, {
+    String prefix = '?',
+    bool inRecursion = false,
+  }) {
     String query = '';
     params.forEach((key, value) {
       final effectivePrefix = inRecursion ? '&' : prefix;
@@ -66,10 +90,6 @@ class TournamentParticipantProvider extends ChangeNotifier {
   }
 
   Map<String, String> createHeaders() {
-    final basicAuth = 'Basic ${base64Encode(utf8.encode('${AuthProvider.username}: ${AuthProvider.password}'))}';
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': basicAuth,
-    };
+    return AuthProvider.authenticatedHeaders();
   }
 }

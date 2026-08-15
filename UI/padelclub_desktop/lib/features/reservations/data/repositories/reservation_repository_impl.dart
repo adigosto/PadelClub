@@ -8,7 +8,9 @@ class ReservationRepositoryImpl implements ReservationRepository {
   ReservationRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<List<Reservation>> getReservations({Map<String, dynamic>? filter}) async {
+  Future<List<Reservation>> getReservations({
+    Map<String, dynamic>? filter,
+  }) async {
     return await remoteDataSource.getReservations(filter: filter);
   }
 }

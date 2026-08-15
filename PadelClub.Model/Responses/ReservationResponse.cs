@@ -14,6 +14,9 @@ namespace PadelClub.Model
         public string? Notes { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public Guid? SeriesId { get; set; }
+        public DateTime? CancelledAt { get; set; }
+        public bool IsNoShow { get; set; }
     }
 }
 

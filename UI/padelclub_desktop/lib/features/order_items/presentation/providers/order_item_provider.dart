@@ -11,7 +11,12 @@ class OrderItemProvider extends ChangeNotifier {
   static String? _baseUrl;
 
   OrderItemProvider({String? baseUrl}) {
-    _baseUrl = baseUrl ?? const String.fromEnvironment('_baseUrl', defaultValue: 'http://localhost:5001/api');
+    _baseUrl =
+        baseUrl ??
+        const String.fromEnvironment(
+          'baseUrl',
+          defaultValue: 'http://localhost:5000',
+        );
   }
 
   Future<List<OrderItem>> get({Map<String, dynamic>? filter}) async {
@@ -26,22 +31,32 @@ class OrderItemProvider extends ChangeNotifier {
 
     if (isValidResponse(response)) {
       final data = jsonDecode(response.body) as List<dynamic>;
-      final items = data.map((e) => OrderItemModel.fromJson(e as Map<String, dynamic>)).toList();
-      return items.map((m) => OrderItem(
-            id: m.id,
-            orderId: m.orderId,
-            productId: m.productId,
-            quantity: m.quantity,
-            unitPrice: m.unitPrice,
-            totalPrice: m.totalPrice,
-            createdAt: m.createdAt,
-          )).toList();
+      final items = data
+          .map((e) => OrderItemModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+      return items
+          .map(
+            (m) => OrderItem(
+              id: m.id,
+              orderId: m.orderId,
+              productId: m.productId,
+              quantity: m.quantity,
+              unitPrice: m.unitPrice,
+              totalPrice: m.totalPrice,
+              createdAt: m.createdAt,
+            ),
+          )
+          .toList();
     } else {
       throw Exception('Failed to load order items');
     }
   }
 
-  String getQueryString(Map<String, dynamic> params, {String prefix = '?', bool inRecursion = false}) {
+  String getQueryString(
+    Map<String, dynamic> params, {
+    String prefix = '?',
+    bool inRecursion = false,
+  }) {
     String query = '';
     params.forEach((key, value) {
       final effectivePrefix = inRecursion ? '&' : prefix;
@@ -74,10 +89,6 @@ class OrderItemProvider extends ChangeNotifier {
   }
 
   Map<String, String> createHeaders() {
-    final basicAuth = 'Basic ${base64Encode(utf8.encode('${AuthProvider.username}: ${AuthProvider.password}'))}';
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': basicAuth,
-    };
+    return AuthProvider.authenticatedHeaders();
   }
 }

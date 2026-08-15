@@ -8,7 +8,9 @@ class TournamentRepositoryImpl implements TournamentRepository {
   TournamentRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<List<Tournament>> getTournaments({Map<String, dynamic>? filter}) async {
+  Future<List<Tournament>> getTournaments({
+    Map<String, dynamic>? filter,
+  }) async {
     return await remoteDataSource.getTournaments(filter: filter);
   }
 }

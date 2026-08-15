@@ -2,22 +2,72 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:padelclub_desktop/core/di/injection.dart';
+import 'package:padelclub_desktop/core/theme/app_theme.dart';
 import 'package:padelclub_desktop/dashboard_page.dart';
+import 'package:padelclub_desktop/features/courts/presentation/providers/court_provider.dart';
+import 'package:padelclub_desktop/features/courts/presentation/screens/court_management_screen.dart';
+import 'package:padelclub_desktop/features/notifications/presentation/screens/notification_management_screen.dart';
+import 'package:padelclub_desktop/features/notifications/presentation/providers/notification_provider.dart';
+import 'package:padelclub_desktop/features/orders/presentation/providers/order_provider.dart';
+import 'package:padelclub_desktop/features/orders/presentation/screens/order_management_screen.dart';
+import 'package:padelclub_desktop/features/product/presentation/providers/cart_provider.dart';
 import 'package:padelclub_desktop/features/product/presentation/providers/product_provider.dart';
+import 'package:padelclub_desktop/features/product/presentation/screens/product_management_screen.dart';
+import 'package:padelclub_desktop/features/profile/presentation/screens/profile_screen.dart';
+import 'package:padelclub_desktop/features/reservations/presentation/providers/reservation_provider.dart';
+import 'package:padelclub_desktop/features/reservations/presentation/screens/reservation_screens.dart';
+import 'package:padelclub_desktop/features/reviews/presentation/providers/club_review_provider.dart';
+import 'package:padelclub_desktop/features/product/presentation/screens/product_list_screen.dart';
+import 'package:padelclub_desktop/features/search/presentation/screens/search_screen.dart';
+import 'package:padelclub_desktop/features/search/presentation/providers/discovery_provider.dart';
+import 'package:padelclub_desktop/features/tournament/presentation/providers/tournament_provider.dart';
+import 'package:padelclub_desktop/features/users/presentation/providers/user_provider.dart';
+import 'package:padelclub_desktop/features/users/presentation/screens/user_management_screen.dart';
+import 'package:padelclub_desktop/layouts/master_screen.dart';
 import 'package:padelclub_desktop/providers/auth_provider.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   sl.init();
-  runApp(
-    MultiProvider(
+  runApp(const PadelClubBootstrap());
+}
+
+/// Shared composition root used by the desktop and mobile distribution targets.
+class PadelClubBootstrap extends StatelessWidget {
+  const PadelClubBootstrap({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final authProvider = AuthProvider();
+    return MultiProvider(
       providers: [
+        ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
+        ChangeNotifierProvider<ReservationProvider>(
+          create: (_) => ReservationProvider(),
+        ),
+        ChangeNotifierProvider<UserProvider>(create: (_) => UserProvider()),
+        ChangeNotifierProvider<OrderProvider>(create: (_) => OrderProvider()),
+        ChangeNotifierProvider<CourtProvider>(create: (_) => CourtProvider()),
+        ChangeNotifierProvider<NotificationProvider>(
+          create: (_) => NotificationProvider(),
+        ),
+        ChangeNotifierProvider<ClubReviewProvider>(
+          create: (_) => ClubReviewProvider(),
+        ),
+        ChangeNotifierProvider<TournamentProvider>(
+          create: (_) => sl.tournamentProvider,
+        ),
         ChangeNotifierProvider<ProductProvider>(
           create: (context) => sl.loggedProductProvider,
         ),
+        ChangeNotifierProvider<CartProvider>(create: (_) => CartProvider()),
+        ChangeNotifierProvider<DiscoveryProvider>(
+          create: (_) => DiscoveryProvider(),
+        ),
       ],
       child: const PadelClubApp(),
-    ),
-  );
+    );
+  }
 }
 
 class PadelClubApp extends StatelessWidget {
@@ -25,74 +75,22 @@ class PadelClubApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const seedColor = Color(0xFF1F7A63);
-
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'PadelClub',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: seedColor,
-          brightness: Brightness.light,
-        ),
-        scaffoldBackgroundColor: const Color(0xFFF4F7F2),
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-          surfaceTintColor: Colors.transparent,
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 18,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: Color(0xFFDDE5DC)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: Color(0xFF1F7A63), width: 1.5),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: Color(0xFFC95C4C)),
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: Color(0xFFC95C4C), width: 1.5),
-          ),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            minimumSize: const Size.fromHeight(54),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            backgroundColor: const Color(0xFF1F7A63),
-            foregroundColor: Colors.white,
-            textStyle: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-        textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF1F7A63),
-            textStyle: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-        ),
-      ),
+      theme: PadelTheme.light,
       home: const LoginPage(),
+      routes: {
+        '/home': (_) => const DashboardPage(),
+        '/search': (_) => const SearchScreen(),
+        '/reservations': (_) => const _ReservationsRoute(),
+        '/products': (_) => const _ProductsRoute(),
+        '/courts': (_) => const CourtManagementScreen(),
+        '/members': (_) => const UserManagementScreen(),
+        '/orders': (_) => const OrderManagementScreen(),
+        '/notifications': (_) => const NotificationManagementScreen(),
+        '/profile': (_) => const ProfileScreen(),
+      },
     );
   }
 }
@@ -109,8 +107,24 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  bool _rememberMe = true;
+  bool _rememberMe = false;
   bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _prefillLogin());
+  }
+
+  Future<void> _prefillLogin() async {
+    final remembered = await context.read<AuthProvider>().rememberedLogin();
+    if (!mounted || remembered == null) return;
+    setState(() {
+      _emailController.text = remembered.username;
+      _passwordController.text = remembered.password;
+      _rememberMe = true;
+    });
+  }
 
   @override
   void dispose() {
@@ -124,22 +138,25 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    AuthProvider.username = _emailController.text.trim();
-    AuthProvider.password = _passwordController.text;
-
-    try {
-      await sl.loggedProductProvider.get();
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const DashboardPage()),
-      );
-    } on Exception catch (error) {
-      if (!mounted) return;
+    final auth = context.read<AuthProvider>();
+    final usesSavedSession =
+        _passwordController.text == AuthProvider.savedSessionPlaceholder;
+    final success = usesSavedSession
+        ? await auth.restoreRememberedLogin()
+        : await auth.login(
+            _emailController.text.trim(),
+            _passwordController.text,
+            rememberMe: _rememberMe,
+          );
+    if (!mounted) return;
+    if (success) {
+      Navigator.of(context).pushReplacementNamed('/home');
+    } else {
       showDialog<void>(
         context: context,
         builder: (_) => AlertDialog(
           title: const Text('Sign in failed'),
-          content: Text(error.toString().replaceFirst('Exception: ', '')),
+          content: Text(auth.errorMessage ?? 'Please try again.'),
         ),
       );
     }
@@ -147,6 +164,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
     return Scaffold(
       body: Stack(
         children: [
@@ -179,21 +197,25 @@ class _LoginPageState extends State<LoginPage> {
                         children: [
                           Align(
                             alignment: Alignment.centerLeft,
-                            child: Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFF2E6BD7),
-                                    Color(0xFF1F7A63),
-                                  ],
+                            child: Semantics(
+                              label: 'PadelClub logo',
+                              image: true,
+                              child: Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFF2E6BD7),
+                                      Color(0xFF1F7A63),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(18),
                                 ),
-                                borderRadius: BorderRadius.circular(18),
-                              ),
-                              child: const Icon(
-                                Icons.sports_tennis,
-                                size: 30,
-                                color: Colors.white,
+                                child: const Icon(
+                                  Icons.sports_tennis,
+                                  size: 30,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ),
@@ -235,6 +257,12 @@ class _LoginPageState extends State<LoginPage> {
                           const SizedBox(height: 16),
                           TextFormField(
                             controller: _passwordController,
+                            onTap: () {
+                              if (_passwordController.text ==
+                                  AuthProvider.savedSessionPlaceholder) {
+                                _passwordController.clear();
+                              }
+                            },
                             obscureText: _obscurePassword,
                             autofillHints: const [AutofillHints.password],
                             textInputAction: TextInputAction.done,
@@ -242,6 +270,9 @@ class _LoginPageState extends State<LoginPage> {
                               labelText: 'Password',
                               prefixIcon: const Icon(Icons.lock_outline),
                               suffixIcon: IconButton(
+                                tooltip: _obscurePassword
+                                    ? 'Show password'
+                                    : 'Hide password',
                                 onPressed: () {
                                   setState(() {
                                     _obscurePassword = !_obscurePassword;
@@ -267,87 +298,38 @@ class _LoginPageState extends State<LoginPage> {
                             onFieldSubmitted: (_) => _signIn(),
                           ),
                           const SizedBox(height: 14),
-                          Row(
-                            children: [
-                              Checkbox(
-                                value: _rememberMe,
-                                activeColor: const Color(0xFF1F7A63),
-                                onChanged: (value) {
-                                  setState(() {
-                                    _rememberMe = value ?? false;
-                                  });
-                                },
+                          Material(
+                            type: MaterialType.transparency,
+                            child: CheckboxListTile(
+                              value: _rememberMe,
+                              contentPadding: EdgeInsets.zero,
+                              controlAffinity: ListTileControlAffinity.leading,
+                              activeColor: const Color(0xFF1F7A63),
+                              title: const Text(
+                                'Save login information on this device',
+                                style: TextStyle(color: Color(0xFF4F6059)),
                               ),
-                              const Expanded(
-                                child: Text(
-                                  'Remember me on this device',
-                                  style: TextStyle(color: Color(0xFF4F6059)),
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: () {},
-                                style: TextButton.styleFrom(
-                                  foregroundColor: const Color(0xFF2E6BD7),
-                                ),
-                                child: const Text('Forgot password?'),
-                              ),
-                            ],
+                              onChanged: auth.isLoading
+                                  ? null
+                                  : (value) {
+                                      setState(() {
+                                        _rememberMe = value ?? false;
+                                      });
+                                    },
+                            ),
                           ),
                           const SizedBox(height: 8),
                           ElevatedButton(
-                            onPressed: _signIn,
-                            child: const Text('Sign in'),
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: const [
-                              Expanded(child: Divider()),
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 12),
-                                child: Text(
-                                  'or',
-                                  style: TextStyle(
-                                    color: Color(0xFF728078),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              Expanded(child: Divider()),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          OutlinedButton.icon(
-                            onPressed: () {},
-                            icon: const Icon(Icons.g_mobiledata),
-                            label: const Text('Continue with Google'),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(54),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              side: const BorderSide(color: Color(0xFFD4E0FA)),
-                              foregroundColor: const Color(0xFF2E6BD7),
-                              textStyle: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Wrap(
-                            alignment: WrapAlignment.center,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            spacing: 4,
-                            children: [
-                              const Text(
-                                "Don't have an account?",
-                                style: TextStyle(color: Color(0xFF5C6B64)),
-                              ),
-                              TextButton(
-                                onPressed: () {},
-                                child: const Text('Create one'),
-                              ),
-                            ],
+                            onPressed: auth.isLoading ? null : _signIn,
+                            child: auth.isLoading
+                                ? const SizedBox.square(
+                                    dimension: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text('Sign in'),
                           ),
                         ],
                       ),
@@ -358,6 +340,100 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ReservationsRoute extends StatelessWidget {
+  const _ReservationsRoute();
+
+  @override
+  Widget build(BuildContext context) {
+    if (usesDesktopManagement(context)) {
+      return context.watch<AuthProvider>().isAdministrator
+          ? const ManagementReservationsScreen()
+          : const _PlaceholderScreen(
+              title: 'Management access required',
+              section: AppSection.reservations,
+              message:
+                  'Sign in with an administrator account to use the desktop management application.',
+            );
+    }
+    return const MobileReservationsScreen();
+  }
+}
+
+class _ProductsRoute extends StatelessWidget {
+  const _ProductsRoute();
+
+  @override
+  Widget build(BuildContext context) {
+    return usesDesktopManagement(context)
+        ? const ProductManagementScreen()
+        : const ProductListScreen();
+  }
+}
+
+class _PlaceholderScreen extends StatelessWidget {
+  const _PlaceholderScreen({
+    required this.title,
+    required this.section,
+    this.message,
+  });
+
+  final String title;
+  final AppSection section;
+  final String? message;
+
+  @override
+  Widget build(BuildContext context) {
+    final isAccessMessage = message?.contains('administrator') == true;
+    return MasterScreen(
+      title: title,
+      section: section,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.construction_rounded,
+                size: 52,
+                color: Color(0xFF2F64E7),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 7),
+              Text(
+                message ??
+                    'This section is ready for the next management feature.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Color(0xFF667085)),
+              ),
+              if (isAccessMessage) ...[
+                const SizedBox(height: 18),
+                FilledButton.icon(
+                  onPressed: () {
+                    context.read<AuthProvider>().logout();
+                    Navigator.of(
+                      context,
+                    ).pushNamedAndRemoveUntil('/', (_) => false);
+                  },
+                  icon: const Icon(Icons.logout_rounded),
+                  label: const Text('Sign out'),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

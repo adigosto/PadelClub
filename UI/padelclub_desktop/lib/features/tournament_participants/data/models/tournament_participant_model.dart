@@ -1,7 +1,11 @@
 import 'package:padelclub_desktop/features/tournament_participants/domain/entities/tournament_participant.dart';
 
 class TournamentParticipantModel extends TournamentParticipant {
-  TournamentParticipantModel({super.id, required super.tournamentId, required super.userId});
+  TournamentParticipantModel({
+    super.id,
+    required super.tournamentId,
+    required super.userId,
+  });
 
   factory TournamentParticipantModel.fromJson(Map<String, dynamic> json) {
     return TournamentParticipantModel(
@@ -12,8 +16,8 @@ class TournamentParticipantModel extends TournamentParticipant {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'tournamentId': tournamentId,
-        'userId': userId,
-      };
+    'id': id,
+    'tournamentId': tournamentId,
+    'userId': userId,
+  };
 }

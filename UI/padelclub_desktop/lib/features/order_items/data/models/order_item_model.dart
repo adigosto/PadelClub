@@ -24,12 +24,12 @@ class OrderItemModel extends OrderItem {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'orderId': orderId,
-        'productId': productId,
-        'quantity': quantity,
-        'unitPrice': unitPrice,
-        'totalPrice': totalPrice,
-        'createdAt': createdAt.toIso8601String(),
-      };
+    'id': id,
+    'orderId': orderId,
+    'productId': productId,
+    'quantity': quantity,
+    'unitPrice': unitPrice,
+    'totalPrice': totalPrice,
+    'createdAt': createdAt.toIso8601String(),
+  };
 }

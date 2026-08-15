@@ -18,11 +18,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         padding: EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _DetailHeroCard(),
-            SizedBox(height: 16),
-            _InfoCard(),
-          ],
+          children: [_DetailHeroCard(), SizedBox(height: 16), _InfoCard()],
         ),
       ),
     );
@@ -52,7 +48,11 @@ class _DetailHeroCard extends StatelessWidget {
           CircleAvatar(
             radius: 28,
             backgroundColor: Color(0xFFE8F4EF),
-            child: Icon(Icons.inventory_2_outlined, color: Color(0xFF1F7A63), size: 28),
+            child: Icon(
+              Icons.inventory_2_outlined,
+              color: Color(0xFF1F7A63),
+              size: 28,
+            ),
           ),
           SizedBox(width: 16),
           Expanded(
@@ -61,7 +61,11 @@ class _DetailHeroCard extends StatelessWidget {
               children: [
                 Text(
                   'Premium Padel Ball Pack',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF27423A)),
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF27423A),
+                  ),
                 ),
                 SizedBox(height: 4),
                 Text(
@@ -92,7 +96,14 @@ class _InfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: const [
-          Text('Product details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF27423A))),
+          Text(
+            'Product details',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF27423A),
+            ),
+          ),
           SizedBox(height: 12),
           _DetailRow(label: 'Price', value: '\$42.00'),
           _DetailRow(label: 'Stock', value: '24 items'),
@@ -117,9 +128,21 @@ class _DetailRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(label, style: const TextStyle(color: Color(0xFF5C6B64), fontWeight: FontWeight.w600)),
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFF5C6B64),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
-          Text(value, style: const TextStyle(color: Color(0xFF27423A), fontWeight: FontWeight.w700)),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Color(0xFF27423A),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );

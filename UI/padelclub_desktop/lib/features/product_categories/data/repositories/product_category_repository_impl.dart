@@ -8,7 +8,9 @@ class ProductCategoryRepositoryImpl implements ProductCategoryRepository {
   ProductCategoryRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<List<ProductCategory>> getProductCategories({Map<String, dynamic>? filter}) async {
+  Future<List<ProductCategory>> getProductCategories({
+    Map<String, dynamic>? filter,
+  }) async {
     return await remoteDataSource.getProductCategories(filter: filter);
   }
 }

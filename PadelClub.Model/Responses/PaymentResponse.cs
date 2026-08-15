@@ -16,5 +16,11 @@ namespace PadelClub.Model
         public string? TransactionId { get; set; }
         public DateTime PaymentDate { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string Provider { get; set; } = string.Empty;
+        public string Currency { get; set; } = string.Empty;
+        public decimal RefundedAmount { get; set; }
+        public string? ReceiptUrl { get; set; }
+        public string? FailureMessage { get; set; }
+        public DateTime? ReconciledAt { get; set; }
     }
 }

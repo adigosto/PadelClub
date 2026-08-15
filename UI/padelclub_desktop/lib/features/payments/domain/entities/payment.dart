@@ -4,5 +4,10 @@ class Payment {
   double amount;
   DateTime date;
 
-  Payment({this.id, required this.orderId, required this.amount, required this.date});
+  Payment({
+    this.id,
+    required this.orderId,
+    required this.amount,
+    required this.date,
+  });
 }

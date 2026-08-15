@@ -5,17 +5,28 @@ import 'package:padelclub_desktop/features/product_categories/data/models/produc
 import 'package:padelclub_desktop/providers/auth_provider.dart';
 
 abstract class ProductCategoryRemoteDataSource {
-  Future<List<ProductCategoryModel>> getProductCategories({Map<String, dynamic>? filter});
+  Future<List<ProductCategoryModel>> getProductCategories({
+    Map<String, dynamic>? filter,
+  });
 }
 
-class ProductCategoryRemoteDataSourceImpl implements ProductCategoryRemoteDataSource {
+class ProductCategoryRemoteDataSourceImpl
+    implements ProductCategoryRemoteDataSource {
   final http.Client client;
   final String baseUrl;
 
-  ProductCategoryRemoteDataSourceImpl({required this.client, this.baseUrl = const String.fromEnvironment('baseUrl', defaultValue: 'http://localhost:5001/api')});
+  ProductCategoryRemoteDataSourceImpl({
+    required this.client,
+    this.baseUrl = const String.fromEnvironment(
+      'baseUrl',
+      defaultValue: 'http://localhost:5000',
+    ),
+  });
 
   @override
-  Future<List<ProductCategoryModel>> getProductCategories({Map<String, dynamic>? filter}) async {
+  Future<List<ProductCategoryModel>> getProductCategories({
+    Map<String, dynamic>? filter,
+  }) async {
     var url = '$baseUrl/ProductCategories';
     if (filter != null && filter.isNotEmpty) {
       var query = getQueryString(filter);
@@ -25,13 +36,19 @@ class ProductCategoryRemoteDataSourceImpl implements ProductCategoryRemoteDataSo
     final response = await client.get(uri, headers: createHeaders());
     if (isValidResponse(response)) {
       final data = jsonDecode(response.body) as List<dynamic>;
-      return data.map((e) => ProductCategoryModel.fromJson(e as Map<String, dynamic>)).toList();
+      return data
+          .map((e) => ProductCategoryModel.fromJson(e as Map<String, dynamic>))
+          .toList();
     } else {
       throw Exception('Something went wrong');
     }
   }
 
-  String getQueryString(Map params, {String prefix = '&', bool inRecursion = false}) {
+  String getQueryString(
+    Map params, {
+    String prefix = '&',
+    bool inRecursion = false,
+  }) {
     String query = '';
     params.forEach((key, value) {
       if (inRecursion) {
@@ -52,7 +69,11 @@ class ProductCategoryRemoteDataSourceImpl implements ProductCategoryRemoteDataSo
       } else if (value is List || value is Map) {
         if (value is List) value = value.asMap();
         value.forEach((k, v) {
-          query += getQueryString({k: v}, prefix: '$prefix$key', inRecursion: true);
+          query += getQueryString(
+            {k: v},
+            prefix: '$prefix$key',
+            inRecursion: true,
+          );
         });
       }
     });
@@ -66,10 +87,6 @@ class ProductCategoryRemoteDataSourceImpl implements ProductCategoryRemoteDataSo
   }
 
   Map<String, String> createHeaders() {
-    final basicAuth = 'Basic ${base64Encode(utf8.encode('${AuthProvider.username}: ${AuthProvider.password}'))}';
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': basicAuth,
-    };
+    return AuthProvider.authenticatedHeaders();
   }
 }

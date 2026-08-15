@@ -39,6 +39,7 @@ namespace PadelClub.Services
 
             if (pageSize > 0)
             {
+                query = query.OrderBy(x => EF.Property<int>(x, "Id"));
                 query = query.Skip((page - 1) * pageSize).Take(pageSize);
             }
             

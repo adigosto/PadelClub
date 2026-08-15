@@ -1,6 +1,13 @@
 # Build folders
 bin/
 obj/
+build/
+.dart_tool/
+.pub/
+.pub-cache/
+.flutter-plugins
+.flutter-plugins-dependencies
+coverage/
 
 # Visual Studio
 .vs/

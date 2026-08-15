@@ -4,6 +4,7 @@ using PadelClub.Model.Requests;
 using PadelClub.Model.SearchObjects;
 using PadelClub.Services.Database;
 using DbMembership = PadelClub.Services.Database.Membership;
+using Microsoft.EntityFrameworkCore;
 
 namespace PadelClub.Services
 {
@@ -11,6 +12,18 @@ namespace PadelClub.Services
     {
         public MembershipService(PadelClubContext dbContext, IMapper mapper) : base(dbContext, mapper)
         {
+        }
+
+        public override async Task<MembershipResponse> CreateAsync(MembershipInsertRequest request)
+        {
+            if (request.EndDate <= request.StartDate) throw new InvalidOperationException("Membership end date must be after its start date.");
+            if (request.Price < 0) throw new InvalidOperationException("Membership price cannot be negative.");
+            var overlaps = await _dbContext.Memberships.AnyAsync(x => x.UserId == request.UserId && x.Status == "Active" && x.EndDate > request.StartDate && x.StartDate < request.EndDate);
+            if (overlaps) throw new InvalidOperationException("This user already has an overlapping active membership.");
+            var result = await base.CreateAsync(request);
+            _dbContext.MembershipEvents.Add(new MembershipEvent { MembershipId = result.Id, EventType = "Created", Notes = "Membership created." });
+            await _dbContext.SaveChangesAsync();
+            return result;
         }
 
         protected override IQueryable<DbMembership> ApplyFilter(IQueryable<DbMembership> query, MembershipSearchObject search)

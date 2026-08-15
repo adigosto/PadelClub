@@ -8,7 +8,9 @@ class MatchParticipantRepositoryImpl implements MatchParticipantRepository {
   MatchParticipantRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<List<MatchParticipant>> getMatchParticipants({Map<String, dynamic>? filter}) async {
+  Future<List<MatchParticipant>> getMatchParticipants({
+    Map<String, dynamic>? filter,
+  }) async {
     return await remoteDataSource.getMatchParticipants(filter: filter);
   }
 }
