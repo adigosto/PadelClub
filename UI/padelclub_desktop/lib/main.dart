@@ -1,26 +1,54 @@
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
 
 import 'package:padelclub_desktop/core/di/injection.dart';
+import 'package:padelclub_desktop/core/localization/app_localizations.dart';
+import 'package:padelclub_desktop/core/localization/language_switcher.dart';
+import 'package:padelclub_desktop/core/localization/locale_controller.dart';
 import 'package:padelclub_desktop/core/theme/app_theme.dart';
+import 'package:padelclub_desktop/core/validation/form_validators.dart';
 import 'package:padelclub_desktop/dashboard_page.dart';
 import 'package:padelclub_desktop/features/courts/presentation/providers/court_provider.dart';
 import 'package:padelclub_desktop/features/courts/presentation/screens/court_management_screen.dart';
-import 'package:padelclub_desktop/features/notifications/presentation/screens/notification_management_screen.dart';
+import 'package:padelclub_desktop/features/memberships/presentation/providers/membership_management_provider.dart';
+import 'package:padelclub_desktop/features/memberships/presentation/screens/membership_management_screen.dart';
+import 'package:padelclub_desktop/features/notifications/data/repositories/http_notification_repository.dart';
 import 'package:padelclub_desktop/features/notifications/presentation/providers/notification_provider.dart';
+import 'package:padelclub_desktop/features/notifications/presentation/screens/notification_management_screen.dart';
+import 'package:padelclub_desktop/features/operations/presentation/providers/operations_analytics_provider.dart';
+import 'package:padelclub_desktop/features/operations/presentation/screens/audit_trail_screen.dart';
+import 'package:padelclub_desktop/features/operations/presentation/screens/provider_readiness_screen.dart';
 import 'package:padelclub_desktop/features/orders/presentation/providers/order_provider.dart';
 import 'package:padelclub_desktop/features/orders/presentation/screens/order_management_screen.dart';
+import 'package:padelclub_desktop/features/payments/data/repositories/http_payment_repository.dart';
+import 'package:padelclub_desktop/features/payments/domain/entities/payment.dart';
+import 'package:padelclub_desktop/features/payments/domain/repositories/payment_repository.dart';
+import 'package:padelclub_desktop/features/payments/presentation/screens/payments_screen.dart';
+import 'package:padelclub_desktop/features/player_experience/data/repositories/http_city_repository.dart';
+import 'package:padelclub_desktop/features/player_experience/domain/usecases/get_cities.dart';
+import 'package:padelclub_desktop/features/player_experience/presentation/providers/player_experience_provider.dart';
 import 'package:padelclub_desktop/features/product/presentation/providers/cart_provider.dart';
 import 'package:padelclub_desktop/features/product/presentation/providers/product_provider.dart';
+import 'package:padelclub_desktop/features/product/presentation/screens/product_list_screen.dart';
 import 'package:padelclub_desktop/features/product/presentation/screens/product_management_screen.dart';
 import 'package:padelclub_desktop/features/profile/presentation/screens/profile_screen.dart';
+import 'package:padelclub_desktop/features/recommendation_evaluation/data/datasources/recommendation_evaluation_remote_data_source.dart';
+import 'package:padelclub_desktop/features/recommendation_evaluation/data/repositories/recommendation_evaluation_repository_impl.dart';
+import 'package:padelclub_desktop/features/recommendation_evaluation/domain/usecases/create_recommendation_evaluation_run.dart';
+import 'package:padelclub_desktop/features/recommendation_evaluation/domain/usecases/get_latest_recommendation_evaluation_run.dart';
+import 'package:padelclub_desktop/features/recommendation_evaluation/domain/usecases/get_recommendation_evaluation.dart';
+import 'package:padelclub_desktop/features/recommendation_evaluation/presentation/providers/recommendation_evaluation_provider.dart';
+import 'package:padelclub_desktop/features/recommendation_evaluation/presentation/providers/recommendation_operational_readiness_provider.dart';
+import 'package:padelclub_desktop/features/recommendations/presentation/providers/product_recommendation_provider.dart';
 import 'package:padelclub_desktop/features/reservations/presentation/providers/reservation_provider.dart';
 import 'package:padelclub_desktop/features/reservations/presentation/screens/reservation_screens.dart';
+import 'package:padelclub_desktop/features/returns/presentation/providers/return_requests_provider.dart';
 import 'package:padelclub_desktop/features/reviews/presentation/providers/club_review_provider.dart';
-import 'package:padelclub_desktop/features/product/presentation/screens/product_list_screen.dart';
-import 'package:padelclub_desktop/features/search/presentation/screens/search_screen.dart';
 import 'package:padelclub_desktop/features/search/presentation/providers/discovery_provider.dart';
+import 'package:padelclub_desktop/features/search/presentation/screens/search_screen.dart';
 import 'package:padelclub_desktop/features/tournament/presentation/providers/tournament_provider.dart';
+import 'package:padelclub_desktop/features/tournament_management/presentation/screens/tournament_management_screen.dart';
 import 'package:padelclub_desktop/features/users/presentation/providers/user_provider.dart';
 import 'package:padelclub_desktop/features/users/presentation/screens/user_management_screen.dart';
 import 'package:padelclub_desktop/layouts/master_screen.dart';
@@ -34,22 +62,84 @@ Future<void> main() async {
 
 /// Shared composition root used by the desktop and mobile distribution targets.
 class PadelClubBootstrap extends StatelessWidget {
-  const PadelClubBootstrap({super.key});
+  const PadelClubBootstrap({
+    super.key,
+    this.authProvider,
+    this.paymentSheetPresenter = const UnavailablePaymentSheet(),
+    this.homeRouteBuilder,
+  });
+
+  /// An optional authentication provider for runner-level widget tests.
+  ///
+  /// Production runners omit this and create an [AuthProvider].
+  final AuthProvider? authProvider;
+  final PaymentSheetPresenter paymentSheetPresenter;
+
+  /// An optional player home route for runner-level widget tests.
+  ///
+  /// Production runners omit this and use [DashboardPage].
+  final WidgetBuilder? homeRouteBuilder;
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = AuthProvider();
+    final resolvedAuthProvider = authProvider ?? AuthProvider();
+    final recommendationEvaluationDataSource =
+        RecommendationEvaluationRemoteDataSourceImpl(
+          headersProvider: AuthProvider.authenticatedHeaders,
+        );
+    final recommendationEvaluationRepository =
+        RecommendationEvaluationRepositoryImpl(
+          recommendationEvaluationDataSource,
+        );
+    final getRecommendationEvaluation = GetRecommendationEvaluation(
+      recommendationEvaluationRepository,
+    );
+    final createRecommendationEvaluationRun = CreateRecommendationEvaluationRun(
+      recommendationEvaluationRepository,
+    );
+    final getLatestRecommendationEvaluationRun =
+        GetLatestRecommendationEvaluationRun(
+          recommendationEvaluationRepository,
+        );
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
+        Provider<PaymentSheetPresenter>.value(value: paymentSheetPresenter),
+        Provider<PaymentRepository>(
+          create: (_) =>
+              HttpPaymentRepository(headers: AuthProvider.authenticatedHeaders),
+          dispose: (_, repository) => repository.dispose(),
+        ),
+        ChangeNotifierProvider<AuthProvider>.value(value: resolvedAuthProvider),
         ChangeNotifierProvider<ReservationProvider>(
           create: (_) => ReservationProvider(),
         ),
         ChangeNotifierProvider<UserProvider>(create: (_) => UserProvider()),
         ChangeNotifierProvider<OrderProvider>(create: (_) => OrderProvider()),
+        ChangeNotifierProvider<ReturnRequestsProvider>(
+          create: (_) => ReturnRequestsProvider.live(),
+        ),
+        ChangeNotifierProvider<OperationsAnalyticsProvider>(
+          create: (_) => OperationsAnalyticsProvider(),
+        ),
+        ChangeNotifierProvider<RecommendationEvaluationProvider>(
+          create: (_) => RecommendationEvaluationProvider(
+            getRecommendationEvaluation,
+            createRecommendationEvaluationRun,
+            getLatestRecommendationEvaluationRun,
+          ),
+        ),
+        ChangeNotifierProvider<RecommendationOperationalReadinessProvider>(
+          create: (_) => RecommendationOperationalReadinessProvider(),
+        ),
         ChangeNotifierProvider<CourtProvider>(create: (_) => CourtProvider()),
-        ChangeNotifierProvider<NotificationProvider>(
-          create: (_) => NotificationProvider(),
+        ChangeNotifierProxyProvider<AuthProvider, NotificationProvider>(
+          create: (_) => NotificationProvider(
+            HttpNotificationRepository(
+              headers: AuthProvider.authenticatedHeaders,
+            ),
+          ),
+          update: (_, auth, notifications) =>
+              notifications!..setSession(auth.userId, auth.isAdministrator),
         ),
         ChangeNotifierProvider<ClubReviewProvider>(
           create: (_) => ClubReviewProvider(),
@@ -61,36 +151,85 @@ class PadelClubBootstrap extends StatelessWidget {
           create: (context) => sl.loggedProductProvider,
         ),
         ChangeNotifierProvider<CartProvider>(create: (_) => CartProvider()),
+        ChangeNotifierProvider<ProductRecommendationProvider>(
+          create: (_) => ProductRecommendationProvider(),
+        ),
         ChangeNotifierProvider<DiscoveryProvider>(
           create: (_) => DiscoveryProvider(),
         ),
+        ChangeNotifierProvider<PlayerExperienceProvider>(
+          create: (_) => PlayerExperienceProvider(
+            getCities: GetCities(HttpCityRepository()),
+          ),
+        ),
       ],
-      child: const PadelClubApp(),
+      child: PadelClubApp(homeRouteBuilder: homeRouteBuilder),
     );
   }
 }
 
-class PadelClubApp extends StatelessWidget {
-  const PadelClubApp({super.key});
+class PadelClubApp extends StatefulWidget {
+  const PadelClubApp({super.key, this.homeRouteBuilder, this.localeController});
+
+  final WidgetBuilder? homeRouteBuilder;
+  final LocaleController? localeController;
+
+  @override
+  State<PadelClubApp> createState() => _PadelClubAppState();
+}
+
+class _PadelClubAppState extends State<PadelClubApp> {
+  late final LocaleController _localeController;
+
+  @override
+  void initState() {
+    super.initState();
+    _localeController = widget.localeController ?? LocaleController();
+    _localeController.load();
+  }
+
+  @override
+  void dispose() {
+    if (widget.localeController == null) _localeController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'PadelClub',
-      theme: PadelTheme.light,
-      home: const LoginPage(),
-      routes: {
-        '/home': (_) => const DashboardPage(),
-        '/search': (_) => const SearchScreen(),
-        '/reservations': (_) => const _ReservationsRoute(),
-        '/products': (_) => const _ProductsRoute(),
-        '/courts': (_) => const CourtManagementScreen(),
-        '/members': (_) => const UserManagementScreen(),
-        '/orders': (_) => const OrderManagementScreen(),
-        '/notifications': (_) => const NotificationManagementScreen(),
-        '/profile': (_) => const ProfileScreen(),
-      },
+    return LanguageScope(
+      controller: _localeController,
+      child: ListenableBuilder(
+        listenable: _localeController,
+        builder: (context, _) => MaterialApp(
+          locale: _localeController.locale,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          debugShowCheckedModeBanner: false,
+          title: 'PadelClub',
+          theme: PadelTheme.light,
+          home: const LoginPage(),
+          routes: {
+            '/home': widget.homeRouteBuilder ?? (_) => const DashboardPage(),
+            '/search': (_) => const SearchScreen(),
+            '/reservations': (_) => const _ReservationsRoute(),
+            '/products': (_) => const _ProductsRoute(),
+            '/courts': (_) => const CourtManagementScreen(),
+            '/members': (_) => const UserManagementScreen(),
+            '/memberships': (_) => ChangeNotifierProvider(
+              create: (_) => MembershipManagementProvider.live(),
+              child: const MembershipManagementScreen(),
+            ),
+            '/orders': (_) => const OrderManagementScreen(),
+            '/tournaments': (_) => const _TournamentsRoute(),
+            '/notifications': (_) => const NotificationManagementScreen(),
+            '/operations/audit': (_) => const _AuditTrailRoute(),
+            '/operations/provider-readiness': (_) =>
+                const _ProviderReadinessRoute(),
+            '/payments': (_) => const PaymentsScreen(),
+            '/profile': (_) => const ProfileScreen(),
+          },
+        ),
+      ),
     );
   }
 }
@@ -155,11 +294,208 @@ class _LoginPageState extends State<LoginPage> {
       showDialog<void>(
         context: context,
         builder: (_) => AlertDialog(
-          title: const Text('Sign in failed'),
-          content: Text(auth.errorMessage ?? 'Please try again.'),
+          title: Text(context.tr("Sign in failed")),
+          content: Text(context.tr(auth.errorMessage ?? "Please try again.")),
+          backgroundColor: PadelColors.danger,
         ),
       );
     }
+  }
+
+  Future<void> _forgotPassword() async {
+    final emailController = TextEditingController(
+      text: _emailController.text.contains('@') ? _emailController.text : '',
+    );
+    final formKey = GlobalKey<FormState>();
+    final email = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(context.tr("Forgot password")),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: emailController,
+            keyboardType: TextInputType.emailAddress,
+            autofillHints: const [AutofillHints.email],
+            autofocus: true,
+            decoration: InputDecoration(
+              labelText: context.tr("Email"),
+              prefixIcon: const Icon(Icons.email_outlined),
+            ),
+            validator: (value) =>
+                FormValidators.email(value, l10n: context.l10n),
+            onFieldSubmitted: (_) {
+              if (formKey.currentState?.validate() ?? false) {
+                Navigator.of(dialogContext).pop(emailController.text.trim());
+              }
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(context.tr("Cancel")),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() ?? false) {
+                Navigator.of(dialogContext).pop(emailController.text.trim());
+              }
+            },
+            child: Text(context.tr("Send reset link")),
+          ),
+        ],
+      ),
+    );
+    emailController.dispose();
+    if (!mounted || email == null) return;
+
+    final auth = context.read<AuthProvider>();
+    final success = await auth.requestPasswordReset(email);
+    if (!mounted) return;
+    final shouldEnterToken = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(
+          context.tr(
+            success ? "Check your email" : "Password reset unavailable",
+          ),
+        ),
+        content: Text(
+          context.tr(
+            success
+                ? "If an account matches that email, a password reset link will be sent shortly."
+                : auth.errorMessage ?? "Please try again.",
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(context.tr("OK")),
+          ),
+          if (success)
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(context.tr("Enter reset token")),
+            ),
+        ],
+      ),
+    );
+    if (!mounted || shouldEnterToken != true) return;
+
+    final resetData = await _showResetPasswordDialog();
+    if (!mounted || resetData == null) return;
+    final resetSuccess = await auth.resetPassword(
+      resetData.token,
+      resetData.password,
+    );
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(
+          context.tr(
+            resetSuccess ? "Password updated." : "Password reset unavailable",
+          ),
+        ),
+        content: Text(
+          context.tr(
+            resetSuccess
+                ? "You can now sign in with your new password."
+                : auth.errorMessage ?? "Please try again.",
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(context.tr("OK")),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<({String token, String password})?> _showResetPasswordDialog() async {
+    final tokenController = TextEditingController();
+    final passwordController = TextEditingController();
+    final confirmationController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final result = await showDialog<({String token, String password})>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(context.tr("Reset password")),
+        content: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: tokenController,
+                  decoration: InputDecoration(
+                    labelText: context.tr("Reset token"),
+                    prefixIcon: const Icon(Icons.key_outlined),
+                  ),
+                  validator: (value) => FormValidators.text(
+                    value,
+                    label: 'the reset token',
+                    l10n: context.l10n,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: passwordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: context.tr("New password"),
+                    prefixIcon: const Icon(Icons.lock_outline),
+                  ),
+                  validator: (value) => FormValidators.text(
+                    value,
+                    label: 'your password',
+                    minLength: 10,
+                    l10n: context.l10n,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: confirmationController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: context.tr("Confirm password"),
+                    prefixIcon: const Icon(Icons.lock_reset_outlined),
+                  ),
+                  validator: (value) => value != passwordController.text
+                      ? context.tr("Passwords do not match")
+                      : null,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(context.tr("Cancel")),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() ?? false) {
+                Navigator.of(dialogContext).pop((
+                  token: tokenController.text.trim(),
+                  password: passwordController.text,
+                ));
+              }
+            },
+            child: Text(context.tr("Update password")),
+          ),
+        ],
+      ),
+    );
+    tokenController.dispose();
+    passwordController.dispose();
+    confirmationController.dispose();
+    return result;
   }
 
   @override
@@ -191,14 +527,20 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     child: Form(
                       key: _formKey,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          const Align(
+                            alignment: Alignment.centerRight,
+                            child: LanguageSwitcher(),
+                          ),
+                          const SizedBox(height: 8),
                           Align(
                             alignment: Alignment.centerLeft,
                             child: Semantics(
-                              label: 'PadelClub logo',
+                              label: context.tr("PadelClub logo"),
                               image: true,
                               child: Container(
                                 padding: const EdgeInsets.all(14),
@@ -220,8 +562,8 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                           const SizedBox(height: 14),
-                          const Text(
-                            'Welcome back',
+                          Text(
+                            context.tr("Welcome back"),
                             style: TextStyle(
                               fontSize: 30,
                               fontWeight: FontWeight.w800,
@@ -229,8 +571,10 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          const Text(
-                            'Sign in to book courts, track matches, and manage your PadelClub activity in one place.',
+                          Text(
+                            context.tr(
+                              "Sign in to book courts, track matches, and manage your PadelClub activity in one place.",
+                            ),
                             style: TextStyle(
                               fontSize: 15,
                               height: 1.45,
@@ -242,14 +586,14 @@ class _LoginPageState extends State<LoginPage> {
                             controller: _emailController,
                             autofillHints: const [AutofillHints.username],
                             textInputAction: TextInputAction.next,
-                            decoration: const InputDecoration(
-                              labelText: 'Username',
+                            decoration: InputDecoration(
+                              labelText: context.tr("Username"),
                               prefixIcon: Icon(Icons.person_outline_rounded),
                             ),
                             validator: (value) {
                               final text = value?.trim() ?? '';
                               if (text.isEmpty) {
-                                return 'Enter your username';
+                                return context.tr("Enter your username");
                               }
                               return null;
                             },
@@ -267,12 +611,12 @@ class _LoginPageState extends State<LoginPage> {
                             autofillHints: const [AutofillHints.password],
                             textInputAction: TextInputAction.done,
                             decoration: InputDecoration(
-                              labelText: 'Password',
+                              labelText: context.tr("Password"),
                               prefixIcon: const Icon(Icons.lock_outline),
                               suffixIcon: IconButton(
                                 tooltip: _obscurePassword
-                                    ? 'Show password'
-                                    : 'Hide password',
+                                    ? context.tr("Show password")
+                                    : context.tr("Hide password"),
                                 onPressed: () {
                                   setState(() {
                                     _obscurePassword = !_obscurePassword;
@@ -288,10 +632,10 @@ class _LoginPageState extends State<LoginPage> {
                             validator: (value) {
                               final text = value ?? '';
                               if (text.isEmpty) {
-                                return 'Enter your password';
+                                return context.tr("Enter your password");
                               }
                               if (text.length < 6) {
-                                return 'Use at least 6 characters';
+                                return context.tr("Use at least 6 characters");
                               }
                               return null;
                             },
@@ -305,8 +649,10 @@ class _LoginPageState extends State<LoginPage> {
                               contentPadding: EdgeInsets.zero,
                               controlAffinity: ListTileControlAffinity.leading,
                               activeColor: const Color(0xFF1F7A63),
-                              title: const Text(
-                                'Save login information on this device',
+                              title: Text(
+                                context.tr(
+                                  "Save login information on this device",
+                                ),
                                 style: TextStyle(color: Color(0xFF4F6059)),
                               ),
                               onChanged: auth.isLoading
@@ -319,6 +665,15 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                           const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: auth.isLoading
+                                  ? null
+                                  : _forgotPassword,
+                              child: Text(context.tr("Forgot password?")),
+                            ),
+                          ),
                           ElevatedButton(
                             onPressed: auth.isLoading ? null : _signIn,
                             child: auth.isLoading
@@ -329,7 +684,7 @@ class _LoginPageState extends State<LoginPage> {
                                       color: Colors.white,
                                     ),
                                   )
-                                : const Text('Sign in'),
+                                : Text(context.tr("Sign in")),
                           ),
                         ],
                       ),
@@ -353,11 +708,12 @@ class _ReservationsRoute extends StatelessWidget {
     if (usesDesktopManagement(context)) {
       return context.watch<AuthProvider>().isAdministrator
           ? const ManagementReservationsScreen()
-          : const _PlaceholderScreen(
-              title: 'Management access required',
+          : _PlaceholderScreen(
+              title: context.tr("Management access required"),
               section: AppSection.reservations,
-              message:
-                  'Sign in with an administrator account to use the desktop management application.',
+              message: context.tr(
+                "Sign in with an administrator account to use the desktop management application.",
+              ),
             );
     }
     return const MobileReservationsScreen();
@@ -372,6 +728,84 @@ class _ProductsRoute extends StatelessWidget {
     return usesDesktopManagement(context)
         ? const ProductManagementScreen()
         : const ProductListScreen();
+  }
+}
+
+class _AuditTrailRoute extends StatelessWidget {
+  const _AuditTrailRoute();
+
+  @override
+  Widget build(BuildContext context) {
+    if (!usesDesktopManagement(context)) {
+      return _PlaceholderScreen(
+        title: context.tr("Audit Trail"),
+        section: AppSection.profile,
+        message: context.tr(
+          "Audit review is available in the desktop management application.",
+        ),
+      );
+    }
+    return context.watch<AuthProvider>().isAdministrator
+        ? const AuditTrailScreen()
+        : _PlaceholderScreen(
+            title: context.tr("Management access required"),
+            section: AppSection.auditTrail,
+            message: context.tr(
+              "Sign in with an administrator account to review the audit trail.",
+            ),
+          );
+  }
+}
+
+class _ProviderReadinessRoute extends StatelessWidget {
+  const _ProviderReadinessRoute();
+
+  @override
+  Widget build(BuildContext context) {
+    if (!usesDesktopManagement(context)) {
+      return _PlaceholderScreen(
+        title: context.tr("Provider Readiness"),
+        section: AppSection.profile,
+        message: context.tr(
+          "Provider configuration diagnostics are available in the desktop management application.",
+        ),
+      );
+    }
+    return context.watch<AuthProvider>().isAdministrator
+        ? const ProviderReadinessScreen()
+        : _PlaceholderScreen(
+            title: context.tr("Management access required"),
+            section: AppSection.auditTrail,
+            message: context.tr(
+              "Sign in with an administrator account to review provider readiness.",
+            ),
+          );
+  }
+}
+
+class _TournamentsRoute extends StatelessWidget {
+  const _TournamentsRoute();
+
+  @override
+  Widget build(BuildContext context) {
+    if (!usesDesktopManagement(context)) {
+      return _PlaceholderScreen(
+        title: context.tr("Tournament Management"),
+        section: AppSection.search,
+        message: context.tr(
+          "Tournament management is available in the desktop management application.",
+        ),
+      );
+    }
+    return context.watch<AuthProvider>().isAdministrator
+        ? const TournamentManagementScreen()
+        : _PlaceholderScreen(
+            title: context.tr("Management access required"),
+            section: AppSection.tournaments,
+            message: context.tr(
+              "Sign in with an administrator account to manage tournaments.",
+            ),
+          );
   }
 }
 
@@ -414,7 +848,9 @@ class _PlaceholderScreen extends StatelessWidget {
               const SizedBox(height: 7),
               Text(
                 message ??
-                    'This section is ready for the next management feature.',
+                    context.tr(
+                      "This section is ready for the next management feature.",
+                    ),
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Color(0xFF667085)),
               ),
@@ -428,7 +864,7 @@ class _PlaceholderScreen extends StatelessWidget {
                     ).pushNamedAndRemoveUntil('/', (_) => false);
                   },
                   icon: const Icon(Icons.logout_rounded),
-                  label: const Text('Sign out'),
+                  label: Text(context.tr("Sign out")),
                 ),
               ],
             ],
@@ -464,12 +900,14 @@ class _LoginBackground extends StatelessWidget {
             left: -40,
             child: _BackgroundOrb(size: 220, color: const Color(0x222E6BD7)),
           ),
-          const Positioned(
+          Positioned(
             top: 96,
             left: 24,
             child: _BackgroundAccent(
               title: 'PadelClub',
-              subtitle: 'Fast booking. Clean courts. Better matches.',
+              subtitle: context.tr(
+                "Fast booking. Clean courts. Better matches.",
+              ),
             ),
           ),
         ],
@@ -564,7 +1002,7 @@ class MyHomePage extends StatelessWidget {
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
+                children: [
                   Icon(
                     Icons.emoji_events_outlined,
                     size: 64,
@@ -572,7 +1010,7 @@ class MyHomePage extends StatelessWidget {
                   ),
                   SizedBox(height: 16),
                   Text(
-                    'Welcome to PadelClub',
+                    context.tr("Welcome to PadelClub"),
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
@@ -581,7 +1019,9 @@ class MyHomePage extends StatelessWidget {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'Your club dashboard is ready to guide bookings, products, and match activity.',
+                    context.tr(
+                      "Your club dashboard is ready to guide bookings, products, and match activity.",
+                    ),
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Color(0xFF5C6B64)),
                   ),

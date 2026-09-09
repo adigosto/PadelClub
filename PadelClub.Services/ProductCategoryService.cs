@@ -13,6 +13,9 @@ namespace PadelClub.Services
         {
         }
 
+        public override Task<bool> DeleteAsync(int id) =>
+            throw new InvalidOperationException("Product categories cannot be physically deleted. Deactivate the category instead.");
+
         protected override IQueryable<DbProductCategory> ApplyFilter(IQueryable<DbProductCategory> query, ProductCategorySearchObject search)
         {
             if (!string.IsNullOrWhiteSpace(search.Name))

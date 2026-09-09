@@ -1,0 +1,11 @@
+﻿{
+    "Findings":  32,
+    "P1":  7,
+    "P2":  19,
+    "P3":  6,
+    "InvalidReferences":  [
+
+                          ],
+    "Probes":  6,
+    "Observed":  6
+}

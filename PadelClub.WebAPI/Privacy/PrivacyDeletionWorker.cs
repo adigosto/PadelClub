@@ -21,6 +21,13 @@ public sealed class PrivacyDeletionWorker(IServiceScopeFactory scopeFactory, ILo
                     request.User.PhoneNumber = null; request.User.PasswordHash = "DELETED"; request.User.PasswordSalt = "DELETED"; request.User.IsActive = false; request.User.UpdatedAt = DateTime.UtcNow;
                     await db.AuthTokens.Where(x => x.UserId == request.UserId).ExecuteDeleteAsync(stoppingToken);
                     await db.PushDevices.Where(x => x.UserId == request.UserId).ExecuteDeleteAsync(stoppingToken);
+                    // Prospective recommender consent and interaction rows are
+                    // user-level data. Delete them before the immutable
+                    // aggregate experiment snapshots are retained; those
+                    // snapshots have no raw user tuples and remain auditable.
+                    await db.RecommendationExposures.Where(x => x.UserId == request.UserId).ExecuteDeleteAsync(stoppingToken);
+                    await db.RecommendationExperimentAssignments.Where(x => x.UserId == request.UserId).ExecuteDeleteAsync(stoppingToken);
+                    await db.RecommendationAnalyticsConsents.Where(x => x.UserId == request.UserId).ExecuteDeleteAsync(stoppingToken);
                     await db.PlayerProfiles.Where(x => x.UserId == request.UserId).ExecuteUpdateAsync(x => x.SetProperty(p => p.IsDiscoverable, false).SetProperty(p => p.Bio, string.Empty).SetProperty(p => p.Availability, string.Empty), stoppingToken);
                     await db.Orders.Where(x => x.UserId == request.UserId).ExecuteUpdateAsync(x => x.SetProperty(o => o.RecipientName, "Deleted User").SetProperty(o => o.PhoneNumber, "redacted")
                         .SetProperty(o => o.ShippingAddress, "redacted").SetProperty(o => o.City, "redacted").SetProperty(o => o.PostalCode, "redacted").SetProperty(o => o.Notes, (string?)null), stoppingToken);

@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="b6987865-00d5-4e76-be6c-16cdd0ef6590" name="User@DESKTOP-MPRVV8J 2026-09-05 13:13:52" runUser="DESKTOP-MPRVV8J\User" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-09-05T13:13:52.2276389+02:00" queuing="2026-09-05T13:13:52.2276395+02:00" start="2026-09-05T13:13:32.3354665+02:00" finish="2026-09-05T13:13:52.2348548+02:00" />
+  <TestSettings name="default" id="6acf6d3c-b1cf-4497-abf6-4484b3eaa9c0">
+    <Deployment runDeploymentRoot="User_DESKTOP-MPRVV8J_2026-09-05_13_13_52" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="491caf0f-8a11-4d99-a5ab-55d68f75e4f0" testId="3bb7d5a7-9b9a-8336-de20-5be0585e0edd" testName="PadelClub.WebAPI.Tests.ApiIntegrationTests.Tournament_management_and_bracket_generation_are_admin_only_and_server_enforced" computerName="DESKTOP-MPRVV8J" duration="00:00:00.8789133" startTime="2026-09-05T13:13:51.5523568+02:00" endTime="2026-09-05T13:13:51.5523912+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="491caf0f-8a11-4d99-a5ab-55d68f75e4f0" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="PadelClub.WebAPI.Tests.ApiIntegrationTests.Tournament_management_and_bracket_generation_are_admin_only_and_server_enforced" storage="c:\users\user\desktop\padelclub\padelclub.webapi.tests\bin\release\net8.0\padelclub.webapi.tests.dll" id="3bb7d5a7-9b9a-8336-de20-5be0585e0edd">
+      <Execution id="491caf0f-8a11-4d99-a5ab-55d68f75e4f0" />
+      <TestMethod codeBase="C:\Users\User\Desktop\PadelClub\PadelClub.WebAPI.Tests\bin\Release\net8.0\PadelClub.WebAPI.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="PadelClub.WebAPI.Tests.ApiIntegrationTests" name="Tournament_management_and_bracket_generation_are_admin_only_and_server_enforced" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="3bb7d5a7-9b9a-8336-de20-5be0585e0edd" executionId="491caf0f-8a11-4d99-a5ab-55d68f75e4f0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="1" executed="1" passed="1" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 8.0.12)&#xD;
+[xUnit.net 00:00:00.10]   Discovering: PadelClub.WebAPI.Tests&#xD;
+[xUnit.net 00:00:00.15]   Discovered:  PadelClub.WebAPI.Tests&#xD;
+[xUnit.net 00:00:00.16]   Starting:    PadelClub.WebAPI.Tests&#xD;
+[testcontainers.org 00:00:00.13] Connected to Docker:&#xD;
+  Host: npipe://./pipe/docker_engine&#xD;
+  Server Version: 28.5.1&#xD;
+  Kernel Version: 6.18.33.2-microsoft-standard-WSL2&#xD;
+  API Version: 1.51&#xD;
+  Operating System: Docker Desktop&#xD;
+  Total Memory: 7.63 GB&#xD;
+  Labels: &#xD;
+    com.docker.desktop.address=npipe://\\.\pipe\docker_cli&#xD;
+[testcontainers.org 00:00:00.43] Docker container 71abe3c25f59 created&#xD;
+[testcontainers.org 00:00:00.51] Start Docker container 71abe3c25f59&#xD;
+[testcontainers.org 00:00:00.75] Wait for Docker container 71abe3c25f59 to complete readiness checks&#xD;
+[testcontainers.org 00:00:01.82] Docker container 71abe3c25f59 ready&#xD;
+[testcontainers.org 00:00:01.97] Docker container 0618add0a5fa created&#xD;
+[testcontainers.org 00:00:01.98] Start Docker container 0618add0a5fa&#xD;
+[testcontainers.org 00:00:02.25] Wait for Docker container 0618add0a5fa to complete readiness checks&#xD;
+[testcontainers.org 00:00:02.27] Execute "/bin/sh -c find /opt/mssql-tools*/bin/sqlcmd -type f -print -quit" at Docker container 0618add0a5fa&#xD;
+[testcontainers.org 00:00:02.37] Execute "/opt/mssql-tools18/bin/sqlcmd -C -b -r 1 -d master -Q SELECT 1;" at Docker container 0618add0a5fa&#xD;
+[testcontainers.org 00:00:10.98] Execute "/opt/mssql-tools18/bin/sqlcmd -C -b -r 1 -d master -Q SELECT 1;" at Docker container 0618add0a5fa&#xD;
+[testcontainers.org 00:00:12.12] Execute "/opt/mssql-tools18/bin/sqlcmd -C -b -r 1 -d master -Q SELECT 1;" at Docker container 0618add0a5fa&#xD;
+[testcontainers.org 00:00:12.22] Docker container 0618add0a5fa ready&#xD;
+info: PadelClub.WebAPI[0]&#xD;
+      Database bootstrap is disabled by configuration.&#xD;
+warn: Microsoft.EntityFrameworkCore.Query[20504]&#xD;
+      Compiling a query which loads related collections for more than one collection navigation, either via 'Include' or through projection, but no 'QuerySplittingBehavior' has been configured. By default, Entity Framework will use 'QuerySplittingBehavior.SingleQuery', which can potentially result in slow query performance. See https://go.microsoft.com/fwlink/?linkid=2134277 for more information. To identify the query that's triggering this warning call 'ConfigureWarnings(w =&gt; w.Throw(RelationalEventId.MultipleCollectionIncludeWarning))'.&#xD;
+warn: Microsoft.EntityFrameworkCore.Query[20504]&#xD;
+      Compiling a query which loads related collections for more than one collection navigation, either via 'Include' or through projection, but no 'QuerySplittingBehavior' has been configured. By default, Entity Framework will use 'QuerySplittingBehavior.SingleQuery', which can potentially result in slow query performance. See https://go.microsoft.com/fwlink/?linkid=2134277 for more information. To identify the query that's triggering this warning call 'ConfigureWarnings(w =&gt; w.Throw(RelationalEventId.MultipleCollectionIncludeWarning))'.&#xD;
+[testcontainers.org 00:00:18.36] Delete Docker container 0618add0a5fa&#xD;
+[xUnit.net 00:00:19.22]   Finished:    PadelClub.WebAPI.Tests&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

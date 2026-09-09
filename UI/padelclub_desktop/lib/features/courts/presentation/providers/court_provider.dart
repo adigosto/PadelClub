@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:padelclub_desktop/core/network/api_error.dart';
 import 'package:padelclub_desktop/core/network/api_config.dart';
 import 'package:padelclub_desktop/features/courts/data/models/court_model.dart';
 import 'package:padelclub_desktop/features/courts/domain/entities/court.dart';
@@ -110,7 +111,7 @@ class CourtProvider extends ChangeNotifier {
     throw Exception(
       response.body.trim().isEmpty
           ? 'The court request could not be completed.'
-          : response.body.replaceAll('"', ''),
+          : apiErrorMessage(response.body),
     );
   }
 }

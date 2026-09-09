@@ -16,7 +16,7 @@ Set a unique high-entropy signing key outside source control:
 
 `Authentication__SigningKey=<at-least-32-random-characters>`
 
-The checked-in key exists only in `appsettings.Development.json`. Production startup fails validation when no secure key is supplied.
+No checked-in fallback key is provided. Docker Compose also fails fast when `AUTH_SIGNING_KEY` is missing, and startup validation rejects weak or shared values.
 
 `LoggingTransactionalEmailSender` is deliberately a development adapter. Replace it with the transactional email provider during Phase 4; the recovery and verification lifecycle is already provider-independent.
 

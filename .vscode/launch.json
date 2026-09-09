@@ -30,10 +30,11 @@
             "name": "Flutter (Android Emulator)",
             "type": "dart",
             "request": "launch",
-            "cwd": "${workspaceFolder}/UI/padelclub_desktop",
+            "cwd": "${workspaceFolder}/UI/padelclub_mobile",
             "program": "lib/main.dart",
             "deviceId": "emulator-5554",
-            "flutterMode": "debug"
+            "flutterMode": "debug",
+            "toolArgs": ["--dart-define=baseUrl=http://10.0.2.2:5000"]
         },
         {
             "name": ".NET Core Attach",

@@ -1,6 +1,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$BackupFile,
-    [string]$SqlPassword = "YourStrong!Passw0rd"
+    [Parameter(Mandatory = $true)]
+    [string]$SqlPassword
 )
 
 $ErrorActionPreference = "Stop"

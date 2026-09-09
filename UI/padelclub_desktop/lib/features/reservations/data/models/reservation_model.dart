@@ -10,11 +10,15 @@ class ReservationModel extends Reservation {
     required super.totalPrice,
     required super.status,
     super.notes,
+    super.courtName,
+    super.userName,
   });
 
   factory ReservationModel.fromJson(Map<String, dynamic> json) {
     return ReservationModel(
       id: json['id'] as int,
+      courtName: json['courtName'] as String? ?? '',
+      userName: json['userName'] as String? ?? '',
       courtId: json['courtId'] as int,
       userId: json['userId'] as int,
       startTime: DateTime.parse(json['startTime'] as String).toLocal(),

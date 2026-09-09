@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using PadelClub.Services.Database;
+using PadelClub.WebAPI.Authentication;
 using PadelClub.WebAPI.Controllers;
 using PadelClub.WebAPI.Monitoring;
 using Xunit;
@@ -25,4 +26,12 @@ public class ProductionReadinessTests
     [Fact]
     public void Database_check_uses_standard_health_contract() =>
         Assert.True(typeof(IHealthCheck).IsAssignableFrom(typeof(DatabaseHealthCheck)));
+
+    [Fact]
+    public void Shared_development_signing_keys_are_rejected() =>
+        Assert.False(StartupSecurity.IsValidSigningKey("DEVELOPMENT-ONLY-CHANGE-VIA-ENVIRONMENT-123456789"));
+
+    [Fact]
+    public void Demo_seed_is_never_enabled_outside_development() =>
+        Assert.False(StartupSecurity.ShouldSeedDemoData("Production", true));
 }

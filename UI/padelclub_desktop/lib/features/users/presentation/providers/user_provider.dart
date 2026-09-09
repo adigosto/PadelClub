@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:padelclub_desktop/core/network/api_error.dart';
 import 'package:padelclub_desktop/core/network/api_config.dart';
 import 'package:padelclub_desktop/features/users/data/models/user_model.dart';
 import 'package:padelclub_desktop/features/users/domain/entities/user.dart';
@@ -51,7 +52,7 @@ class UserProvider extends ChangeNotifier {
     throw Exception(
       response.body.trim().isEmpty
           ? 'Users could not be loaded.'
-          : response.body.replaceAll('"', ''),
+          : apiErrorMessage(response.body),
     );
   }
 }

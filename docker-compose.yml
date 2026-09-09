@@ -1,12 +1,34 @@
 name: padelclub
 
 services:
+  padelclub-rabbitmq:
+    image: rabbitmq:3.13-management
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: "${RABBITMQ_DEFAULT_USER:?Set RABBITMQ_DEFAULT_USER to a deployment-specific value}"
+      RABBITMQ_DEFAULT_PASS: "${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS to a deployment-specific secret}"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - padelclub-2026
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      # `ping` becomes available before the AMQP listener accepts connections.
+      # Subscribers depend on the listener itself, so check the real port.
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_listener", "5672"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
   padelclub-sql:
     image: mcr.microsoft.com/mssql/server:2022-latest
     restart: unless-stopped
     environment:
       ACCEPT_EULA: "Y"
-      SA_PASSWORD: "${MSSQL_SA_PASSWORD:-YourStrong!Passw0rd}"
+      SA_PASSWORD: "${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD to a deployment-specific secret}"
       MSSQL_PID: "Developer"
     ports:
       - "1433:1433"
@@ -29,19 +51,33 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      ASPNETCORE_ENVIRONMENT: "Development"
-      ConnectionStrings__DefaultConnection: "Server=padelclub-sql;Database=PadelClub;User Id=sa;Password=${MSSQL_SA_PASSWORD:-YourStrong!Passw0rd};TrustServerCertificate=True"
+      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
+      Authentication__SigningKey: "${AUTH_SIGNING_KEY:?Set AUTH_SIGNING_KEY to a unique random value of at least 32 characters}"
+      Database__SeedDemoData: "${SEED_DEMO_DATA:-false}"
+      Database__DemoPassword: "${DEMO_PASSWORD:-}"
+      ConnectionStrings__DefaultConnection: "Server=padelclub-sql;Database=PadelClub;User Id=sa;Password=${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD to a deployment-specific secret};TrustServerCertificate=True"
+      ConnectionStrings__RabbitMq: "host=padelclub-rabbitmq;username=${RABBITMQ_DEFAULT_USER:?Set RABBITMQ_DEFAULT_USER to a deployment-specific value};password=${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS to a deployment-specific secret}"
+      Stripe__PublishableKey: "${STRIPE_PUBLISHABLE_KEY:-}"
       Stripe__SecretKey: "${STRIPE_SECRET_KEY:-}"
       Stripe__WebhookSecret: "${STRIPE_WEBHOOK_SECRET:-}"
       Stripe__Currency: "${STRIPE_CURRENCY:-bam}"
+      ProviderVerification__Enabled: "${PROVIDER_VERIFICATION_ENABLED:-false}"
+      ProviderVerification__AllowStripeTestRead: "${PROVIDER_VERIFICATION_ALLOW_STRIPE_TEST_READ:-false}"
+      ProviderVerification__AllowSmtp: "${PROVIDER_VERIFICATION_ALLOW_SMTP:-false}"
+      ProviderVerification__AllowFirebase: "${PROVIDER_VERIFICATION_ALLOW_FIREBASE:-false}"
+      ProviderVerification__MinimumIntervalMinutes: "${PROVIDER_VERIFICATION_MINIMUM_INTERVAL_MINUTES:-15}"
+      ProviderVerification__StripeTestPaymentIntentId: "${PROVIDER_VERIFICATION_STRIPE_TEST_PAYMENT_INTENT_ID:-}"
+      ProviderVerification__SmtpRecipient: "${PROVIDER_VERIFICATION_SMTP_RECIPIENT:-}"
+      ProviderVerification__FirebaseInstallationId: "${PROVIDER_VERIFICATION_FIREBASE_INSTALLATION_ID:-}"
       Notifications__FirebaseProjectId: "${FIREBASE_PROJECT_ID:-}"
       Notifications__FirebaseServiceAccountJson: "${FIREBASE_SERVICE_ACCOUNT_JSON:-}"
-      Notifications__Smtp__Host: "${SMTP_HOST:-padelclub-mailpit}"
-      Notifications__Smtp__Port: "${SMTP_PORT:-1025}"
-      Notifications__Smtp__UseStartTls: "${SMTP_STARTTLS:-false}"
+      Notifications__Smtp__Host: "${SMTP_HOST:-}"
+      Notifications__Smtp__Port: "${SMTP_PORT:-587}"
+      Notifications__Smtp__UseStartTls: "${SMTP_STARTTLS:-true}"
       Notifications__Smtp__Username: "${SMTP_USERNAME:-}"
       Notifications__Smtp__Password: "${SMTP_PASSWORD:-}"
-      Notifications__Smtp__FromAddress: "${SMTP_FROM_ADDRESS:-noreply@padelclub.local}"
+      Notifications__Smtp__FromAddress: "${SMTP_FROM_ADDRESS:-}"
+      Notifications__Smtp__FromName: "${SMTP_FROM_NAME:-PadelClub}"
     ports:
       - "5000:5001"
     restart: on-failure
@@ -54,6 +90,53 @@ services:
         condition: service_healthy
       padelclub-mailpit:
         condition: service_started
+      padelclub-rabbitmq:
+        condition: service_healthy
+
+  padelclub-worker:
+    build:
+      context: .
+      dockerfile: PadelClub.Worker/Dockerfile
+    environment:
+      DOTNET_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
+      ConnectionStrings__DefaultConnection: "Server=padelclub-sql;Database=PadelClub;User Id=sa;Password=${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD to a deployment-specific secret};TrustServerCertificate=True"
+      ConnectionStrings__RabbitMq: "host=padelclub-rabbitmq;username=${RABBITMQ_DEFAULT_USER:?Set RABBITMQ_DEFAULT_USER to a deployment-specific value};password=${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS to a deployment-specific secret}"
+      Stripe__SecretKey: "${STRIPE_SECRET_KEY:-}"
+      Stripe__WebhookSecret: "${STRIPE_WEBHOOK_SECRET:-}"
+      Stripe__Currency: "${STRIPE_CURRENCY:-bam}"
+      Notifications__FirebaseProjectId: "${FIREBASE_PROJECT_ID:-}"
+      Notifications__FirebaseServiceAccountJson: "${FIREBASE_SERVICE_ACCOUNT_JSON:-}"
+      Notifications__Smtp__Host: "${SMTP_HOST:-}"
+      Notifications__Smtp__Port: "${SMTP_PORT:-587}"
+      Notifications__Smtp__UseStartTls: "${SMTP_STARTTLS:-true}"
+      Notifications__Smtp__Username: "${SMTP_USERNAME:-}"
+      Notifications__Smtp__Password: "${SMTP_PASSWORD:-}"
+      Notifications__Smtp__FromAddress: "${SMTP_FROM_ADDRESS:-}"
+      Notifications__Smtp__FromName: "${SMTP_FROM_NAME:-PadelClub}"
+    restart: on-failure
+    networks:
+      - padelclub-2026
+    depends_on:
+      padelclub-sql:
+        condition: service_healthy
+      padelclub-rabbitmq:
+        condition: service_healthy
+
+  padelclub-subscriber:
+    build:
+      context: .
+      dockerfile: PadelClub.WebAPI/PadelClub.Subscriber/Dockerfile
+    environment:
+      ConnectionStrings__RabbitMq: "host=padelclub-rabbitmq;username=${RABBITMQ_DEFAULT_USER:?Set RABBITMQ_DEFAULT_USER to a deployment-specific value};password=${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS to a deployment-specific secret}"
+      ConnectionStrings__DefaultConnection: "Server=padelclub-sql;Database=PadelClub;User Id=sa;Password=${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD to a deployment-specific secret};TrustServerCertificate=True"
+    restart: on-failure
+    networks:
+      - padelclub-2026
+    depends_on:
+      padelclub-sql:
+        condition: service_healthy
+      padelclub-rabbitmq:
+        condition: service_healthy
 
   padelclub-mailpit:
     image: axllent/mailpit:latest
@@ -70,3 +153,4 @@ networks:
 volumes:
   sql_data:
   api_keys:
+  rabbitmq_data:

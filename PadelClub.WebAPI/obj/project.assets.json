@@ -5020,6 +5020,7 @@
   },
   "projectFileDependencyGroups": {
     "net8.0": [
+      "EasyNetQ >= 8.1.4",
       "FirebaseAdmin >= 3.6.0",
       "MailKit >= 4.17.0",
       "Mapster >= 10.0.6",
@@ -5090,6 +5091,10 @@
       "net8.0": {
         "targetAlias": "net8.0",
         "dependencies": {
+          "EasyNetQ": {
+            "target": "Package",
+            "version": "[8.1.4, )"
+          },
           "FirebaseAdmin": {
             "target": "Package",
             "version": "[3.6.0, )"

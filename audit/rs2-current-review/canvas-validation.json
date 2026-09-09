@@ -1,0 +1,5 @@
+{
+  "typeErrors": [],
+  "forbiddenPatterns": [],
+  "limitations": "Local SDK TypeScript check; actual host rendering was not exercised."
+}

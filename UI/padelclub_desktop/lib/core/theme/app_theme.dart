@@ -14,7 +14,7 @@ abstract final class PadelColors {
   static const textMuted = Color(0xFF778195);
   static const warning = Color(0xFFF59E0B);
   static const warningSoft = Color(0xFFFFF4D6);
-  static const danger = Color(0xFFEF4444);
+  static const danger = Color(0xFFB42318);
   static const dangerSoft = Color(0xFFFFE4E6);
 }
 
@@ -114,6 +114,14 @@ abstract final class PadelTheme {
           vertical: 14,
         ),
         hintStyle: const TextStyle(color: PadelColors.textMuted, fontSize: 13),
+        errorStyle: const TextStyle(
+          color: PadelColors.danger,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          height: 1.35,
+        ),
+        errorMaxLines: 4,
+        helperMaxLines: 3,
         border: fieldBorder,
         enabledBorder: fieldBorder,
         focusedBorder: fieldBorder.copyWith(

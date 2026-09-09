@@ -6,6 +6,7 @@ namespace PadelClub.Model
     {
         public int Id { get; set; }
         public int UserId { get; set; }
+        public string ReferenceDescription { get; set; } = string.Empty;
         public string PaymentType { get; set; } = string.Empty;
         public int? ReservationId { get; set; }
         public int? MembershipId { get; set; }

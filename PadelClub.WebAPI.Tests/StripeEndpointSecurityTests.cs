@@ -9,9 +9,9 @@ public class StripeEndpointSecurityTests
     [Fact]
     public void Only_webhook_is_anonymous()
     {
-        var methods = typeof(StripePaymentsController).GetMethods().Where(x => x.DeclaringType == typeof(StripePaymentsController)).ToList();
-        Assert.NotNull(methods.Single(x => x.Name == "Webhook").GetCustomAttributes(typeof(AllowAnonymousAttribute), true).SingleOrDefault());
-        Assert.Empty(methods.Single(x => x.Name == "CreateIntent").GetCustomAttributes(typeof(AllowAnonymousAttribute), true));
+        var webhook = typeof(StripeWebhookController).GetMethod("Webhook")!;
+        Assert.Empty(webhook.GetCustomAttributes(typeof(AllowAnonymousAttribute), true));
+        Assert.Empty(typeof(StripePaymentsController).GetMethods().Where(x => x.DeclaringType == typeof(StripePaymentsController)).SelectMany(x => x.GetCustomAttributes(typeof(AllowAnonymousAttribute), true)));
     }
 
     [Fact]

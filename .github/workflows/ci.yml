@@ -11,13 +11,18 @@ permissions:
 jobs:
   api:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
+      - name: Verify Docker for relational API integration tests
+        run: docker version
       - run: dotnet restore PadelClub.sln
       - run: dotnet build PadelClub.sln --configuration Release --no-restore
+      - name: Build external recommendation benchmark (no dataset download)
+        run: dotnet build tools/PadelClub.RecommendationBenchmark/PadelClub.RecommendationBenchmark.csproj --configuration Release
       - run: dotnet test PadelClub.sln --configuration Release --no-build --logger trx --results-directory TestResults
       - uses: actions/upload-artifact@v4
         if: always()
@@ -35,13 +40,75 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: 3.44.5
           cache: true
+          pub-cache: true
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
+
+  mobile:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: UI/padelclub_mobile
+    steps:
+      - uses: actions/checkout@v6
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.5
+          cache: true
+          pub-cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build apk --debug
 
   container:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - run: docker compose config --quiet
       - run: docker build --tag padelclub-api:ci .
+      - run: docker build --file PadelClub.WebAPI/PadelClub.Subscriber/Dockerfile --tag padelclub-subscriber:ci .
+
+  compose-smoke:
+    runs-on: ubuntu-latest
+    needs: [container]
+    timeout-minutes: 30
+    env:
+      SMOKE_PROJECT: padelclub-clean-ci-${{ github.run_id }}-${{ github.run_attempt }}
+      SMOKE_EVIDENCE_DIRECTORY: artifacts/clean-compose-smoke
+    steps:
+      - uses: actions/checkout@v6
+      - name: Show container runtime versions
+        shell: bash
+        run: |
+          docker version
+          docker compose version
+          pwsh --version
+      - name: Run isolated clean-stack smoke
+        shell: pwsh
+        run: ./scripts/Invoke-CleanComposeSmoke.ps1 -ProjectName $env:SMOKE_PROJECT -ApiPort 5100 -TimeoutSeconds 600 -EvidenceDirectory $env:SMOKE_EVIDENCE_DIRECTORY -Cleanup
+      - name: Verify isolated cleanup
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose --project-name "$SMOKE_PROJECT" --env-file .env.example -f docker-compose.yml -f docker-compose.clean.yml down --volumes --remove-orphans
+          leftovers="$(
+            {
+              docker container ls --all --quiet --filter "label=com.docker.compose.project=$SMOKE_PROJECT"
+              docker volume ls --quiet --filter "label=com.docker.compose.project=$SMOKE_PROJECT"
+              docker network ls --quiet --filter "label=com.docker.compose.project=$SMOKE_PROJECT"
+            } | sed '/^$/d'
+          )"
+          test -z "$leftovers"
+      - name: Upload clean-stack smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: clean-compose-smoke-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/clean-compose-smoke
+          if-no-files-found: warn

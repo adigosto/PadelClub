@@ -46,6 +46,14 @@ public sealed class NotificationDeliveryWorker(IServiceScopeFactory scopeFactory
                 delivery.SentAt = DateTime.UtcNow;
                 delivery.LastError = null;
             }
+            catch (EmailDeliveryUnavailableException exception)
+            {
+                // An absent SMTP provider is an explicit local configuration
+                // state, not a retryable provider failure and never a Sent
+                // delivery. Keep the safe generic reason only.
+                delivery.Status = "Skipped";
+                delivery.LastError = exception.Message;
+            }
             catch (Exception ex)
             {
                 delivery.LastError = ex.Message.Length > 2000 ? ex.Message[..2000] : ex.Message;

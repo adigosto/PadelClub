@@ -1,0 +1,105 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="bf90d644-f9ca-48bd-93fa-ac8b5c1e99de" name="User@DESKTOP-MPRVV8J 2026-08-30 09:07:12" runUser="DESKTOP-MPRVV8J\User" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-08-30T09:07:12.4039558+02:00" queuing="2026-08-30T09:07:12.4039564+02:00" start="2026-08-30T09:06:50.3327962+02:00" finish="2026-08-30T09:07:13.6037874+02:00" />
+  <TestSettings name="default" id="9600edcd-7649-4fe9-b083-798df8b1741d">
+    <Deployment runDeploymentRoot="User_DESKTOP-MPRVV8J_2026-08-30_09_07_12" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="da373081-2d14-4d23-9351-93433b38ebc6" testId="975f2d48-ddcb-ac86-da44-3069dcf53a2e" testName="PadelClub.WebAPI.Tests.ApiIntegrationTests.Recommendation_evaluator_enforces_roles_and_reports_demo_provenance" computerName="DESKTOP-MPRVV8J" duration="00:00:00.3571750" startTime="2026-08-30T09:07:12.4918364+02:00" endTime="2026-08-30T09:07:12.4918368+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="da373081-2d14-4d23-9351-93433b38ebc6">
+      <Output>
+        <ErrorInfo>
+          <Message>Assert.Equal() Failure: Values differ&#xD;
+Expected: 0&#xD;
+Actual:   3</Message>
+          <StackTrace>   at PadelClub.WebAPI.Tests.ApiIntegrationTests.Recommendation_evaluator_enforces_roles_and_reports_demo_provenance() in C:\Users\User\Desktop\PadelClub\PadelClub.WebAPI.Tests\ApiIntegrationTests.cs:line 85&#xD;
+--- End of stack trace from previous location ---</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="5397117c-1ddd-465f-91f4-681b9302a5b4" testId="5c7c82d6-4f88-7a44-8d32-2b1af0caa58d" testName="PadelClub.WebAPI.Tests.ApiIntegrationTests.Login_creates_a_usable_session_and_rejects_a_wrong_password" computerName="DESKTOP-MPRVV8J" duration="00:00:00.9099836" startTime="2026-08-30T09:07:11.7842293+02:00" endTime="2026-08-30T09:07:11.7842463+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5397117c-1ddd-465f-91f4-681b9302a5b4" />
+    <UnitTestResult executionId="75d27cdc-8d50-49b9-88c7-32df467f9955" testId="ed2b79be-545a-a434-122f-90cde23e6040" testName="PadelClub.WebAPI.Tests.ApiIntegrationTests.Recommendations_require_a_real_session_and_rank_a_peer_purchase" computerName="DESKTOP-MPRVV8J" duration="00:00:00.3325582" startTime="2026-08-30T09:07:12.1179631+02:00" endTime="2026-08-30T09:07:12.1179637+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="75d27cdc-8d50-49b9-88c7-32df467f9955" />
+    <UnitTestResult executionId="6c00b78d-f192-487d-be23-84c9c4175cbf" testId="4f05b1d0-68fb-1e1b-592a-18f5720d0d79" testName="PadelClub.WebAPI.Tests.ApiIntegrationTests.Recommendation_evaluator_rejects_missing_invalid_and_future_windows" computerName="DESKTOP-MPRVV8J" duration="00:00:00.0970772" startTime="2026-08-30T09:07:12.9682650+02:00" endTime="2026-08-30T09:07:12.9682651+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="6c00b78d-f192-487d-be23-84c9c4175cbf" />
+    <UnitTestResult executionId="f81755db-46b3-4a95-a01a-0831ad7ae28b" testId="cffebda0-1fd4-90d8-df7a-9e09a34a693a" testName="PadelClub.WebAPI.Tests.ApiIntegrationTests.Inventory_adjustment_requires_an_admin_and_persists_a_transactional_audit_row" computerName="DESKTOP-MPRVV8J" duration="00:00:00.3846875" startTime="2026-08-30T09:07:12.8708397+02:00" endTime="2026-08-30T09:07:12.8708400+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f81755db-46b3-4a95-a01a-0831ad7ae28b" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="PadelClub.WebAPI.Tests.ApiIntegrationTests.Recommendation_evaluator_enforces_roles_and_reports_demo_provenance" storage="c:\users\user\desktop\padelclub\padelclub.webapi.tests\bin\release\net8.0\padelclub.webapi.tests.dll" id="975f2d48-ddcb-ac86-da44-3069dcf53a2e">
+      <Execution id="da373081-2d14-4d23-9351-93433b38ebc6" />
+      <TestMethod codeBase="C:\Users\User\Desktop\PadelClub\PadelClub.WebAPI.Tests\bin\Release\net8.0\PadelClub.WebAPI.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="PadelClub.WebAPI.Tests.ApiIntegrationTests" name="Recommendation_evaluator_enforces_roles_and_reports_demo_provenance" />
+    </UnitTest>
+    <UnitTest name="PadelClub.WebAPI.Tests.ApiIntegrationTests.Inventory_adjustment_requires_an_admin_and_persists_a_transactional_audit_row" storage="c:\users\user\desktop\padelclub\padelclub.webapi.tests\bin\release\net8.0\padelclub.webapi.tests.dll" id="cffebda0-1fd4-90d8-df7a-9e09a34a693a">
+      <Execution id="f81755db-46b3-4a95-a01a-0831ad7ae28b" />
+      <TestMethod codeBase="C:\Users\User\Desktop\PadelClub\PadelClub.WebAPI.Tests\bin\Release\net8.0\PadelClub.WebAPI.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="PadelClub.WebAPI.Tests.ApiIntegrationTests" name="Inventory_adjustment_requires_an_admin_and_persists_a_transactional_audit_row" />
+    </UnitTest>
+    <UnitTest name="PadelClub.WebAPI.Tests.ApiIntegrationTests.Login_creates_a_usable_session_and_rejects_a_wrong_password" storage="c:\users\user\desktop\padelclub\padelclub.webapi.tests\bin\release\net8.0\padelclub.webapi.tests.dll" id="5c7c82d6-4f88-7a44-8d32-2b1af0caa58d">
+      <Execution id="5397117c-1ddd-465f-91f4-681b9302a5b4" />
+      <TestMethod codeBase="C:\Users\User\Desktop\PadelClub\PadelClub.WebAPI.Tests\bin\Release\net8.0\PadelClub.WebAPI.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="PadelClub.WebAPI.Tests.ApiIntegrationTests" name="Login_creates_a_usable_session_and_rejects_a_wrong_password" />
+    </UnitTest>
+    <UnitTest name="PadelClub.WebAPI.Tests.ApiIntegrationTests.Recommendations_require_a_real_session_and_rank_a_peer_purchase" storage="c:\users\user\desktop\padelclub\padelclub.webapi.tests\bin\release\net8.0\padelclub.webapi.tests.dll" id="ed2b79be-545a-a434-122f-90cde23e6040">
+      <Execution id="75d27cdc-8d50-49b9-88c7-32df467f9955" />
+      <TestMethod codeBase="C:\Users\User\Desktop\PadelClub\PadelClub.WebAPI.Tests\bin\Release\net8.0\PadelClub.WebAPI.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="PadelClub.WebAPI.Tests.ApiIntegrationTests" name="Recommendations_require_a_real_session_and_rank_a_peer_purchase" />
+    </UnitTest>
+    <UnitTest name="PadelClub.WebAPI.Tests.ApiIntegrationTests.Recommendation_evaluator_rejects_missing_invalid_and_future_windows" storage="c:\users\user\desktop\padelclub\padelclub.webapi.tests\bin\release\net8.0\padelclub.webapi.tests.dll" id="4f05b1d0-68fb-1e1b-592a-18f5720d0d79">
+      <Execution id="6c00b78d-f192-487d-be23-84c9c4175cbf" />
+      <TestMethod codeBase="C:\Users\User\Desktop\PadelClub\PadelClub.WebAPI.Tests\bin\Release\net8.0\PadelClub.WebAPI.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="PadelClub.WebAPI.Tests.ApiIntegrationTests" name="Recommendation_evaluator_rejects_missing_invalid_and_future_windows" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="975f2d48-ddcb-ac86-da44-3069dcf53a2e" executionId="da373081-2d14-4d23-9351-93433b38ebc6" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="5c7c82d6-4f88-7a44-8d32-2b1af0caa58d" executionId="5397117c-1ddd-465f-91f4-681b9302a5b4" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ed2b79be-545a-a434-122f-90cde23e6040" executionId="75d27cdc-8d50-49b9-88c7-32df467f9955" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="4f05b1d0-68fb-1e1b-592a-18f5720d0d79" executionId="6c00b78d-f192-487d-be23-84c9c4175cbf" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="cffebda0-1fd4-90d8-df7a-9e09a34a693a" executionId="f81755db-46b3-4a95-a01a-0831ad7ae28b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="5" executed="5" passed="4" failed="1" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 8.0.12)&#xD;
+[xUnit.net 00:00:00.23]   Discovering: PadelClub.WebAPI.Tests&#xD;
+[xUnit.net 00:00:00.31]   Discovered:  PadelClub.WebAPI.Tests&#xD;
+[xUnit.net 00:00:00.31]   Starting:    PadelClub.WebAPI.Tests&#xD;
+[testcontainers.org 00:00:00.16] Connected to Docker:&#xD;
+  Host: npipe://./pipe/docker_engine&#xD;
+  Server Version: 28.5.1&#xD;
+  Kernel Version: 6.18.33.2-microsoft-standard-WSL2&#xD;
+  API Version: 1.51&#xD;
+  Operating System: Docker Desktop&#xD;
+  Total Memory: 7.63 GB&#xD;
+  Labels: &#xD;
+    com.docker.desktop.address=npipe://\\.\pipe\docker_cli&#xD;
+[testcontainers.org 00:00:00.51] Docker container bb893080e670 created&#xD;
+[testcontainers.org 00:00:00.58] Start Docker container bb893080e670&#xD;
+[testcontainers.org 00:00:00.96] Wait for Docker container bb893080e670 to complete readiness checks&#xD;
+[testcontainers.org 00:00:02.02] Docker container bb893080e670 ready&#xD;
+[testcontainers.org 00:00:02.21] Docker container 21073f449e75 created&#xD;
+[testcontainers.org 00:00:02.23] Start Docker container 21073f449e75&#xD;
+[testcontainers.org 00:00:02.60] Wait for Docker container 21073f449e75 to complete readiness checks&#xD;
+[testcontainers.org 00:00:02.63] Execute "/bin/sh -c find /opt/mssql-tools*/bin/sqlcmd -type f -print -quit" at Docker container 21073f449e75&#xD;
+[testcontainers.org 00:00:02.76] Execute "/opt/mssql-tools18/bin/sqlcmd -C -b -r 1 -d master -Q SELECT 1;" at Docker container 21073f449e75&#xD;
+[testcontainers.org 00:00:11.42] Execute "/opt/mssql-tools18/bin/sqlcmd -C -b -r 1 -d master -Q SELECT 1;" at Docker container 21073f449e75&#xD;
+[testcontainers.org 00:00:12.55] Execute "/opt/mssql-tools18/bin/sqlcmd -C -b -r 1 -d master -Q SELECT 1;" at Docker container 21073f449e75&#xD;
+[testcontainers.org 00:00:13.67] Execute "/opt/mssql-tools18/bin/sqlcmd -C -b -r 1 -d master -Q SELECT 1;" at Docker container 21073f449e75&#xD;
+[testcontainers.org 00:00:14.79] Execute "/opt/mssql-tools18/bin/sqlcmd -C -b -r 1 -d master -Q SELECT 1;" at Docker container 21073f449e75&#xD;
+[testcontainers.org 00:00:14.87] Docker container 21073f449e75 ready&#xD;
+info: PadelClub.WebAPI[0]&#xD;
+      Database bootstrap is disabled by configuration.&#xD;
+[xUnit.net 00:00:21.51]       Assert.Equal() Failure: Values differ&#xD;
+[xUnit.net 00:00:21.51]       Expected: 0&#xD;
+[xUnit.net 00:00:21.51]       Actual:   3&#xD;
+[xUnit.net 00:00:21.51]       Stack Trace:&#xD;
+[xUnit.net 00:00:21.51]         C:\Users\User\Desktop\PadelClub\PadelClub.WebAPI.Tests\ApiIntegrationTests.cs(85,0): at PadelClub.WebAPI.Tests.ApiIntegrationTests.Recommendation_evaluator_enforces_roles_and_reports_demo_provenance()&#xD;
+[xUnit.net 00:00:21.51]         --- End of stack trace from previous location ---&#xD;
+[testcontainers.org 00:00:21.50] Delete Docker container 21073f449e75&#xD;
+[xUnit.net 00:00:22.53]   Finished:    PadelClub.WebAPI.Tests&#xD;
+</StdOut>
+    </Output>
+    <RunInfos>
+      <RunInfo computerName="DESKTOP-MPRVV8J" outcome="Error" timestamp="2026-08-30T09:07:12.4888348+02:00">
+        <Text>[xUnit.net 00:00:21.51]     PadelClub.WebAPI.Tests.ApiIntegrationTests.Recommendation_evaluator_enforces_roles_and_reports_demo_provenance [FAIL]</Text>
+      </RunInfo>
+    </RunInfos>
+  </ResultSummary>
+</TestRun>

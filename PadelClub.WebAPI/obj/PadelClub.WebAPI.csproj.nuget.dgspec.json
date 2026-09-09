@@ -241,6 +241,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "EasyNetQ": {
+              "target": "Package",
+              "version": "[8.1.4, )"
+            },
             "FirebaseAdmin": {
               "target": "Package",
               "version": "[3.6.0, )"

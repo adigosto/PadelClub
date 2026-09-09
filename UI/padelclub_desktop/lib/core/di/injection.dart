@@ -1,5 +1,11 @@
 import 'package:http/http.dart' as http;
 
+import 'package:padelclub_desktop/features/notification_settings/data/datasources/notification_settings_remote_data_source.dart';
+import 'package:padelclub_desktop/features/notification_settings/data/repositories/notification_settings_repository_impl.dart';
+import 'package:padelclub_desktop/features/notification_settings/domain/repositories/notification_settings_repository.dart';
+import 'package:padelclub_desktop/features/notification_settings/domain/usecases/get_notification_preferences.dart';
+import 'package:padelclub_desktop/features/notification_settings/domain/usecases/save_notification_preferences.dart';
+import 'package:padelclub_desktop/features/notification_settings/presentation/providers/notification_settings_provider.dart';
 import 'package:padelclub_desktop/features/product/data/datasources/product_remote_data_source.dart';
 import 'package:padelclub_desktop/features/product/data/repositories/product_repository_impl.dart';
 import 'package:padelclub_desktop/features/product/domain/repositories/product_repository.dart';
@@ -69,6 +75,7 @@ import 'package:padelclub_desktop/features/match_participants/data/repositories/
 import 'package:padelclub_desktop/features/match_participants/domain/repositories/match_participant_repository.dart';
 import 'package:padelclub_desktop/features/match_participants/domain/usecases/get_match_participants.dart';
 import 'package:padelclub_desktop/features/match_participants/presentation/providers/match_participant_provider.dart';
+import 'package:padelclub_desktop/providers/auth_provider.dart';
 
 class InjectionContainer {
   static final InjectionContainer _instance = InjectionContainer._internal();
@@ -76,6 +83,12 @@ class InjectionContainer {
   InjectionContainer._internal();
 
   late final http.Client httpClient;
+  late final NotificationSettingsRemoteDataSource
+  notificationSettingsRemoteDataSource;
+  late final NotificationSettingsRepository notificationSettingsRepository;
+  late final GetNotificationPreferences getNotificationPreferencesUseCase;
+  late final SaveNotificationPreferences saveNotificationPreferencesUseCase;
+  late final NotificationSettingsProvider notificationSettingsProvider;
   late final ProductRemoteDataSource productRemoteDataSource;
   late final ProductRepository productRepository;
   late final GetProducts getProductsUseCase;
@@ -136,6 +149,24 @@ class InjectionContainer {
 
   void init() {
     httpClient = http.Client();
+    notificationSettingsRemoteDataSource =
+        NotificationSettingsRemoteDataSourceImpl(
+          headersProvider: AuthProvider.authenticatedHeaders,
+          client: httpClient,
+        );
+    notificationSettingsRepository = NotificationSettingsRepositoryImpl(
+      notificationSettingsRemoteDataSource,
+    );
+    getNotificationPreferencesUseCase = GetNotificationPreferences(
+      notificationSettingsRepository,
+    );
+    saveNotificationPreferencesUseCase = SaveNotificationPreferences(
+      notificationSettingsRepository,
+    );
+    notificationSettingsProvider = NotificationSettingsProvider(
+      getNotificationPreferencesUseCase,
+      saveNotificationPreferencesUseCase,
+    );
     productRemoteDataSource = ProductRemoteDataSourceImpl(client: httpClient);
     productRepository = ProductRepositoryImpl(
       remoteDataSource: productRemoteDataSource,

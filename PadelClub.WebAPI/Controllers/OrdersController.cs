@@ -26,7 +26,7 @@ namespace PadelClub.WebAPI.Controllers
         [HttpPost]
         [Authorize(Policy = "AdminOnly")]
         public override Task<ActionResult<OrderResponse>> Create([FromBody] OrderInsertRequest request)
-            => base.Create(request);
+            => Task.FromResult<ActionResult<OrderResponse>>(Conflict("Orders must be created through the checkout workflow."));
 
         [HttpPut("{id:int}")]
         [Authorize(Policy = "AdminOnly")]

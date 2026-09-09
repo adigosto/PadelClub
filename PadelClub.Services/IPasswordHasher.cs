@@ -6,8 +6,6 @@ namespace PadelClub.Services
     /// </summary>
     public interface IPasswordHasher
     {
-        string GenerateSalt();
-
         /// <summary>
         /// Hashes a plain text password.
         /// </summary>

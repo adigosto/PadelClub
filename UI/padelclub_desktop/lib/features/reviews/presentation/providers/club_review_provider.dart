@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:padelclub_desktop/core/network/api_error.dart';
 import 'package:padelclub_desktop/core/network/api_config.dart';
 import 'package:padelclub_desktop/features/reviews/data/models/club_review_model.dart';
 import 'package:padelclub_desktop/features/reviews/domain/entities/club_review.dart';
@@ -56,7 +57,7 @@ class ClubReviewProvider extends ChangeNotifier {
         throw Exception(
           response.body.trim().isEmpty
               ? 'Your review could not be saved.'
-              : response.body.replaceAll('"', ''),
+              : apiErrorMessage(response.body),
         );
       }
       await loadPublished();

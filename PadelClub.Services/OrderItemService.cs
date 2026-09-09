@@ -13,6 +13,12 @@ namespace PadelClub.Services
         {
         }
 
+        public override Task<OrderItemResponse> CreateAsync(OrderItemInsertRequest request) =>
+            throw new InvalidOperationException("Order items can only be created through the checkout workflow.");
+
+        public override Task<OrderItemResponse?> UpdateAsync(int id, OrderItemUpdateRequest request) =>
+            throw new InvalidOperationException("Order items cannot be edited after checkout.");
+
         protected override IQueryable<DbOrderItem> ApplyFilter(IQueryable<DbOrderItem> query, OrderItemSearchObject search)
         {
             if (search.OrderId.HasValue)

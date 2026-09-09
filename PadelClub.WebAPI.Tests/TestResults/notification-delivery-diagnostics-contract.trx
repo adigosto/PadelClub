@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="af23eb63-bbe0-4549-a5da-1d956eb43280" name="User@DESKTOP-MPRVV8J 2026-09-05 08:24:09" runUser="DESKTOP-MPRVV8J\User" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-09-05T08:24:09.9777646+02:00" queuing="2026-09-05T08:24:09.9777650+02:00" start="2026-09-05T08:23:49.2362849+02:00" finish="2026-09-05T08:24:09.9827651+02:00" />
+  <TestSettings name="default" id="150a345c-4c74-4612-a3ec-d074d42540e1">
+    <Deployment runDeploymentRoot="User_DESKTOP-MPRVV8J_2026-09-05_08_24_09" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="6f86da56-3c92-4e05-89bd-0c2332f555bf" testId="16f01493-2234-ae9a-81fa-b3ac6d8de458" testName="PadelClub.WebAPI.Tests.ApiIntegrationTests.Notification_delivery_diagnostics_are_admin_only_and_server_filtered" computerName="DESKTOP-MPRVV8J" duration="00:00:00.1885400" startTime="2026-09-05T08:24:09.3495117+02:00" endTime="2026-09-05T08:24:09.3495413+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="6f86da56-3c92-4e05-89bd-0c2332f555bf" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="PadelClub.WebAPI.Tests.ApiIntegrationTests.Notification_delivery_diagnostics_are_admin_only_and_server_filtered" storage="c:\users\user\desktop\padelclub\padelclub.webapi.tests\bin\release\net8.0\padelclub.webapi.tests.dll" id="16f01493-2234-ae9a-81fa-b3ac6d8de458">
+      <Execution id="6f86da56-3c92-4e05-89bd-0c2332f555bf" />
+      <TestMethod codeBase="C:\Users\User\Desktop\PadelClub\PadelClub.WebAPI.Tests\bin\Release\net8.0\PadelClub.WebAPI.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="PadelClub.WebAPI.Tests.ApiIntegrationTests" name="Notification_delivery_diagnostics_are_admin_only_and_server_filtered" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="16f01493-2234-ae9a-81fa-b3ac6d8de458" executionId="6f86da56-3c92-4e05-89bd-0c2332f555bf" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="1" executed="1" passed="1" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 8.0.12)&#xD;
+[xUnit.net 00:00:00.12]   Discovering: PadelClub.WebAPI.Tests&#xD;
+[xUnit.net 00:00:00.19]   Discovered:  PadelClub.WebAPI.Tests&#xD;
+[xUnit.net 00:00:00.20]   Starting:    PadelClub.WebAPI.Tests&#xD;
+[testcontainers.org 00:00:00.16] Connected to Docker:&#xD;
+  Host: npipe://./pipe/docker_engine&#xD;
+  Server Version: 28.5.1&#xD;
+  Kernel Version: 6.18.33.2-microsoft-standard-WSL2&#xD;
+  API Version: 1.51&#xD;
+  Operating System: Docker Desktop&#xD;
+  Total Memory: 7.63 GB&#xD;
+  Labels: &#xD;
+    com.docker.desktop.address=npipe://\\.\pipe\docker_cli&#xD;
+[testcontainers.org 00:00:00.43] Docker container 93dd50aaf7db created&#xD;
+[testcontainers.org 00:00:00.52] Start Docker container 93dd50aaf7db&#xD;
+[testcontainers.org 00:00:00.80] Wait for Docker container 93dd50aaf7db to complete readiness checks&#xD;
+[testcontainers.org 00:00:01.87] Docker container 93dd50aaf7db ready&#xD;
+[testcontainers.org 00:00:02.01] Docker container c1b8a8356185 created&#xD;
+[testcontainers.org 00:00:02.03] Start Docker container c1b8a8356185&#xD;
+[testcontainers.org 00:00:02.32] Wait for Docker container c1b8a8356185 to complete readiness checks&#xD;
+[testcontainers.org 00:00:02.34] Execute "/bin/sh -c find /opt/mssql-tools*/bin/sqlcmd -type f -print -quit" at Docker container c1b8a8356185&#xD;
+[testcontainers.org 00:00:02.46] Execute "/opt/mssql-tools18/bin/sqlcmd -C -b -r 1 -d master -Q SELECT 1;" at Docker container c1b8a8356185&#xD;
+[testcontainers.org 00:00:11.57] Execute "/opt/mssql-tools18/bin/sqlcmd -C -b -r 1 -d master -Q SELECT 1;" at Docker container c1b8a8356185&#xD;
+[testcontainers.org 00:00:12.70] Execute "/opt/mssql-tools18/bin/sqlcmd -C -b -r 1 -d master -Q SELECT 1;" at Docker container c1b8a8356185&#xD;
+[testcontainers.org 00:00:12.81] Docker container c1b8a8356185 ready&#xD;
+info: PadelClub.WebAPI[0]&#xD;
+      Database bootstrap is disabled by configuration.&#xD;
+[testcontainers.org 00:00:19.14] Delete Docker container c1b8a8356185&#xD;
+[xUnit.net 00:00:19.98]   Finished:    PadelClub.WebAPI.Tests&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

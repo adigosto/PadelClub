@@ -5,6 +5,7 @@ namespace PadelClub.Model.SearchObjects
     public class MembershipSearchObject : BaseSearchObject
     {
         public int? UserId { get; set; }
+        public int? MembershipTypeReferenceId { get; set; }
         public string? MembershipType { get; set; }
         public bool? IsActive { get; set; }
         public DateTime? StartDateFrom { get; set; }

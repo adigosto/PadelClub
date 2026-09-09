@@ -35,6 +35,36 @@ class OrderModel extends Order {
     );
   }
 
+  factory OrderModel.fromOrder(Order order, {String? status}) {
+    return OrderModel(
+      id: order.id,
+      userId: order.userId,
+      orderNumber: order.orderNumber,
+      totalAmount: order.totalAmount,
+      status: status ?? order.status,
+      recipientName: order.recipientName,
+      phoneNumber: order.phoneNumber,
+      shippingAddress: order.shippingAddress,
+      city: order.city,
+      postalCode: order.postalCode,
+      createdAt: order.createdAt,
+      notes: order.notes,
+    );
+  }
+
+  /// Builds the payload accepted by the existing administrator-only
+  /// `PUT /Orders/{id}` endpoint.  That endpoint is a full update rather than
+  /// a status-only command, so every field it owns is deliberately preserved
+  /// from the order that staff just reviewed.
+  Map<String, dynamic> toUpdateJson({required String status}) => {
+    'userId': userId,
+    'orderNumber': orderNumber,
+    'totalAmount': totalAmount,
+    'status': status,
+    'shippingAddress': shippingAddress,
+    'notes': notes,
+  };
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'userId': userId,

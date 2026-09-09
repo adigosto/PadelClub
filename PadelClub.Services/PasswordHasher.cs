@@ -103,10 +103,6 @@ namespace PadelClub.Services
             return result == 0;
         }
 
-        public string GenerateSalt()
-        {
-            throw new NotImplementedException();
-        }
     }
 }
 

@@ -1,17 +1,22 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'package:padelclub_desktop/core/localization/app_localizations.dart';
+import 'package:padelclub_desktop/core/localization/language_switcher.dart';
 import 'package:padelclub_desktop/core/theme/app_theme.dart';
 
 enum AppSection {
   home,
   search,
   members,
+  memberships,
   orders,
   reservations,
   products,
   courts,
+  tournaments,
   notifications,
+  auditTrail,
   profile,
 }
 
@@ -81,40 +86,41 @@ class _MobilePlayerShell extends StatelessWidget {
       backgroundColor: const Color(0xFFF4F7F2),
       appBar: AppBar(
         automaticallyImplyLeading: showBackButton,
-        title: Text(title),
+        title: Text(context.tr(title)),
         backgroundColor: PadelColors.greenDark,
         foregroundColor: Colors.white,
+        actions: const [LanguageSwitcher(onDark: true)],
       ),
       body: child,
       bottomNavigationBar: NavigationBar(
         selectedIndex: selectedIndex,
         onDestinationSelected: (index) =>
             _openSection(context, sections[index]),
-        destinations: const [
+        destinations: [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home_rounded),
-            label: 'Home',
+            label: context.tr("Home"),
           ),
           NavigationDestination(
             icon: Icon(Icons.search_rounded),
             selectedIcon: Icon(Icons.manage_search_rounded),
-            label: 'Search',
+            label: context.tr("Search"),
           ),
           NavigationDestination(
             icon: Icon(Icons.calendar_month_outlined),
             selectedIcon: Icon(Icons.calendar_month_rounded),
-            label: 'Reservations',
+            label: context.tr("Reservations"),
           ),
           NavigationDestination(
             icon: Icon(Icons.shopping_bag_outlined),
             selectedIcon: Icon(Icons.shopping_bag_rounded),
-            label: 'Shop',
+            label: context.tr("Shop"),
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline_rounded),
             selectedIcon: Icon(Icons.person_rounded),
-            label: 'Profile',
+            label: context.tr("Profile"),
           ),
         ],
       ),
@@ -156,11 +162,14 @@ class _DesktopAdminBar extends StatelessWidget {
 
   static const _destinations = [
     (AppSection.members, 'User Management'),
+    (AppSection.memberships, 'Memberships'),
     (AppSection.orders, 'Order Management'),
     (AppSection.reservations, 'Reservation Management'),
     (AppSection.products, 'Product Management'),
     (AppSection.courts, 'Court Management'),
+    (AppSection.tournaments, 'Tournament Management'),
     (AppSection.notifications, 'Notifications'),
+    (AppSection.auditTrail, 'Audit Trail'),
   ];
 
   @override
@@ -175,17 +184,17 @@ class _DesktopAdminBar extends StatelessWidget {
             children: [
               Semantics(
                 button: true,
-                label: 'Open management overview',
+                label: context.tr("Open management overview"),
                 child: InkWell(
                   onTap: () => _openSection(context, AppSection.home),
-                  child: const Padding(
+                  child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
                       children: [
                         _AdminBrandMark(),
                         SizedBox(width: 10),
                         Text(
-                          'PadelClub Admin',
+                          context.tr("PadelClub Admin"),
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 18,
@@ -198,28 +207,147 @@ class _DesktopAdminBar extends StatelessWidget {
                 ),
               ),
               Expanded(
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 9,
-                  ),
-                  itemCount: _destinations.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 4),
-                  itemBuilder: (context, index) {
-                    final destination = _destinations[index];
-                    return _DesktopNavItem(
-                      section: destination.$1,
-                      current: section,
-                      label: destination.$2,
-                    );
-                  },
+                child: _DesktopNavStrip(
+                  destinations: _destinations,
+                  section: section,
                 ),
+              ),
+              Container(
+                height: 40,
+                margin: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.only(left: 8),
+                decoration: BoxDecoration(
+                  border: Border(
+                    left: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.22),
+                    ),
+                  ),
+                ),
+                child: const LanguageSwitcher(onDark: true),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _DesktopNavStrip extends StatefulWidget {
+  const _DesktopNavStrip({
+    required this.destinations,
+    required this.section,
+  });
+
+  final List<(AppSection, String)> destinations;
+  final AppSection section;
+
+  @override
+  State<_DesktopNavStrip> createState() => _DesktopNavStripState();
+}
+
+class _DesktopNavStripState extends State<_DesktopNavStrip> {
+  final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_updateScrollState);
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_updateScrollState)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _updateScrollState() {
+    if (mounted) setState(() {});
+  }
+
+  void _scrollBy(double amount) {
+    final target = (_scrollController.offset + amount).clamp(
+      0.0,
+      _scrollController.position.maxScrollExtent,
+    );
+    _scrollController.animateTo(
+      target,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final canScrollBackward = _scrollController.hasClients &&
+        _scrollController.offset > 0;
+    final canScrollForward = _scrollController.hasClients &&
+        _scrollController.offset < _scrollController.position.maxScrollExtent;
+
+    return Row(
+      children: [
+        _DesktopNavArrow(
+          icon: Icons.chevron_left_rounded,
+          tooltip: context.tr('Previous navigation options'),
+          enabled: canScrollBackward,
+          onPressed: () => _scrollBy(-220),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 9),
+            child: Row(
+              children: [
+                for (var index = 0; index < widget.destinations.length; index++) ...[
+                  if (index > 0) const SizedBox(width: 4),
+                  _DesktopNavItem(
+                    section: widget.destinations[index].$1,
+                    current: widget.section,
+                    label: context.tr(widget.destinations[index].$2),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        _DesktopNavArrow(
+          icon: Icons.chevron_right_rounded,
+          tooltip: context.tr('Next navigation options'),
+          enabled: canScrollForward,
+          onPressed: () => _scrollBy(220),
+        ),
+      ],
+    );
+  }
+}
+
+class _DesktopNavArrow extends StatelessWidget {
+  const _DesktopNavArrow({
+    required this.icon,
+    required this.tooltip,
+    required this.enabled,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: enabled ? onPressed : null,
+      tooltip: tooltip,
+      icon: Icon(icon),
+      color: Colors.white,
+      disabledColor: Colors.white30,
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints.tightFor(width: 32, height: 40),
     );
   }
 }
@@ -270,7 +398,7 @@ class _DesktopNavItem extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
             color: selected
                 ? Colors.white.withValues(alpha: 0.18)
@@ -298,11 +426,14 @@ void _openSection(BuildContext context, AppSection section) {
     AppSection.home => '/home',
     AppSection.search => '/search',
     AppSection.members => '/members',
+    AppSection.memberships => '/memberships',
     AppSection.orders => '/orders',
     AppSection.reservations => '/reservations',
     AppSection.products => '/products',
     AppSection.courts => '/courts',
+    AppSection.tournaments => '/tournaments',
     AppSection.notifications => '/notifications',
+    AppSection.auditTrail => '/operations/audit',
     AppSection.profile => '/profile',
   };
   final current = ModalRoute.of(context)?.settings.name;

@@ -9,6 +9,7 @@ using PadelClub.Model.Requests;
 using PadelClub.Model.Responses;
 using PadelClub.Services;
 using PadelClub.Services.Database;
+using PadelClub.WebAPI.Notifications;
 
 namespace PadelClub.WebAPI.Authentication;
 
@@ -72,7 +73,16 @@ public sealed class AuthService(
         var user = await db.Users.SingleOrDefaultAsync(x => x.Email == email && x.IsActive, cancellationToken);
         if (user is null) return;
         var token = await CreateOpaqueTokenAsync(user.Id, "password-reset", TimeSpan.FromHours(1), cancellationToken);
-        await emailSender.SendPasswordResetAsync(user.Email, token, cancellationToken);
+        try
+        {
+            await emailSender.SendPasswordResetAsync(user.Email, token, cancellationToken);
+        }
+        catch (Exception exception) when (exception is EmailDeliveryUnavailableException or TransactionalEmailUnavailableException)
+        {
+            // The anonymous endpoint always gives the same acknowledgement;
+            // disabled delivery must not disclose whether an account exists.
+            // The sender already logs the configuration state without secrets.
+        }
     }
 
     public async Task<bool> ResetPasswordAsync(string token, string newPassword, CancellationToken cancellationToken)

@@ -17,6 +17,9 @@ namespace PadelClub.Services
             _logger = logger;
         }
 
+        public override Task<bool> DeleteAsync(int id) =>
+            throw new InvalidOperationException("Product types cannot be physically deleted. Deactivate the type instead.");
+
         protected override IQueryable<DbProductType> ApplyFilter(IQueryable<DbProductType> query, ProductTypeSearchObject search)
         {
             if (!string.IsNullOrWhiteSpace(search.Name))

@@ -77,9 +77,19 @@ namespace PadelClub.Services
 
         public virtual async Task<bool> DeleteAsync(int id)
         {
+            if (typeof(TEntity) == typeof(Database.Order) ||
+                typeof(TEntity) == typeof(Database.OrderItem) ||
+                typeof(TEntity) == typeof(Database.Membership) ||
+                typeof(TEntity) == typeof(Database.Payment) ||
+                typeof(TEntity) == typeof(Reservation))
+                throw new InvalidOperationException("Business history cannot be deleted. Use the lifecycle or cancellation workflow.");
+
             var entity = await _dbContext.Set<TEntity>().FindAsync(id);
             if (entity == null)
                 return false;
+
+            if (typeof(TEntity).GetProperty("IsActive")?.GetValue(entity) is true)
+                throw new InvalidOperationException("Active records cannot be deleted. Deactivate or archive the record first.");
 
             await BeforeDelete(entity);
 

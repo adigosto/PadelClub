@@ -17,34 +17,22 @@ namespace PadelClub.Services
             _notificationService = notificationService;
         }
 
-        public override async Task<PaymentResponse> CreateAsync(PaymentInsertRequest request)
-        {
-            var created = await base.CreateAsync(request);
-            await NotifyPaymentAsync(created, "Payment received");
-            return created;
-        }
+        public override Task<PaymentResponse> CreateAsync(PaymentInsertRequest request) =>
+            throw new InvalidOperationException("Payments must be initiated and verified through the payment provider workflow.");
 
-        public override async Task<PaymentResponse?> UpdateAsync(int id, PaymentUpdateRequest request)
-        {
-            var previousStatus = await _dbContext.Payments
-                .Where(x => x.Id == id)
-                .Select(x => x.Status)
-                .FirstOrDefaultAsync();
-            var updated = await base.UpdateAsync(id, request);
-            if (updated != null && !string.Equals(previousStatus, updated.Status, StringComparison.OrdinalIgnoreCase))
-                await NotifyPaymentAsync(updated, "Payment status updated");
-            return updated;
-        }
+        public override Task<PaymentResponse?> UpdateAsync(int id, PaymentUpdateRequest request) =>
+            throw new InvalidOperationException("Payment amounts, references and settlement status cannot be edited manually.");
 
-        private Task<NotificationResponse> NotifyPaymentAsync(PaymentResponse payment, string title)
+        public override Task<bool> DeleteAsync(int id) =>
+            throw new InvalidOperationException("Payment history cannot be deleted. Use the refund workflow.");
+
+        protected override PaymentResponse MapToResponse(DbPayment entity)
         {
-            return _notificationService.CreateAsync(new NotificationInsertRequest
-            {
-                Title = title,
-                Message = $"Your {payment.Amount:F2} KM payment is {payment.Status.ToLowerInvariant()}.",
-                Type = "Payments",
-                RecipientUserIds = new List<int> { payment.UserId }
-            });
+            var response = base.MapToResponse(entity);
+            response.ReferenceDescription = entity.Reservation is not null
+                ? entity.Reservation.Court.Name
+                : entity.Order?.OrderNumber ?? entity.Membership?.MembershipType ?? entity.PaymentType;
+            return response;
         }
 
         protected override IQueryable<DbPayment> ApplyFilter(IQueryable<DbPayment> query, PaymentSearchObject search)
@@ -108,7 +96,7 @@ namespace PadelClub.Services
                     (x.TransactionId != null && x.TransactionId.Contains(search.FTS)));
             }
 
-            return base.ApplyFilter(query, search);
+            return base.ApplyFilter(query.Include(x => x.Reservation).ThenInclude(x => x!.Court).Include(x => x.Membership).Include(x => x.Order), search);
         }
     }
 }

@@ -29,6 +29,7 @@ namespace PadelClub.Services.Database
         public virtual Reservation? Reservation { get; set; }
         public virtual Membership? Membership { get; set; }
         public virtual Order? Order { get; set; }
+        public virtual ICollection<ProviderRefundOperation> ProviderRefundOperations { get; set; } = new List<ProviderRefundOperation>();
     }
 }
 

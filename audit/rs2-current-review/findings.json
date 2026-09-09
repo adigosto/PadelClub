@@ -1,0 +1,802 @@
+[
+  {
+    "id": "R01",
+    "priority": "P1",
+    "category": "Plaćanje",
+    "title": "Stariji charge događaj poništava dio evidentiranog refunda",
+    "evidence": "Charge grana bez provjere redoslijeda postavlja RefundedAmount = charge.AmountRefunded / 100m. Zaštita CanAdvanceStatus primjenjuje se samo na PaymentIntent granu.",
+    "impact": "Proba: nakon refunda 30, stariji događaj s refundom 10 vraća status iz Refunded u PartiallyRefunded i ponovo otvara lokalni refund kapacitet. Nije dokazano da Stripe stvarno isplaćuje više od naplaćenog iznosa.",
+    "fix": "Refund saldo usklađivati s aktuelnim provider stanjem i odbiti regresiju kumulativnog iznosa; zaštititi i konkurentne obrade događaja.",
+    "locations": [
+      {
+        "file": "PadelClub.WebAPI/Payments/StripePaymentService.cs",
+        "line": 93
+      },
+      {
+        "file": "PadelClub.WebAPI/Payments/ProviderRefundOperationService.cs",
+        "line": 88
+      }
+    ],
+    "validation": "Izvršno potvrđeno: REFUND_REGRESSION, 30 → 10. Stvarni servis, EF InMemory, bez Stripe poziva."
+  },
+  {
+    "id": "R02",
+    "priority": "P1",
+    "category": "Plaćanje",
+    "title": "Ista uplata daje puni kredit i puni refund",
+    "evidence": "CancelAsync izdaje AccountCredit, ali payment saldo ne evidentira izdati kredit. QueueDirectAsync računa kapacitet samo iz Amount, RefundedAmount i pending refund operacija.",
+    "impact": "Proba je za uplatu 30 kreirala kredit 30 i prihvatila refund operaciju 30. Otkazivanje traži vlasnika/admina, direktan refund admina. Unique indeks kredita i transakcija sada postoje, pa raniju tvrdnju o duplom kreditu ne ponavljam.",
+    "fix": "U istoj transakciji rezervisati jedinstven raspoloživi saldo, uz međusobno isključive kredit/refund kompenzacije.",
+    "locations": [
+      {
+        "file": "PadelClub.Services/ReservationService.cs",
+        "line": 216
+      },
+      {
+        "file": "PadelClub.WebAPI/Payments/ProviderRefundOperationService.cs",
+        "line": 88
+      },
+      {
+        "file": "PadelClub.Services/Database/PadelClubContext.cs",
+        "line": 612
+      }
+    ],
+    "validation": "Izvršno potvrđeno: CREDIT_AND_REFUND. Refund je lokalno zakazan; novac nije isplaćen."
+  },
+  {
+    "id": "R03",
+    "priority": "P1",
+    "category": "Poslovna logika",
+    "title": "Admin CRUD narudžbi i stavki zaobilazi obračun i lifecycle",
+    "evidence": "OrderService.CreateAsync koristi generičko mapiranje Status/TotalAmount; BeforeInsert određuje samo porijeklo. Update mapira i ostala DTO polja nakon provjere statusa. OrderItemService nasljeđuje insert/update/delete bez provjere stanja narudžbe i preračuna zalihe/ukupnog iznosa.",
+    "impact": "Proba kreira Delivered narudžbu iznosa 999 bez ijedne stavke. Admin može mijenjati finansijske podatke izvan checkout workflowa. Admin privilegija je preduslov, ovo nije player eskalacija.",
+    "fix": "Zamijeniti generički CRUD poslovnim komandama; zaključati vlasništvo i stavke nakon obračuna, cijenu i zalihu računati isključivo na backendu.",
+    "locations": [
+      {
+        "file": "PadelClub.Services/OrderService.cs",
+        "line": 36
+      },
+      {
+        "file": "PadelClub.Services/OrderService.cs",
+        "line": 231
+      },
+      {
+        "file": "PadelClub.Services/OrderItemService.cs",
+        "line": 10
+      },
+      {
+        "file": "PadelClub.Model/Requests/OrderInsertRequest.cs",
+        "line": 7
+      }
+    ],
+    "validation": "Kreiranje izvršno potvrđeno: ORDER_CRUD_BYPASS. Ostale putanje potvrđene kodom."
+  },
+  {
+    "id": "R04",
+    "priority": "P1",
+    "category": "Poslovna logika",
+    "title": "Članarine imaju nezaštićen update i neusaglašene putanje statusa/obnove",
+    "evidence": "MembershipService validira Create, ali nasljeđuje Update bez istih provjera. ChangeStatus ne provjerava prethodni status. Renew direktno produžava i aktivira bez potvrđene nove naplate; worker postavlja RenewalDue uz IsActive=false, a ResolvePayableAsync prihvata samo IsActive članarine.",
+    "impact": "Proba upisuje cijenu -25, EndDate prije StartDate i Status=Active uz IsActive=false. Obnova nema zatvoren tok naplate, a jedinstvena veza Membership–Payment dodatno traži model pojedinačnih obračunskih perioda.",
+    "fix": "Centralizovati članarinski lifecycle i sve validacije; obnovu predstavljati zasebnim naplativim periodom koji postaje aktivan tek nakon propisane potvrde.",
+    "locations": [
+      {
+        "file": "PadelClub.Services/MembershipService.cs",
+        "line": 17
+      },
+      {
+        "file": "PadelClub.Services/BaseCRUDService.cs",
+        "line": 55
+      },
+      {
+        "file": "PadelClub.WebAPI/Controllers/MembershipsController.cs",
+        "line": 71
+      },
+      {
+        "file": "PadelClub.WebAPI/Controllers/MembershipsController.cs",
+        "line": 89
+      },
+      {
+        "file": "PadelClub.WebAPI/Memberships/MembershipLifecycleWorker.cs",
+        "line": 21
+      },
+      {
+        "file": "PadelClub.WebAPI/Payments/StripePaymentService.cs",
+        "line": 137
+      }
+    ],
+    "validation": "Update izvršno potvrđen: MEMBERSHIP_UPDATE_BYPASS. Lifecycle/obnova statički analizirani."
+  },
+  {
+    "id": "R05",
+    "priority": "P1",
+    "category": "Rezervacije",
+    "title": "Rezervacije, turnirski mečevi i održavanje ne dijele kalendar zauzetosti",
+    "evidence": "BracketService bira prvi aktivni teren i dodjeljuje ScheduledTime bez provjere rezervacija/održavanja. ValidateReservationAsync ne provjerava Matches. AddMaintenanceBlockAsync samo snima blok.",
+    "impact": "Moguće je rezervisati termin već dodijeljen meču, napraviti meč preko rezervacije ili dodati održavanje preko obećanog termina bez rješavanja pogođenih korisnika.",
+    "fix": "Uvesti zajedničku backend provjeru intervala za sve izvore zauzetosti i atomarnu rezervaciju termina.",
+    "locations": [
+      {
+        "file": "PadelClub.WebAPI/Tournaments/BracketService.cs",
+        "line": 24
+      },
+      {
+        "file": "PadelClub.WebAPI/Tournaments/BracketService.cs",
+        "line": 35
+      },
+      {
+        "file": "PadelClub.Services/ReservationService.cs",
+        "line": 275
+      },
+      {
+        "file": "PadelClub.Services/ReservationService.cs",
+        "line": 325
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R06",
+    "priority": "P1",
+    "category": "Pouzdanost",
+    "title": "Generisanje bracket-a ostavlja djelimično snimljen turnir",
+    "evidence": "GenerateAsync snima prazne mečeve, potom veze/učesnike, potom bye napredovanje/status kroz više SaveChangesAsync. Ni servis ni Generate akcija ne otvaraju zajedničku transakciju. Prvi guard odbija ponavljanje čim postoji bracket meč.",
+    "impact": "Kvar nakon prvog upisa ostavlja nepotpun bracket koji običan retry više ne može dovršiti. Ovo se ne odnosi na ConfirmResult, koji sada ima transakciju.",
+    "fix": "Sve generisanje obuhvatiti transakcijom i zaključavanjem turnira; dodati test prekida nakon prvog SaveChanges.",
+    "locations": [
+      {
+        "file": "PadelClub.WebAPI/Tournaments/BracketService.cs",
+        "line": 18
+      },
+      {
+        "file": "PadelClub.WebAPI/Tournaments/BracketService.cs",
+        "line": 40
+      },
+      {
+        "file": "PadelClub.WebAPI/Controllers/TournamentLifecycleController.cs",
+        "line": 115
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R07",
+    "priority": "P1",
+    "category": "Flutter / plaćanje",
+    "title": "Mobilna aplikacija nema povezan tok Stripe plaćanja",
+    "evidence": "Mobilni runner koristi desktop paket. U lib/pubspec oba projekta nema PaymentSheet/Stripe SDK integracije niti poziva payment-intents endpointa. Checkout šalje Orders/checkout i zatvara formu; launchUrl u toj formi otvara Google Maps.",
+    "impact": "Korisnik može poslati narudžbu, ali prikazani mobilni tok ne završava in-app naplatu. Backend webhook sam ne ispunjava pravilo mobilnog plaćanja.",
+    "fix": "Povezati kreiranje intent-a, mobilni SDK/deep-link povrat i prikaz backend potvrđenog statusa, uz confirmation korak.",
+    "locations": [
+      {
+        "file": "UI/padelclub_mobile/lib/main.dart",
+        "line": 4
+      },
+      {
+        "file": "UI/padelclub_desktop/lib/features/product/presentation/widgets/checkout_sheet.dart",
+        "line": 60
+      },
+      {
+        "file": "UI/padelclub_desktop/lib/features/product/presentation/providers/cart_provider.dart",
+        "line": 101
+      }
+    ],
+    "validation": "Statički pregled Flutter koda i zavisnosti. Nije pokretano plaćanje na uređaju."
+  },
+  {
+    "id": "R08",
+    "priority": "P2",
+    "category": "Pouzdanost",
+    "title": "Checkout i ponavljajuće rezervacije commitaju prije obavezne notifikacije",
+    "evidence": "OrderService.CheckoutAsync commit-a prije CreateAsync notifikacije; ponavljanje istog idempotency ključa odmah vraća narudžbu bez popravke notifikacije. CreateRecurringAsync također commit-a prije obavijesti.",
+    "impact": "Kvar notifikacije daje parcijalni uspjeh; potvrđena narudžba može ostati bez obavijesti. Kod serije klijent može dobiti grešku iako rezervacije postoje. Ranija tvrdnja da svaki checkout retry pravi duplu narudžbu više nije tačna jer postoji idempotency ključ.",
+    "fix": "Poslovnu promjenu i notification/outbox namjeru snimiti u istoj transakciji; dostavu obaviti naknadno.",
+    "locations": [
+      {
+        "file": "PadelClub.Services/OrderService.cs",
+        "line": 71
+      },
+      {
+        "file": "PadelClub.Services/OrderService.cs",
+        "line": 183
+      },
+      {
+        "file": "PadelClub.Services/ReservationService.cs",
+        "line": 303
+      },
+      {
+        "file": "PadelClub.WebAPI/Memberships/MembershipLifecycleWorker.cs",
+        "line": 28
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R09",
+    "priority": "P2",
+    "category": "Poslovna logika",
+    "title": "Dio otkazivanja nema obavezan razlog i notifikaciju",
+    "evidence": "Withdraw turnirske prijave prima samo tournamentId i snima Withdrawn bez razloga ili notifikacije. Članarinski CancelAtPeriodEnd nema razlog; ChangeStatus prihvata prazne Notes. OrderUpdateRequest nema obavezan razlog otkazivanja.",
+    "impact": "Nedostaje propisani poslovni trag za otkazivanje i obavijest saigraču. Rezervacijski CancelAsync sada zahtijeva razlog, pa se nalaz ne odnosi na taj popravljeni tok.",
+    "fix": "Dodati namjenske cancel DTO-e sa validiranim razlogom i trajnu obavijest svim pogođenim korisnicima.",
+    "locations": [
+      {
+        "file": "PadelClub.WebAPI/Controllers/TournamentLifecycleController.cs",
+        "line": 97
+      },
+      {
+        "file": "PadelClub.WebAPI/Controllers/MembershipsController.cs",
+        "line": 44
+      },
+      {
+        "file": "PadelClub.WebAPI/Controllers/MembershipsController.cs",
+        "line": 81
+      },
+      {
+        "file": "PadelClub.Model/Requests/OrderUpdateRequest.cs",
+        "line": 3
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R10",
+    "priority": "P2",
+    "category": "Performanse",
+    "title": "Notifikacije zaobilaze maksimalnu paginaciju",
+    "evidence": "NotificationService override-i GetAsync i GetForUserAsync koriste Take samo kada je PageSize > 0 i nemaju max clamp. Popravka BaseService se ne primjenjuje na ove override-e.",
+    "impact": "PageSize=0 ili negativan vraća sve dostupne notifikacije, a proizvoljno veliki pozitivan limit također prolazi.",
+    "fix": "Primijeniti obavezni zajednički page-size clamp i na override-e; provjeriti admin i mine endpoint.",
+    "locations": [
+      {
+        "file": "PadelClub.Services/NotificationService.cs",
+        "line": 29
+      },
+      {
+        "file": "PadelClub.Services/NotificationService.cs",
+        "line": 140
+      }
+    ],
+    "validation": "Izvršno potvrđeno: NOTIFICATIONS_UNBOUNDED, PageSize=0 vratio 121 zapis."
+  },
+  {
+    "id": "R11",
+    "priority": "P2",
+    "category": "Performanse",
+    "title": "Posebni list endpoint-i nemaju paginaciju",
+    "evidence": "Waitlist/credits mine vraćaju ToListAsync bez limita; membership history i returns mine također. Discovery koristi fiksni Take(30/50), ali nema sljedeće stranice; commerce liste s Take(500) imaju isti formalni nedostatak.",
+    "impact": "Neograničene liste rastu s historijom, a fiksno odrezane liste ne daju pristup starijim zapisima. Fiksni limit nije dokaz N+1 niti neograničenog učitavanja.",
+    "fix": "Dodati page/cursor i max limit svakom list endpointu, uz stabilno sortiranje i continuation podatke.",
+    "locations": [
+      {
+        "file": "PadelClub.Services/ReservationService.cs",
+        "line": 319
+      },
+      {
+        "file": "PadelClub.WebAPI/Controllers/MembershipsController.cs",
+        "line": 108
+      },
+      {
+        "file": "PadelClub.WebAPI/Controllers/CommerceOperationsController.cs",
+        "line": 284
+      },
+      {
+        "file": "PadelClub.WebAPI/Controllers/DiscoveryController.cs",
+        "line": 39
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R12",
+    "priority": "P2",
+    "category": "Arhitektura",
+    "title": "Osam kontrolera direktno koristi DbContext i poslovnu logiku",
+    "evidence": "CommerceOperations, PlayerExperience, Privacy, Discovery, Operations, NotificationSettings, TournamentLifecycle i Memberships zavise od PadelClubContext. Npr. ConfirmResult računa rating i upisuje stanje meča u kontroleru.",
+    "impact": "Krši Controller → Service → DbContext; lifecycle, transakcije i pravila teško se ponovo koriste kroz druge ulaze.",
+    "fix": "Premjestiti use-case logiku i transakcije u scoped servise; kontrolere svesti na HTTP ugovor i autorizaciju.",
+    "locations": [
+      {
+        "file": "PadelClub.WebAPI/Controllers/CommerceOperationsController.cs",
+        "line": 18
+      },
+      {
+        "file": "PadelClub.WebAPI/Controllers/PlayerExperienceController.cs",
+        "line": 16
+      },
+      {
+        "file": "PadelClub.WebAPI/Controllers/PlayerExperienceController.cs",
+        "line": 142
+      },
+      {
+        "file": "PadelClub.WebAPI/Controllers/MembershipsController.cs",
+        "line": 16
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R13",
+    "priority": "P2",
+    "category": "Arhitektura",
+    "title": "Pet poslovnih workera pokreće se u API hostu",
+    "evidence": "Program registruje ProviderRefundOperationWorker, NotificationDeliveryWorker, MembershipLifecycleWorker, PrivacyDeletionWorker i OutboxPublisherWorker preko AddHostedService unutar API-ja. Odvojeni product subscriber kontejner postoji.",
+    "impact": "Krši izričito pravilo odvojenog worker kontejnera; broj API replika utiče na broj pokrenutih background petlji. Postojeći lease mehanizmi ne zamjenjuju traženu deployment granicu.",
+    "fix": "Poslovne workere premjestiti u zaseban worker host/kontejner uz zadržavanje lease/idempotency zaštita.",
+    "locations": [
+      {
+        "file": "PadelClub.WebAPI/Program.cs",
+        "line": 65
+      },
+      {
+        "file": "PadelClub.WebAPI/Program.cs",
+        "line": 80
+      },
+      {
+        "file": "PadelClub.WebAPI/Program.cs",
+        "line": 123
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R14",
+    "priority": "P2",
+    "category": "DI",
+    "title": "DbContext-zavisni servisi registrovani su kao Transient",
+    "evidence": "ITournamentParticipantService/TournamentParticipantService i pet product-state klasa registrovani su kao transient; koriste DbContext direktno ili kroz baznu klasu.",
+    "impact": "Krši zahtjev Scoped. Transient servis koji prima scoped DbContext nije automatski dokaz nove konekcije ili thread-safety proboja.",
+    "fix": "Registracije ovih kontekst-zavisnih servisa uskladiti na Scoped.",
+    "locations": [
+      {
+        "file": "PadelClub.WebAPI/Program.cs",
+        "line": 92
+      },
+      {
+        "file": "PadelClub.WebAPI/Program.cs",
+        "line": 111
+      },
+      {
+        "file": "PadelClub.Services/TournamentParticipantService.cs",
+        "line": 12
+      },
+      {
+        "file": "PadelClub.Services/ProductStateMachine/BaseProductState.cs",
+        "line": 13
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R15",
+    "priority": "P2",
+    "category": "RabbitMQ",
+    "title": "Consumer ne demonstrira traženi tip listenera ni exponential retry obrade",
+    "evidence": "Subscriber koristi EasyNetQ PubSub.SubscribeAsync i IBus. Exponential retry postoji za uspostavljanje pretplate; HandleAsync nema vlastiti retry/backoff oko DB inbox obrade. Nema eksplicitnog AsyncEventingBasicConsumer.",
+    "impact": "Prema dostavljenim pravilima listener nije usaglašen. Iz ovoga ne zaključujem da EasyNetQ otvara konekciju za svaku poruku niti da biblioteka nema internu obradu grešaka.",
+    "fix": "Implementirati traženi consumer/retry ugovor ili dokumentovati dokazanu ekvivalentnost biblioteke; greške obrade odvojiti od retry-a povezivanja.",
+    "locations": [
+      {
+        "file": "PadelClub.WebAPI/PadelClub.Subscriber/ProductUpdatedSubscriber.cs",
+        "line": 43
+      },
+      {
+        "file": "PadelClub.WebAPI/PadelClub.Subscriber/ProductUpdatedSubscriber.cs",
+        "line": 104
+      },
+      {
+        "file": "PadelClub.WebAPI/PadelClub.Subscriber/Program.cs",
+        "line": 16
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R16",
+    "priority": "P2",
+    "category": "Performanse",
+    "title": "Ponavljani DB upiti unutar petlji",
+    "evidence": "CreateRecurringAsync za svaku sedmicu poziva ValidateReservationAsync koji ponavlja provjere terena, korisnika, rezervacija i održavanja te radi SaveChanges. MembershipLifecycleWorker pojedinačno poziva NotificationService za svaku istek­lu članarinu, ponavljajući recipient/preference upite.",
+    "impact": "Broj DB round-tripova raste s brojem sedmica/članarina; krši zabranu upita u petlji. NotificationService sam ne radi recipient upit za svakog usera, pa taj stari navod nije ponovljen.",
+    "fix": "Zajedničke podatke i intervale učitati grupno, validirati kolekciju i batchirati upise/notifikacije uz zadržavanje atomarnosti.",
+    "locations": [
+      {
+        "file": "PadelClub.Services/ReservationService.cs",
+        "line": 294
+      },
+      {
+        "file": "PadelClub.Services/ReservationService.cs",
+        "line": 268
+      },
+      {
+        "file": "PadelClub.WebAPI/Memberships/MembershipLifecycleWorker.cs",
+        "line": 30
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R17",
+    "priority": "P2",
+    "category": "Preporuke",
+    "title": "Serving model uključuje seed/admin historiju",
+    "evidence": "Upit rawPurchaseLines filtrira samo Delivered i aktivnog korisnika. Ne filtrira OrderOrigin ni IsSeededForDemo. Strožiji filter niže u ResolveTelemetrySourceAsync određuje izvor telemetrije, ne trening skup ovog rankera.",
+    "impact": "Demo/admin kupovine mogu uticati na online preporuke iako analitička evidencija odvojeno razlikuje porijeklo. Ne tvrdim da stvarna historija ne postoji: checkout je upisuje.",
+    "fix": "Za online učenje koristiti dokazano stvarne kupovine i isključiti demo/admin evidenciju ili model jasno označiti kao demonstracijski.",
+    "locations": [
+      {
+        "file": "PadelClub.Services/Recommendations/ProductRecommendationService.cs",
+        "line": 77
+      },
+      {
+        "file": "PadelClub.Services/Recommendations/ProductRecommendationService.cs",
+        "line": 367
+      },
+      {
+        "file": "PadelClub.Services/OrderService.cs",
+        "line": 58
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R18",
+    "priority": "P2",
+    "category": "Performanse",
+    "title": "Svaka preporuka materijalizira globalnu historiju",
+    "evidence": "GetForUserAsync učitava sve eligible proizvode, sve Delivered stavke svih aktivnih korisnika i sve odobrene/refundirane return stavke. Dio product filtriranja radi poslije ToListAsync; odgovor je ograničen na 12 tek nakon obrade.",
+    "impact": "Mali odgovor skriva rast memorije i CPU-a po zahtjevu. Ovo je učitavanje globalnog skupa, ne N+1 dokaz.",
+    "fix": "Agregirati u bazi, precompute/cache model ili statistike i koristiti kontrolisan vremenski prozor; product filter izvršiti u bazi.",
+    "locations": [
+      {
+        "file": "PadelClub.Services/Recommendations/ProductRecommendationService.cs",
+        "line": 42
+      },
+      {
+        "file": "PadelClub.Services/Recommendations/ProductRecommendationService.cs",
+        "line": 56
+      },
+      {
+        "file": "PadelClub.Services/Recommendations/ProductRecommendationService.cs",
+        "line": 77
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R19",
+    "priority": "P2",
+    "category": "Audit",
+    "title": "HTTP audit ne garantuje poslovni trag odobrenja",
+    "evidence": "AuditMiddleware upisuje u drugom scope-u nakon akcije, koristi RequestAborted i samo logira neuspjeh. Reservation nema ConfirmedBy/CancelledBy; ConfirmResult postavlja vrijeme potvrde bez identiteta potvrđivača.",
+    "impact": "Poslovna promjena može ostati bez audita pri prekidu zahtjeva ili grešci upisa. HTTP putanja ne dokazuje staro/novo stanje ili razlog odluke.",
+    "fix": "Actor ID, vrijeme, razlog i prijelaz upisati u istoj transakciji s poslovnom promjenom; HTTP audit ostaviti dodatnim slojem.",
+    "locations": [
+      {
+        "file": "PadelClub.WebAPI/Auditing/AuditMiddleware.cs",
+        "line": 24
+      },
+      {
+        "file": "PadelClub.Services/Database/Reservation.cs",
+        "line": 18
+      },
+      {
+        "file": "PadelClub.WebAPI/Controllers/PlayerExperienceController.cs",
+        "line": 164
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R20",
+    "priority": "P2",
+    "category": "Flutter",
+    "title": "Notifikacije zavise od početnog učitavanja i ručnog refresha",
+    "evidence": "NotificationProvider učitava na eksplicitni poziv; home poziva loadMine pri učitavanju, a admin ekran ima refresh dugme. U pregledanom Flutter lib nema SignalR-a, periodičnog pollinga ili push listenera koji ažurira listu.",
+    "impact": "Nova backend notifikacija ne osvježava otvoreni ekran automatski; backend push worker sam to ne rješava.",
+    "fix": "Dodati lifecycle-aware polling ili SignalR, uz zaustavljanje pri logoutu/dispose i bez preklapanja zahtjeva.",
+    "locations": [
+      {
+        "file": "UI/padelclub_desktop/lib/features/notifications/presentation/providers/notification_provider.dart",
+        "line": 17
+      },
+      {
+        "file": "UI/padelclub_desktop/lib/features/home/presentation/screens/mobile_home_screen.dart",
+        "line": 37
+      },
+      {
+        "file": "UI/padelclub_desktop/lib/features/notifications/presentation/screens/notification_management_screen.dart",
+        "line": 130
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R21",
+    "priority": "P2",
+    "category": "Flutter / paginacija",
+    "title": "Popravka backend limita skriva korisnike iza prve stranice",
+    "evidence": "BaseService sada ograničava PageSize na 100. UserProvider traži 200, uzima samo items i odbacuje TotalCount; UserManagement filtrira samo lokalni users i nema page navigaciju.",
+    "impact": "Od 101. korisnika nadalje zapisi nisu dostupni na ovom ekranu; lokalna pretraga ih ne pronalazi. Slične jednokratne zahtjeve treba pregledati na orders/courts/product ekranima.",
+    "fix": "UI vezati za stvarnu server paginaciju i backend pretragu; ne tretirati prvu stranicu kao cijelu tabelu.",
+    "locations": [
+      {
+        "file": "PadelClub.Services/BaseService.cs",
+        "line": 33
+      },
+      {
+        "file": "UI/padelclub_desktop/lib/features/users/presentation/providers/user_provider.dart",
+        "line": 24
+      },
+      {
+        "file": "UI/padelclub_desktop/lib/features/users/presentation/screens/user_management_screen.dart",
+        "line": 271
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R22",
+    "priority": "P2",
+    "category": "Baza / UI",
+    "title": "Grad i tip članarine koriste slobodan tekst umjesto referentnih FK-ova",
+    "evidence": "PlayerProfile.City i Membership.MembershipType su stringovi; profil prima City kroz request. Model nema odgovarajuće CityId/MembershipTypeId reference za ove vrijednosti.",
+    "impact": "Krši dostavljeno pravilo referentnih tabela; pravopisne varijante otežavaju filtriranje i dosljedan prikaz.",
+    "fix": "Uvesti referentne tabele/FK i Dropdown selekcije. Migraciju postojećih tekstualnih vrijednosti napraviti eksplicitno.",
+    "locations": [
+      {
+        "file": "PadelClub.Services/Database/PlayerProfile.cs",
+        "line": 9
+      },
+      {
+        "file": "PadelClub.Services/Database/Membership.cs",
+        "line": 9
+      },
+      {
+        "file": "PadelClub.WebAPI/Controllers/PlayerExperienceController.cs",
+        "line": 177
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R23",
+    "priority": "P2",
+    "category": "Flutter",
+    "title": "UI prikazuje PK i traži unos User ID-a",
+    "evidence": "Audit filter je tekstualno polje User ID, payment history naslov prikazuje payment.id, a reservation red prikazuje reservation.id i userId.",
+    "impact": "Krši zabranu prikazivanja PK i pravilo referentnog izbora kroz Dropdown; korisnik mora znati interne identifikatore.",
+    "fix": "Prikazati naziv korisnika i poslovni broj dokumenta; filter korisnika zamijeniti pretraživim Dropdown-om.",
+    "locations": [
+      {
+        "file": "UI/padelclub_desktop/lib/features/operations/presentation/screens/audit_trail_screen.dart",
+        "line": 123
+      },
+      {
+        "file": "UI/padelclub_desktop/lib/features/payment_history/presentation/screens/payment_history_screen.dart",
+        "line": 169
+      },
+      {
+        "file": "UI/padelclub_desktop/lib/features/reservations/presentation/screens/reservation_screens.dart",
+        "line": 1733
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R24",
+    "priority": "P2",
+    "category": "Flutter",
+    "title": "Nedostupne admin akcije ostaju klikabilne",
+    "evidence": "Add User i activate/deactivate imaju aktivan onPressed, ali samo otvaraju obavijest da će funkcionalnost biti povezana u kasnijoj fazi.",
+    "impact": "UI obećava akciju koju ne može izvršiti; krši disabled + objašnjenje zahtjev i zadržava implementacijske poruke u korisničkom toku.",
+    "fix": "Akcije implementirati ili prikazati disabled uz konkretan korisnički razlog.",
+    "locations": [
+      {
+        "file": "UI/padelclub_desktop/lib/features/users/presentation/screens/user_management_screen.dart",
+        "line": 57
+      },
+      {
+        "file": "UI/padelclub_desktop/lib/features/users/presentation/screens/user_management_screen.dart",
+        "line": 261
+      },
+      {
+        "file": "UI/padelclub_desktop/lib/features/users/presentation/screens/user_management_screen.dart",
+        "line": 312
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R25",
+    "priority": "P2",
+    "category": "State machine",
+    "title": "Completed prijelaz rezervacije postoji samo u helperu",
+    "evidence": "ReservationLifecycle dopušta Confirmed → Completed nakon završetka, ali ReservationService/Controller nude samo cancel i no-show. Update izričito zabranjuje promjenu statusa; create direktno kreira Confirmed.",
+    "impact": "Normalno odigrana rezervacija nema dostupan tok prelaska u Completed. Postojanje helpera nije dovršen centralni lifecycle.",
+    "fix": "Dodati autorizovanu complete komandu ili worker koji koristi isti lifecycle i zapisuje actor/vrijeme; definisati i Pending potvrdu ako se zadržava to stanje.",
+    "locations": [
+      {
+        "file": "PadelClub.Services/ReservationLifecycle.cs",
+        "line": 11
+      },
+      {
+        "file": "PadelClub.Services/ReservationService.cs",
+        "line": 128
+      },
+      {
+        "file": "PadelClub.WebAPI/Controllers/ReservationsController.cs",
+        "line": 88
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R26",
+    "priority": "P2",
+    "category": "Baza",
+    "title": "Cascade/SetNull veze ostaju na poslovnoj historiji",
+    "evidence": "OrderItems i MembershipEvents koriste Cascade; Payment veze prema Reservation/Membership/Order koriste SetNull.",
+    "impact": "Doslovno krši dostavljeno pravilo očuvanja povezanih podataka. Generički DELETE rezervacija/narudžbi/članarina sada je blokiran, pa ovo nije dokaz da te HTTP akcije i dalje brišu historiju; rizik ostaje na DB/novim servisnim ulazima.",
+    "fix": "Za finansijske i audit veze koristiti Restrict/NoAction i domensko arhiviranje, uz provjeru migracija.",
+    "locations": [
+      {
+        "file": "PadelClub.Services/Database/PadelClubContext.cs",
+        "line": 471
+      },
+      {
+        "file": "PadelClub.Services/Database/PadelClubContext.cs",
+        "line": 927
+      },
+      {
+        "file": "PadelClub.Services/Database/PadelClubContext.cs",
+        "line": 1156
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R27",
+    "priority": "P3",
+    "category": "Kvalitet / async",
+    "title": "Mrtvi helper, blokirajući pozivi i neimplementirani metod ostaju u kodu",
+    "evidence": "RunCrudSmokeTestsIfNeeded nema pozivalaca, ali sadrži brojne GetAwaiter().GetResult(). ReservationsController zadržava zakomentarisane CRUD metode. PasswordHasher.GenerateSalt baca NotImplementedException.",
+    "impact": "Krši zabranu mrtvog/zakomentarisanog koda i sync-over-async. Ne tvrdim da mrtvi helper sada blokira produkcijske zahtjeve; startup migration retry je već prebačen na Task.Delay.",
+    "fix": "Ukloniti neaktivni helper i zakomentarisane implementacije; suziti ili implementirati hash interfejs.",
+    "locations": [
+      {
+        "file": "PadelClub.WebAPI/Program.cs",
+        "line": 1017
+      },
+      {
+        "file": "PadelClub.WebAPI/Program.cs",
+        "line": 1041
+      },
+      {
+        "file": "PadelClub.WebAPI/Controllers/ReservationsController.cs",
+        "line": 101
+      },
+      {
+        "file": "PadelClub.Services/PasswordHasher.cs",
+        "line": 108
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R28",
+    "priority": "P3",
+    "category": "Pravila / autorizacija",
+    "title": "AllowAnonymous postoji izvan login/register",
+    "evidence": "refresh, forgot-password, reset-password, verify-email i Stripe webhook imaju AllowAnonymous. Webhook provjerava Stripe potpis.",
+    "impact": "Formalno kršenje dostavljenog pravila. Sama anonimnost potpisanog webhooka nije potvrđen sigurnosni proboj. Dodavanje običnog korisničkog JWT zahtjeva onemogućilo bi predviđeni vanjski callback.",
+    "fix": "Uskladiti pravila za auth recovery i potpisane integracijske callback-e ili odvojiti integracijski ulaz s odgovarajućom autentikacijom; ne uklanjati provjeru potpisa.",
+    "locations": [
+      {
+        "file": "PadelClub.WebAPI/Controllers/UsersController.cs",
+        "line": 59
+      },
+      {
+        "file": "PadelClub.WebAPI/Controllers/UsersController.cs",
+        "line": 72
+      },
+      {
+        "file": "PadelClub.WebAPI/Controllers/UsersController.cs",
+        "line": 81
+      },
+      {
+        "file": "PadelClub.WebAPI/Controllers/StripePaymentsController.cs",
+        "line": 43
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R29",
+    "priority": "P3",
+    "category": "Pravila / autorizacija",
+    "title": "Admin policy koristi Administrator umjesto Roles=Admin",
+    "evidence": "AdminOnly zahtijeva RequireRole(\"Administrator\"), a kontroleri koriste Authorize(Policy=\"AdminOnly\").",
+    "impact": "Formalna razlika u nazivu/atributu prema ground truth-u; policy ipak vrši server-side provjeru uloge. Nije dokaz player pristupa admin operacijama.",
+    "fix": "Uskladiti naziv uloge, seed, JWT claim i atribute ako se traži doslovno Admin, ili dokumentovati policy ekvivalentnost.",
+    "locations": [
+      {
+        "file": "PadelClub.WebAPI/Program.cs",
+        "line": 149
+      },
+      {
+        "file": "PadelClub.WebAPI/Controllers/PaymentsController.cs",
+        "line": 19
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R30",
+    "priority": "P3",
+    "category": "Pravila / identitet",
+    "title": "Self-service DTO prima UserId i nema current-user accessor servisa",
+    "evidence": "ReservationInsertRequest izlaže UserId, Status i TotalPrice; controller prepisuje identitet i servis računa cijenu. Kontroleri ponavljaju čitanje ClaimsPrincipal-a; IHttpContextAccessor/current-user servis nije pronađen.",
+    "impact": "Formalno krši zabranu primanja UserId za trenutnog korisnika i traženu injekciju. Ovaj POST nije potvrđena impersonacija; FindFirstValue nije ručno dekodiranje JWT-a.",
+    "fix": "Odvojiti self-service DTO od admin DTO-a i koristiti ICurrentUser zasnovan na IHttpContextAccessor.",
+    "locations": [
+      {
+        "file": "PadelClub.Model/Requests/ReservationInsertRequest.cs",
+        "line": 8
+      },
+      {
+        "file": "PadelClub.WebAPI/Controllers/ReservationsController.cs",
+        "line": 44
+      },
+      {
+        "file": "PadelClub.WebAPI/Controllers/ReservationsController.cs",
+        "line": 91
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R31",
+    "priority": "P3",
+    "category": "Konfiguracija",
+    "title": "Development connection string ostaje u JSON-u",
+    "evidence": "appsettings.Development.json sadrži aktivni DefaultConnection za localhost s Trusted_Connection. Compose connection string sastavlja iz interpoliranih env vrijednosti.",
+    "impact": "Krši isključivo .env pravilo za connection string. U ovoj vrijednosti nema SQL lozinke; raniji nalaz javnog JWT ključa/fallback lozinki nije više važeći.",
+    "fix": "Sve connection string vrijednosti premjestiti u propisani env mehanizam, bez tajnih fallback-a.",
+    "locations": [
+      {
+        "file": "PadelClub.WebAPI/appsettings.Development.json",
+        "line": 24
+      },
+      {
+        "file": "docker-compose.yml",
+        "line": 59
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  },
+  {
+    "id": "R32",
+    "priority": "P3",
+    "category": "Exception ugovor",
+    "title": "Domenske greške široko koriste sistemske exceptione",
+    "evidence": "Globalni ExceptionFilter i UserException postoje, ali servisi dominantno bacaju InvalidOperationException/KeyNotFoundException; filter prosljeđuje njihove Message vrijednosti.",
+    "impact": "Nedovoljno precizan domenski ugovor prema zahtjevu custom exceptiona; sistemska InvalidOperationException može sadržavati implementacijske detalje. Nije potvrđen izlaz stack trace-a.",
+    "fix": "Koristiti konkretne domenske exceptione i whitelisted poruke; neočekivane sistemske izuzetke logirati i vratiti generički problem.",
+    "locations": [
+      {
+        "file": "PadelClub.WebAPI/Filters/ExceptionFilter.cs",
+        "line": 23
+      },
+      {
+        "file": "PadelClub.Services/ReservationService.cs",
+        "line": 129
+      },
+      {
+        "file": "PadelClub.WebAPI/Payments/StripePaymentService.cs",
+        "line": 83
+      }
+    ],
+    "validation": "Statička analiza trenutnog koda; nije izvršen HTTP/SQL/provider test."
+  }
+]

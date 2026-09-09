@@ -22,6 +22,7 @@ namespace PadelClub.Services.Database
         public virtual ICollection<Reservation> Reservations { get; set; } = new List<Reservation>();
         public virtual ICollection<Membership> Memberships { get; set; } = new List<Membership>();
         public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
+        public virtual ICollection<ProviderRefundOperation> RequestedProviderRefundOperations { get; set; } = new List<ProviderRefundOperation>();
         public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
         public virtual ICollection<TournamentParticipant> TournamentParticipants { get; set; } = new List<TournamentParticipant>();
         public virtual ICollection<MatchParticipant> MatchParticipants { get; set; } = new List<MatchParticipant>();
@@ -33,6 +34,8 @@ namespace PadelClub.Services.Database
         public virtual ICollection<WaitlistEntry> WaitlistEntries { get; set; } = new List<WaitlistEntry>();
         public virtual ICollection<AccountCredit> AccountCredits { get; set; } = new List<AccountCredit>();
         public virtual NotificationPreference? NotificationPreference { get; set; }
+        public virtual RecommendationAnalyticsConsent? RecommendationAnalyticsConsent { get; set; }
+        public virtual ICollection<RecommendationExperimentAssignment> RecommendationExperimentAssignments { get; set; } = new List<RecommendationExperimentAssignment>();
         public virtual ICollection<PushDevice> PushDevices { get; set; } = new List<PushDevice>();
         public virtual ICollection<NotificationDelivery> NotificationDeliveries { get; set; } = new List<NotificationDelivery>();
         public virtual PlayerProfile? PlayerProfile { get; set; }

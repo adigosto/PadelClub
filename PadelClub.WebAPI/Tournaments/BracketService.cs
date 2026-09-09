@@ -1,3 +1,4 @@
+using PadelClub.Services;
 using Microsoft.EntityFrameworkCore;
 using PadelClub.Services.Database;
 
@@ -9,10 +10,13 @@ public interface IBracketService
     Task AdvanceWinnerAsync(Match match, CancellationToken ct);
 }
 
-public sealed class BracketService(PadelClubContext db) : IBracketService
+public sealed class BracketService(PadelClubContext db, ICourtScheduleService? schedule = null) : IBracketService
 {
     public async Task GenerateAsync(int tournamentId, CancellationToken ct)
     {
+        await using var transaction = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+        var calendar = schedule ?? new CourtScheduleService(db);
+        await calendar.LockCourtsAsync(ct: ct);
         var tournament = await db.Tournaments.Include(x => x.Participants).Include(x => x.Matches).SingleOrDefaultAsync(x => x.Id == tournamentId, ct)
             ?? throw new KeyNotFoundException("Tournament not found.");
         if (tournament.Matches.Any(x => x.BracketRound != null)) throw new InvalidOperationException("The bracket has already been generated.");
@@ -36,6 +40,13 @@ public sealed class BracketService(PadelClubContext db) : IBracketService
                     ScheduledTime = tournament.StartDate.AddHours((round - 1) * 24 + position - 1), Status = round == 1 ? "Scheduled" : "AwaitingPlayers" };
                 matches[(round, position)] = match; db.Matches.Add(match);
             }
+        }
+        var occupations = await calendar.GetOccupationsAsync(matches.Values.Min(x => x.ScheduledTime), matches.Values.Max(x => x.ScheduledTime).AddMinutes(CourtScheduleService.MatchMinutes), ct: ct);
+        foreach (var match in matches.Values)
+        {
+            if (occupations.Any(x => x.Overlaps(courtId, match.ScheduledTime, match.ScheduledTime.AddMinutes(CourtScheduleService.MatchMinutes))))
+                throw new InvalidOperationException("The tournament schedule conflicts with a reservation, match or maintenance block. Choose another start time.");
+            occupations.Add(new CourtOccupation(courtId, match.ScheduledTime, match.ScheduledTime.AddMinutes(CourtScheduleService.MatchMinutes), "tournament match"));
         }
         await db.SaveChangesAsync(ct);
         for (var round = 1; round < rounds; round++)
@@ -62,6 +73,7 @@ public sealed class BracketService(PadelClubContext db) : IBracketService
         }
         tournament.Status = "Ongoing"; tournament.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
     }
 
     public async Task AdvanceWinnerAsync(Match match, CancellationToken ct)

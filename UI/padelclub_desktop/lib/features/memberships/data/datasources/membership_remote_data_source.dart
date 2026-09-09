@@ -1,90 +1,148 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+
+import 'package:padelclub_desktop/core/network/api_error.dart';
+import 'package:padelclub_desktop/core/network/api_config.dart';
+import 'package:padelclub_desktop/features/memberships/data/models/membership_event_model.dart';
 import 'package:padelclub_desktop/features/memberships/data/models/membership_model.dart';
+import 'package:padelclub_desktop/features/memberships/domain/entities/membership_event.dart';
+import 'package:padelclub_desktop/features/memberships/domain/entities/membership_page.dart';
 import 'package:padelclub_desktop/providers/auth_provider.dart';
 
-abstract class MembershipRemoteDataSource {
-  Future<List<MembershipModel>> getMemberships({Map<String, dynamic>? filter});
+typedef MembershipHeadersProvider = Map<String, String> Function();
+
+abstract interface class MembershipRemoteDataSource {
+  Future<MembershipPage> getMine({Map<String, dynamic>? filter});
+
+  Future<void> cancelAtPeriodEnd(int membershipId);
+
+  Future<void> setAutoRenew(int membershipId, bool enabled);
+
+  Future<List<MembershipEvent>> getHistory(int membershipId);
 }
 
+/// Authenticated, player-scoped membership API client.
+///
+/// It deliberately only calls `/Memberships/mine`; a desktop player must never
+/// receive the administrative membership collection just because their account
+/// happens to have an administrative role.
 class MembershipRemoteDataSourceImpl implements MembershipRemoteDataSource {
-  final http.Client client;
-  final String baseUrl;
-
   MembershipRemoteDataSourceImpl({
-    required this.client,
-    this.baseUrl = const String.fromEnvironment(
-      'baseUrl',
-      defaultValue: 'http://localhost:5000',
-    ),
-  });
+    http.Client? client,
+    String? baseUrl,
+    MembershipHeadersProvider? headersProvider,
+  }) : _client = client ?? http.Client(),
+       _baseUrl = baseUrl ?? ApiConfig.baseUrl,
+       _headersProvider = headersProvider ?? AuthProvider.authenticatedHeaders;
+
+  final http.Client _client;
+  final String _baseUrl;
+  final MembershipHeadersProvider _headersProvider;
 
   @override
-  Future<List<MembershipModel>> getMemberships({
-    Map<String, dynamic>? filter,
-  }) async {
-    var url =
-        '$baseUrl/Memberships${AuthProvider.currentUserIsAdministrator ? '' : '/mine'}';
-    if (filter != null && filter.isNotEmpty) {
-      var query = getQueryString(filter);
-      url = '$url?$query';
+  Future<MembershipPage> getMine({Map<String, dynamic>? filter}) async {
+    final uri = Uri.parse(
+      '$_baseUrl/Memberships/mine',
+    ).replace(queryParameters: _queryParameters(filter));
+    final response = await _client
+        .get(uri, headers: _headersProvider())
+        .timeout(const Duration(seconds: 20));
+    _requireSuccess(response, 'load your memberships');
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException(
+        'Memberships returned an invalid paged response.',
+      );
     }
-    final uri = Uri.parse(url);
-    final response = await client.get(uri, headers: createHeaders());
-    if (isValidResponse(response)) {
-      final data = jsonDecode(response.body) as List<dynamic>;
-      return data
-          .map((e) => MembershipModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-    } else {
-      throw Exception('Something went wrong');
+    final rawItems = decoded['items'];
+    if (rawItems is! List<dynamic>) {
+      throw const FormatException(
+        'Memberships response did not contain an items list.',
+      );
     }
+    final items = <MembershipModel>[];
+    for (final rawItem in rawItems) {
+      if (rawItem is! Map<String, dynamic>) {
+        throw const FormatException(
+          'Memberships response contained an invalid membership record.',
+        );
+      }
+      items.add(MembershipModel.fromJson(rawItem));
+    }
+    final rawTotalCount = decoded['totalCount'];
+    if (rawTotalCount != null && rawTotalCount is! int) {
+      throw const FormatException(
+        'Memberships response contained an invalid total count.',
+      );
+    }
+    return MembershipPage(items: items, totalCount: rawTotalCount);
   }
 
-  String getQueryString(
-    Map params, {
-    String prefix = '&',
-    bool inRecursion = false,
-  }) {
-    String query = '';
-    params.forEach((key, value) {
-      if (inRecursion) {
-        if (key is int) {
-          key = '[$key]';
-        } else if (value is List || value is Map) {
-          key = '.$key';
-        } else {
-          key = '.$key';
-        }
-      }
-      if (value is String || value is int || value is double || value is bool) {
-        var encoded = value;
-        if (value is String) encoded = Uri.encodeComponent(value);
-        query += '$prefix$key=$encoded';
-      } else if (value is DateTime) {
-        query += '$prefix$key=${value.toIso8601String()}';
-      } else if (value is List || value is Map) {
-        if (value is List) value = value.asMap();
-        value.forEach((k, v) {
-          query += getQueryString(
-            {k: v},
-            prefix: '$prefix$key',
-            inRecursion: true,
-          );
-        });
-      }
+  @override
+  Future<void> cancelAtPeriodEnd(int membershipId) async {
+    final response = await _client
+        .put(
+          Uri.parse('$_baseUrl/Memberships/$membershipId/cancel-at-period-end'),
+          headers: _headersProvider(),
+        )
+        .timeout(const Duration(seconds: 20));
+    _requireSuccess(response, 'schedule the membership cancellation');
+  }
+
+  @override
+  Future<void> setAutoRenew(int membershipId, bool enabled) async {
+    final response = await _client
+        .put(
+          Uri.parse('$_baseUrl/Memberships/$membershipId/auto-renew'),
+          headers: {..._headersProvider(), 'Content-Type': 'application/json'},
+          body: jsonEncode({'enabled': enabled}),
+        )
+        .timeout(const Duration(seconds: 20));
+    _requireSuccess(response, 'change automatic renewal');
+  }
+
+  @override
+  Future<List<MembershipEvent>> getHistory(int membershipId) async {
+    final response = await _client
+        .get(
+          Uri.parse('$_baseUrl/Memberships/$membershipId/history'),
+          headers: _headersProvider(),
+        )
+        .timeout(const Duration(seconds: 20));
+    _requireSuccess(response, 'load membership activity');
+    final decoded = jsonDecode(response.body);
+    if (decoded is! List<dynamic>) {
+      throw const FormatException(
+        'Membership activity returned an invalid response.',
+      );
+    }
+    return decoded
+        .whereType<Map<String, dynamic>>()
+        .map(MembershipEventModel.fromJson)
+        .toList(growable: false);
+  }
+
+  static Map<String, String>? _queryParameters(Map<String, dynamic>? filter) {
+    if (filter == null || filter.isEmpty) return null;
+    final parameters = <String, String>{};
+    filter.forEach((key, value) {
+      if (value == null) return;
+      parameters[key] = value is DateTime
+          ? value.toIso8601String()
+          : value.toString();
     });
-    return query;
+    return parameters.isEmpty ? null : parameters;
   }
 
-  bool isValidResponse(http.Response response) {
-    if (response.statusCode <= 299) return true;
-    if (response.statusCode == 401) throw Exception('Not authorized');
-    throw Exception('Something went wrong');
+  static void _requireSuccess(http.Response response, String action) {
+    if (response.statusCode >= 200 && response.statusCode < 300) return;
+    throw StateError(_responseMessage(response, action));
   }
 
-  Map<String, String> createHeaders() {
-    return AuthProvider.authenticatedHeaders();
+  static String _responseMessage(http.Response response, String action) {
+    return apiErrorMessage(response.body, fallback: 'Could not $action. Please try again.');
   }
 }

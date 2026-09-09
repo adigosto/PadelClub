@@ -11,6 +11,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PadelClub.Model", "PadelClu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PadelClub.WebAPI.Tests", "PadelClub.WebAPI.Tests\PadelClub.WebAPI.Tests.csproj", "{8E66A40A-A856-47AA-BE60-79F06062D5B1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PadelClub.Subscriber", "PadelClub.WebAPI\PadelClub.Subscriber\PadelClub.Subscriber.csproj", "{02A1139B-10D2-4F2F-8BAF-9A6E4F5D1F15}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PadelClub.Worker", "PadelClub.Worker\PadelClub.Worker.csproj", "{28B53616-F248-4DF5-A5A4-B210E2FE7550}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +37,14 @@ Global
 		{8E66A40A-A856-47AA-BE60-79F06062D5B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8E66A40A-A856-47AA-BE60-79F06062D5B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8E66A40A-A856-47AA-BE60-79F06062D5B1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{02A1139B-10D2-4F2F-8BAF-9A6E4F5D1F15}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{02A1139B-10D2-4F2F-8BAF-9A6E4F5D1F15}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{02A1139B-10D2-4F2F-8BAF-9A6E4F5D1F15}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{02A1139B-10D2-4F2F-8BAF-9A6E4F5D1F15}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28B53616-F248-4DF5-A5A4-B210E2FE7550}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28B53616-F248-4DF5-A5A4-B210E2FE7550}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28B53616-F248-4DF5-A5A4-B210E2FE7550}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28B53616-F248-4DF5-A5A4-B210E2FE7550}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

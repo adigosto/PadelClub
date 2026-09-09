@@ -11,6 +11,12 @@ public interface IEmailSender
     Task<string?> SendAsync(string recipient, string subject, string text, CancellationToken cancellationToken);
 }
 
+/// <summary>
+/// A local configuration state, not an accepted external email. Consumers may
+/// mark the associated notification as skipped but must never relabel it sent.
+/// </summary>
+public sealed class EmailDeliveryUnavailableException(string message) : InvalidOperationException(message);
+
 public sealed class SmtpEmailSender(IOptions<NotificationDeliveryOptions> options, ILogger<SmtpEmailSender> logger)
     : IEmailSender, ITransactionalEmailSender
 {
@@ -21,8 +27,10 @@ public sealed class SmtpEmailSender(IOptions<NotificationDeliveryOptions> option
         var smtp = _options.Smtp;
         if (string.IsNullOrWhiteSpace(smtp.Host))
         {
-            logger.LogInformation("Email to {Recipient}: {Subject}. Development body: {Body}", recipient, subject, text);
-            return "development-log";
+            // Never log recipient data or bodies here: transactional bodies
+            // can contain password-reset and verification tokens.
+            logger.LogInformation("SMTP delivery is disabled by configuration; no email was sent.");
+            throw new EmailDeliveryUnavailableException("SMTP delivery is disabled by configuration.");
         }
 
         var message = new MimeMessage();

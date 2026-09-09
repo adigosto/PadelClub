@@ -35,7 +35,7 @@ When SMTP host is empty outside Docker, messages are safely logged for developme
 
 ## Production SMTP
 
-Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_STARTTLS`, `SMTP_USERNAME`, `SMTP_PASSWORD`, and `SMTP_FROM_ADDRESS`. Keep credentials in the deployment secret store, not appsettings or source control.
+Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_STARTTLS`, `SMTP_USERNAME`, `SMTP_PASSWORD`, and `SMTP_FROM_ADDRESS`. Keep credentials in the deployment secret store, not appsettings or source control. In `Production`, startup fails unless `SMTP_HOST`, a valid `SMTP_PORT`, and `SMTP_FROM_ADDRESS` are configured. Username/password may remain empty only for providers that explicitly allow unauthenticated SMTP.
 
 ## Firebase
 

@@ -6,6 +6,7 @@ namespace PadelClub.Model
     {
         public int Id { get; set; }
         public int UserId { get; set; }
+        public int? MembershipTypeReferenceId { get; set; }
         public string MembershipType { get; set; } = string.Empty;
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }

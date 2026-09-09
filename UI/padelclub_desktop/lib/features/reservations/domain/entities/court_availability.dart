@@ -4,12 +4,14 @@ class AvailabilitySlot {
     required this.endTime,
     required this.price,
     required this.isAvailable,
+    required this.isWaitlistEligible,
   });
 
   final DateTime startTime;
   final DateTime endTime;
   final double price;
   final bool isAvailable;
+  final bool isWaitlistEligible;
 }
 
 class CourtAvailability {

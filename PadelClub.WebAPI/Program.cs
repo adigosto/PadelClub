@@ -1,3 +1,4 @@
+using PadelClub.WebAPI.Workflows;
 using System;
 using System.Linq;
 using System.Threading;
@@ -15,15 +16,20 @@ using PadelClub.Model.Requests;
 using PadelClub.Services;
 using PadelClub.Services.Database;
 using PadelClub.Services.ProductStateMachine;
+using PadelClub.Services.Recommendations;
+using PadelClub.Services.Outbox;
 using PadelClub.WebAPI.Filters;
 using PadelClub.WebAPI.Authentication;
 using PadelClub.WebAPI.Payments;
 using PadelClub.WebAPI.Notifications;
 using PadelClub.WebAPI.Tournaments;
 using PadelClub.WebAPI.Memberships;
+using PadelClub.WebAPI.Discovery;
 using PadelClub.WebAPI.Auditing;
 using PadelClub.WebAPI.Monitoring;
 using PadelClub.WebAPI.Privacy;
+using PadelClub.WebAPI.Outbox;
+using PadelClub.WebAPI.ProviderVerification;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using System.Text.Json;
 
@@ -31,7 +37,7 @@ namespace PadelClub.WebAPI
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -45,46 +51,86 @@ namespace PadelClub.WebAPI
             builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
             builder.Services.AddOptions<StripeOptions>().Bind(builder.Configuration.GetSection(StripeOptions.SectionName))
                 .Validate(x => x.Currency.Length == 3, "Stripe currency must be a three-letter ISO code.").ValidateOnStart();
+            builder.Services.AddOptions<ProviderVerificationOptions>()
+                .Bind(builder.Configuration.GetSection(ProviderVerificationOptions.SectionName))
+                .Validate(
+                    x => x.MinimumIntervalMinutes is >= 1 and <= 1_440,
+                    "Provider verification safety interval must be between one minute and one day.")
+                .ValidateOnStart();
+            builder.Services.AddScoped<IProviderVerificationGateway, ProviderVerificationGateway>();
+            builder.Services.AddScoped<IProviderVerificationService, ProviderVerificationService>();
             builder.Services.AddScoped<IStripePaymentService, StripePaymentService>();
+            builder.Services.AddScoped<IMobilePaymentService, MobilePaymentService>();
+            builder.Services.AddScoped<IProviderRefundOperationService, ProviderRefundOperationService>();
+            builder.Services.AddScoped<IStripeRefundGateway, StripeRefundGateway>();
+            builder.Services.AddScoped<IProviderRefundOperationLeaseService, SqlServerProviderRefundOperationLeaseService>();
+            builder.Services.AddScoped<IProviderRefundOperationProcessor, ProviderRefundOperationProcessor>();
+            builder.Services.AddScoped<StripeWebhookSignatureFilter>();
             builder.Services.AddOptions<NotificationDeliveryOptions>().Bind(builder.Configuration.GetSection(NotificationDeliveryOptions.SectionName))
-                .Validate(x => x.PollSeconds >= 2 && x.MaxAttempts is >= 1 and <= 20, "Invalid notification delivery configuration.").ValidateOnStart();
+                .Validate(x => x.PollSeconds >= 2 && x.MaxAttempts is >= 1 and <= 20, "Invalid notification delivery configuration.")
+                .Validate(
+                    x => !builder.Environment.IsProduction() ||
+                        (!string.IsNullOrWhiteSpace(x.Smtp.Host) &&
+                         x.Smtp.Port is >= 1 and <= 65535 &&
+                         Uri.CheckHostName(x.Smtp.Host) != UriHostNameType.Unknown &&
+                         !string.IsNullOrWhiteSpace(x.Smtp.FromAddress)),
+                    "Production SMTP requires SMTP_HOST, a valid SMTP_PORT, and SMTP_FROM_ADDRESS.")
+                .ValidateOnStart();
             builder.Services.AddScoped<SmtpEmailSender>();
             builder.Services.AddScoped<IEmailSender>(sp => sp.GetRequiredService<SmtpEmailSender>());
             builder.Services.AddScoped<ITransactionalEmailSender>(sp => sp.GetRequiredService<SmtpEmailSender>());
             builder.Services.AddSingleton<IPushSender, FirebasePushSender>();
-            builder.Services.AddHostedService<NotificationDeliveryWorker>();
+            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+            builder.Services.AddScoped<CommerceOperationsWorkflow>();
+            builder.Services.AddScoped<PlayerExperienceWorkflow>();
+            builder.Services.AddScoped<PrivacyWorkflow>();
+            builder.Services.AddScoped<OperationsWorkflow>();
+            builder.Services.AddScoped<NotificationSettingsWorkflow>();
+            builder.Services.AddScoped<TournamentLifecycleWorkflow>();
+            builder.Services.AddScoped<ICourtScheduleService, CourtScheduleService>();
             builder.Services.AddScoped<IBracketService, BracketService>();
-            builder.Services.AddHostedService<MembershipLifecycleWorker>();
             builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
-            builder.Services.AddHostedService<PrivacyDeletionWorker>();
             builder.Services.AddOptions<BookingOptions>().Bind(builder.Configuration.GetSection(BookingOptions.SectionName))
                 .Validate(x => x.OpeningHour >= 0 && x.ClosingHour <= 24 && x.OpeningHour < x.ClosingHour && x.SlotMinutes > 0 && 60 % x.SlotMinutes == 0, "Invalid booking schedule configuration.").ValidateOnStart();
-            builder.Services.AddTransient<IProductService, ProductService>();
-            builder.Services.AddTransient<IUserService, UserService>();
-            builder.Services.AddTransient<ICourtService, CourtService>();
-            builder.Services.AddTransient<IReservationService, ReservationService>();
-            builder.Services.AddTransient<ITournamentService, TournamentService>();
-            builder.Services.AddTransient<ITournamentParticipantService, TournamentParticipantService>();
-            builder.Services.AddTransient<IProductTypeService, ProductTypeService>();
-            builder.Services.AddTransient<IProductCategoryService, ProductCategoryService>();
-            builder.Services.AddTransient<IPaymentService, PaymentService>();
-            builder.Services.AddTransient<IOrderService, OrderService>();
-            builder.Services.AddTransient<IOrderItemService, OrderItemService>();
-            builder.Services.AddTransient<IMembershipService, MembershipService>();
-            builder.Services.AddTransient<IMatchParticipantService, MatchParticipantService>();
-            builder.Services.AddTransient<IRoleService, RoleService>();
-            builder.Services.AddTransient<INotificationService, NotificationService>();
-            builder.Services.AddTransient<IClubReviewService, ClubReviewService>();
-            builder.Services.AddTransient<BaseProductState>();
-            builder.Services.AddTransient<InitialProductState>();
-            builder.Services.AddTransient<DraftProductState>();
-            builder.Services.AddTransient<ActiveProductState>();
-            builder.Services.AddTransient<DeactivatedProductState>();
+            builder.Services.AddScoped<IProductService, ProductService>();
+            builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.AddScoped<ICourtService, CourtService>();
+            builder.Services.AddScoped<IReservationService, ReservationService>();
+            builder.Services.AddScoped<ITournamentService, TournamentService>();
+            builder.Services.AddScoped<ITournamentParticipantService, TournamentParticipantService>();
+            builder.Services.AddScoped<IProductTypeService, ProductTypeService>();
+            builder.Services.AddScoped<IProductCategoryService, ProductCategoryService>();
+            builder.Services.AddScoped<IPaymentService, PaymentService>();
+            builder.Services.AddScoped<IOrderService, OrderService>();
+            builder.Services.AddScoped<IOrderItemService, OrderItemService>();
+            builder.Services.AddScoped<IProductRecommendationService, ProductRecommendationService>();
+            builder.Services.AddSingleton<IRecommendationTelemetryEnvironment>(
+                new RecommendationTelemetryEnvironment(builder.Environment.EnvironmentName));
+            builder.Services.AddScoped<IRecommendationEvaluationService, RecommendationEvaluationService>();
+            builder.Services.AddScoped<IRecommendationCohortReadinessService, RecommendationCohortReadinessService>();
+            builder.Services.AddScoped<IRecommendationExperimentService, RecommendationExperimentService>();
+            builder.Services.AddScoped<IOutboxLeaseService, SqlServerOutboxLeaseService>();
+            builder.Services.AddScoped<IRecommendationImpactService, RecommendationImpactService>();
+            builder.Services.AddScoped<IMembershipService, MembershipService>();
+            builder.Services.AddScoped<IMembershipLifecycleService, MembershipLifecycleService>();
+            builder.Services.AddScoped<IDiscoveryService, DiscoveryService>();
+            builder.Services.AddScoped<IMatchParticipantService, MatchParticipantService>();
+            builder.Services.AddScoped<IRoleService, RoleService>();
+            builder.Services.AddScoped<INotificationService, NotificationService>();
+            builder.Services.AddScoped<IClubReviewService, ClubReviewService>();
+            builder.Services.AddScoped<BaseProductState>();
+            builder.Services.AddScoped<InitialProductState>();
+            builder.Services.AddScoped<DraftProductState>();
+            builder.Services.AddScoped<ActiveProductState>();
+            builder.Services.AddScoped<DeactivatedProductState>();
 
 
 
-            // Register EasyNetQ
-            builder.Services.AddEasyNetQ("host=localhost");
+            // Product-update messages use the same configurable broker in local and Docker runs.
+            var rabbitMqConnectionString = builder.Configuration.GetConnectionString("RabbitMq")
+                ?? throw new InvalidOperationException("ConnectionStrings:RabbitMq must be configured.");
+            builder.Services.AddEasyNetQ(rabbitMqConnectionString);
 
 
             var mapsterConfig = TypeAdapterConfig.GlobalSettings;
@@ -95,11 +141,12 @@ namespace PadelClub.WebAPI
             // Configure database services
             builder.Services.AddDatabaseServices(builder.Configuration);
 
-            builder.Services.AddOptions<AuthOptions>().Bind(builder.Configuration.GetSection(AuthOptions.SectionName)).Validate(x => x.SigningKey.Length >= 32, "Authentication:SigningKey must be at least 32 characters.").ValidateOnStart();
+            builder.Services.AddOptions<AuthOptions>().Bind(builder.Configuration.GetSection(AuthOptions.SectionName))
+                .Validate(x => StartupSecurity.IsValidSigningKey(x.SigningKey), "Configure a unique Authentication__SigningKey of at least 32 characters; shared development keys are rejected.").ValidateOnStart();
             builder.Services.AddScoped<IAuthService, AuthService>();
-            var auth = builder.Configuration.GetSection(AuthOptions.SectionName).Get<AuthOptions>() ?? new AuthOptions();
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
             {
+                var auth = builder.Configuration.GetSection(AuthOptions.SectionName).Get<AuthOptions>() ?? new AuthOptions();
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true, ValidIssuer = auth.Issuer, ValidateAudience = true, ValidAudience = auth.Audience,
@@ -181,31 +228,46 @@ namespace PadelClub.WebAPI
             });
 
             var app = builder.Build();
+            // Validate before migrations or any bootstrap side effects.
+            _ = app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<AuthOptions>>().Value;
 
-            using (var scope = app.Services.CreateScope())
+            var bootstrapDatabaseOnStartup = builder.Configuration.GetValue("Database:BootstrapOnStartup", true);
+            if (bootstrapDatabaseOnStartup)
             {
-                var db = scope.ServiceProvider.GetRequiredService<PadelClubContext>();
-                var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-
-                try
+                using (var scope = app.Services.CreateScope())
                 {
-                    ApplyMigrationsWithRetry(db, logger);
-                    SeedInitialData(db, logger);
-                    if (app.Environment.IsDevelopment())
+                    var db = scope.ServiceProvider.GetRequiredService<PadelClubContext>();
+                    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+                    try
                     {
-                        var verifiedAt = DateTime.UtcNow;
-                        var updated = db.Users
-                            .Where(x => x.Email.EndsWith("@padelclub.local") && x.EmailVerifiedAt == null)
-                            .ExecuteUpdate(x => x.SetProperty(user => user.EmailVerifiedAt, verifiedAt));
-                        if (updated > 0) logger.LogInformation("Marked {Count} local demo accounts as email verified.", updated);
+                        await ApplyMigrationsWithRetryAsync(db, logger);
+                        if (StartupSecurity.ShouldSeedDemoData(app.Environment.EnvironmentName,
+                            builder.Configuration.GetValue<bool>("Database:SeedDemoData")))
+                        {
+                            var demoPassword = builder.Configuration["Database:DemoPassword"];
+                            if (string.IsNullOrWhiteSpace(demoPassword) || demoPassword.Length < 12)
+                                throw new InvalidOperationException("Database:DemoPassword must be configured with at least 12 characters when demo data seeding is enabled.");
+
+                            SeedInitialData(db, logger, true, demoPassword);
+                            var verifiedAt = DateTime.UtcNow;
+                            var updated = db.Users
+                                .Where(x => x.Email.EndsWith("@padelclub.local") && x.EmailVerifiedAt == null)
+                                .ExecuteUpdate(x => x.SetProperty(user => user.EmailVerifiedAt, verifiedAt));
+                            if (updated > 0) logger.LogInformation("Marked {Count} local demo accounts as email verified.", updated);
+                        }
+                    }
+                    catch (Exception ex) when (app.Environment.IsDevelopment())
+                    {
+                        logger.LogWarning(
+                            ex,
+                            "Skipping database bootstrap because SQL Server is unavailable. The API will start, but database-backed endpoints may fail until the database is online.");
                     }
                 }
-                catch (Exception ex) when (app.Environment.IsDevelopment())
-                {
-                    logger.LogWarning(
-                        ex,
-                        "Skipping database bootstrap because SQL Server is unavailable. The API will start, but database-backed endpoints may fail until the database is online.");
-                }
+            }
+            else
+            {
+                app.Logger.LogInformation("Database bootstrap is disabled by configuration.");
             }
 
             // Configure the HTTP request pipeline.
@@ -223,7 +285,8 @@ namespace PadelClub.WebAPI
                 app.UseExceptionHandler("/Error");
             }
 
-            if (!app.Environment.IsDevelopment()) app.UseHttpsRedirection();
+            if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("IntegrationTesting"))
+                app.UseHttpsRedirection();
 
             app.UseCors("PadelClubClient");
             app.UseRateLimiter();
@@ -250,11 +313,16 @@ namespace PadelClub.WebAPI
                 }
             });
 
-            app.Run();
+            await app.RunAsync();
         }
 
-        private static void SeedInitialData(PadelClubContext db, ILogger logger)
+        private static void SeedInitialData(
+            PadelClubContext db,
+            ILogger logger,
+            bool seedCorrelatedDemoData,
+            string demoPassword)
         {
+            if (!seedCorrelatedDemoData) return;
             try
             {
                 var passwordHasher = new PasswordHasher();
@@ -317,9 +385,7 @@ namespace PadelClub.WebAPI
                 // Users
                 if (!db.Users.Any())
                 {
-                    const string defaultPassword = "password123!";
-
-                    var adminPasswordHash = passwordHasher.HashPassword(defaultPassword);
+                    var adminPasswordHash = passwordHasher.HashPassword(demoPassword);
                     var adminPasswordSalt = ExtractSaltFromPasswordHash(adminPasswordHash);
 
                     db.Users.AddRange(new[]
@@ -503,7 +569,15 @@ namespace PadelClub.WebAPI
                     logger.LogInformation("Seeded Reservations.");
                 }
 
-                SeedCorrelatedDemoData(db, passwordHasher, playerRoleId, logger);
+                if (seedCorrelatedDemoData)
+                {
+                    SeedCorrelatedDemoData(db, passwordHasher, playerRoleId, logger, demoPassword);
+                }
+                else
+                {
+                    logger.LogInformation(
+                        "Skipped correlated demo data because the application is not running in Development.");
+                }
             }
             catch (Exception ex)
             {
@@ -515,9 +589,9 @@ namespace PadelClub.WebAPI
             PadelClubContext db,
             IPasswordHasher passwordHasher,
             int playerRoleId,
-            ILogger logger)
+            ILogger logger,
+            string demoPassword)
         {
-            const string demoPassword = "password123!";
             var passwordHash = passwordHasher.HashPassword(demoPassword);
             var passwordSalt = ExtractSaltFromPasswordHash(passwordHash);
             var demoUsers = new[]
@@ -730,10 +804,35 @@ namespace PadelClub.WebAPI
                     City = "Sarajevo",
                     PostalCode = "71000",
                     Notes = "Leave at reception",
-                    CreatedAt = today.AddDays(-12)
+                    CreatedAt = today.AddDays(-12),
+                    DeliveredAt = today.AddDays(-12),
+                    IsSeededForDemo = true,
+                    Origin = OrderOrigin.SeedDemo
                 };
                 db.Orders.Add(order);
                 db.SaveChanges();
+            }
+            else
+            {
+                var changed = false;
+                if (order.Status == "Delivered" && order.DeliveredAt is null)
+                {
+                    // Keep the idempotent development seed compatible with the
+                    // recommendation evaluator's delivery-time semantics.
+                    order.DeliveredAt = order.CreatedAt;
+                    changed = true;
+                }
+                if (!order.IsSeededForDemo)
+                {
+                    order.IsSeededForDemo = true;
+                    changed = true;
+                }
+                if (order.Origin != OrderOrigin.SeedDemo)
+                {
+                    order.Origin = OrderOrigin.SeedDemo;
+                    changed = true;
+                }
+                if (changed) db.SaveChanges();
             }
             if (!db.OrderItems.Any(x => x.OrderId == order.Id))
             {
@@ -748,6 +847,8 @@ namespace PadelClub.WebAPI
                 });
                 db.SaveChanges();
             }
+
+            SeedRecommendationDemoOrders(db, playerIds, today, logger);
 
             var membership = db.Memberships.First(x => x.UserId == playerIds[0] && x.MembershipType.StartsWith("Demo"));
             var paidReservation = db.Reservations.First(x => x.Notes == "DEMO-COMPLETED-MATCH");
@@ -793,6 +894,75 @@ namespace PadelClub.WebAPI
             }
             db.SaveChanges();
             logger.LogInformation("Ensured correlated demo data for all PadelClub entities.");
+        }
+
+        private static void SeedRecommendationDemoOrders(PadelClubContext db, IReadOnlyList<int> playerIds, DateTime today, ILogger logger)
+        {
+            var racket = db.Products.FirstOrDefault(x => x.Name == "PadelClub Control Racket");
+            var balls = db.Products.FirstOrDefault(x => x.Name == "Padel Balls (3 pack)");
+            var shoes = db.Products.FirstOrDefault(x => x.Name == "Padel Shoes (Comfort)");
+            if (racket is null || balls is null || shoes is null || playerIds.Count < 4)
+                return;
+
+            var baskets = new[]
+            {
+                (UserId: playerIds[1], OrderNumber: "DEMO-CF-2026-002", DaysAgo: 10, Items: new[] { (Product: racket, Quantity: 1), (Product: balls, Quantity: 2) }),
+                (UserId: playerIds[2], OrderNumber: "DEMO-CF-2026-003", DaysAgo: 8, Items: new[] { (Product: racket, Quantity: 1), (Product: balls, Quantity: 1) }),
+                (UserId: playerIds[3], OrderNumber: "DEMO-CF-2026-004", DaysAgo: 6, Items: new[] { (Product: racket, Quantity: 1), (Product: shoes, Quantity: 1) })
+            };
+
+            var added = false;
+            foreach (var basket in baskets)
+            {
+                var existingOrder = db.Orders.SingleOrDefault(x => x.OrderNumber == basket.OrderNumber);
+                if (existingOrder is not null)
+                {
+                    if (existingOrder.Origin != OrderOrigin.SeedDemo || !existingOrder.IsSeededForDemo)
+                    {
+                        existingOrder.Origin = OrderOrigin.SeedDemo;
+                        existingOrder.IsSeededForDemo = true;
+                        added = true;
+                    }
+                    continue;
+                }
+
+                var completedAt = today.AddDays(-basket.DaysAgo).AddHours(12);
+                var lines = basket.Items.Select(item => new OrderItem
+                {
+                    ProductId = item.Product.Id,
+                    Quantity = item.Quantity,
+                    UnitPrice = item.Product.Price,
+                    TotalPrice = item.Product.Price * item.Quantity,
+                    CreatedAt = completedAt
+                }).ToList();
+                var subtotal = lines.Sum(x => x.TotalPrice);
+                db.Orders.Add(new Order
+                {
+                    UserId = basket.UserId,
+                    OrderNumber = basket.OrderNumber,
+                    Status = "Delivered",
+                    RecipientName = "PadelClub demo player",
+                    PhoneNumber = "+387 61 220 100",
+                    ShippingAddress = "Zmaja od Bosne 7",
+                    City = "Sarajevo",
+                    PostalCode = "71000",
+                    CreatedAt = completedAt,
+                    DeliveredAt = completedAt,
+                    IsSeededForDemo = true,
+                    Origin = OrderOrigin.SeedDemo,
+                    SubtotalAmount = subtotal,
+                    DiscountAmount = 0m,
+                    TotalAmount = subtotal,
+                    OrderItems = lines
+                });
+                added = true;
+            }
+
+            if (added)
+            {
+                db.SaveChanges();
+                logger.LogInformation("Seeded collaborative-filtering demo purchase baskets.");
+            }
         }
 
         private static void EnsureRoleSchema(PadelClubContext db, ILogger logger)
@@ -855,7 +1025,7 @@ END";
             return parts[1];
         }
 
-        private static void RunCrudSmokeTestsIfNeeded(PadelClubContext db, IServiceProvider serviceProvider, ILogger logger)
+        private static async Task RunCrudSmokeTestsIfNeeded(PadelClubContext db, IServiceProvider serviceProvider, ILogger logger)
         {
             // Run only once (marker court) to avoid creating endless test data.
             const string markerCourtName = "CRUD_MARKER_COURT";
@@ -869,8 +1039,9 @@ END";
 
             try
             {
+                var smokeTestPassword = $"{Guid.NewGuid():N}A!9";
                 // Marker data (dummy records that will stay in the DB)
-                var markerCourt = courtService.CreateAsync(new CourtInsertRequest
+                var markerCourt = await courtService.CreateAsync(new CourtInsertRequest
                 {
                     Name = markerCourtName,
                     Description = "Smoke-test marker court.",
@@ -878,28 +1049,28 @@ END";
                     IsActive = true,
                     HourlyRate = 28m,
                     MaxPlayers = 4
-                }).GetAwaiter().GetResult();
+                });
 
-                var markerUser = userService.CreateAsync(new UserInsertRequest
+                var markerUser = await userService.CreateAsync(new UserInsertRequest
                 {
                     Username = "crud_marker_user",
                     Email = "crud_marker_user@padelclub.local",
                     FirstName = "Smoke",
                     LastName = "Tester",
-                    Password = "password123!",
+                    Password = smokeTestPassword,
                     PhoneNumber = "111222333"
-                }).GetAwaiter().GetResult();
+                });
 
-                var markerProduct = productService.CreateAsync(new ProductInsertRequest
+                var markerProduct = await productService.CreateAsync(new ProductInsertRequest
                 {
                     Name = "CRUD_MARKER_PRODUCT",
                     Description = "Smoke-test marker product.",
                     Price = 19.99m,
                     StockQuantity = 5,
                     ImageUrl = null
-                }).GetAwaiter().GetResult();
+                });
 
-                var markerReservation = reservationService.CreateAsync(new ReservationInsertRequest
+                var markerReservation = await reservationService.CreateAsync(new ReservationInsertRequest
                 {
                     CourtId = markerCourt.Id,
                     UserId = markerUser.Id,
@@ -908,7 +1079,7 @@ END";
                     TotalPrice = markerCourt.HourlyRate,
                     Status = "Pending",
                     Notes = "CRUD_MARKER_RESERVATION"
-                }).GetAwaiter().GetResult();
+                });
 
                 logger.LogInformation(
                     "CRUD smoke marker created: court={CourtId}, user={UserId}, product={ProductId}, reservation={ReservationId}",
@@ -917,7 +1088,7 @@ END";
                 // Temporary records for full CRUD (including delete)
                 var suffix = Guid.NewGuid().ToString("N").Substring(0, 8);
 
-                var tempCourt = courtService.CreateAsync(new CourtInsertRequest
+                var tempCourt = await courtService.CreateAsync(new CourtInsertRequest
                 {
                     Name = $"CRUD_TEMP_COURT_{suffix}",
                     Description = "Temporary smoke-test court.",
@@ -925,28 +1096,28 @@ END";
                     IsActive = true,
                     HourlyRate = 32m,
                     MaxPlayers = 4
-                }).GetAwaiter().GetResult();
+                });
 
-                var tempUser = userService.CreateAsync(new UserInsertRequest
+                var tempUser = await userService.CreateAsync(new UserInsertRequest
                 {
                     Username = $"crud_temp_user_{suffix}",
                     Email = $"crud_temp_user_{suffix}@padelclub.local",
                     FirstName = "Temp",
                     LastName = $"User_{suffix}",
-                    Password = "password123!",
+                    Password = smokeTestPassword,
                     PhoneNumber = "000111222"
-                }).GetAwaiter().GetResult();
+                });
 
-                var tempProduct = productService.CreateAsync(new ProductInsertRequest
+                var tempProduct = await productService.CreateAsync(new ProductInsertRequest
                 {
                     Name = $"CRUD_TEMP_PRODUCT_{suffix}",
                     Description = "Temporary smoke-test product.",
                     Price = 9.99m,
                     StockQuantity = 7,
                     ImageUrl = null
-                }).GetAwaiter().GetResult();
+                });
 
-                var tempReservation = reservationService.CreateAsync(new ReservationInsertRequest
+                var tempReservation = await reservationService.CreateAsync(new ReservationInsertRequest
                 {
                     CourtId = tempCourt.Id,
                     UserId = tempUser.Id,
@@ -955,10 +1126,10 @@ END";
                     TotalPrice = tempCourt.HourlyRate,
                     Status = "Pending",
                     Notes = $"CRUD_TEMP_RESERVATION_{suffix}"
-                }).GetAwaiter().GetResult();
+                });
 
                 // Update
-                courtService.UpdateAsync(tempCourt.Id, new CourtUpdateRequest
+                await courtService.UpdateAsync(tempCourt.Id, new CourtUpdateRequest
                 {
                     Name = $"CRUD_TEMP_COURT_{suffix}_UPDATED",
                     Description = "Updated temporary smoke-test court.",
@@ -966,9 +1137,9 @@ END";
                     IsActive = true,
                     HourlyRate = 35m,
                     MaxPlayers = 4
-                }).GetAwaiter().GetResult();
+                });
 
-                userService.UpdateAsync(tempUser.Id, new UserUpdateRequest
+                await userService.UpdateAsync(tempUser.Id, new UserUpdateRequest
                 {
                     Username = $"crud_temp_user_{suffix}_UPDATED",
                     Email = $"crud_temp_user_{suffix}_UPDATED@padelclub.local",
@@ -978,18 +1149,18 @@ END";
                     Password = null,
                     IsActive = true,
                     UpdatedAt = DateTime.UtcNow
-                }).GetAwaiter().GetResult();
+                });
 
-                productService.UpdateAsync(tempProduct.Id, new ProductUpdateRequest
+                await productService.UpdateAsync(tempProduct.Id, new ProductUpdateRequest
                 {
                     Name = $"CRUD_TEMP_PRODUCT_{suffix}_UPDATED",
                     Description = "Updated temporary smoke-test product.",
                     Price = 11.50m,
                     StockQuantity = 3,
                     ImageUrl = null
-                }).GetAwaiter().GetResult();
+                });
 
-                reservationService.UpdateAsync(tempReservation.Id, new ReservationUpdateRequest
+                await reservationService.UpdateAsync(tempReservation.Id, new ReservationUpdateRequest
                 {
                     CourtId = tempCourt.Id,
                     UserId = tempUser.Id,
@@ -998,22 +1169,22 @@ END";
                     TotalPrice = 99m,
                     Status = "Confirmed",
                     Notes = $"CRUD_TEMP_RESERVATION_{suffix}_UPDATED"
-                }).GetAwaiter().GetResult();
+                });
 
                 // Read (ensure it exists)
-                var courtRead = courtService.GetByIdAsync(tempCourt.Id).GetAwaiter().GetResult();
-                var userRead = userService.GetByIdAsync(tempUser.Id).GetAwaiter().GetResult();
-                var productRead = productService.GetByIdAsync(tempProduct.Id).GetAwaiter().GetResult();
-                var reservationRead = reservationService.GetByIdAsync(tempReservation.Id).GetAwaiter().GetResult();
+                var courtRead = await courtService.GetByIdAsync(tempCourt.Id);
+                var userRead = await userService.GetByIdAsync(tempUser.Id);
+                var productRead = await productService.GetByIdAsync(tempProduct.Id);
+                var reservationRead = await reservationService.GetByIdAsync(tempReservation.Id);
 
                 if (courtRead == null || userRead == null || productRead == null || reservationRead == null)
                     logger.LogWarning("CRUD smoke test read check failed (one or more reads returned null).");
 
                 // Delete (order matters due to Reservation foreign keys)
-                reservationService.DeleteAsync(tempReservation.Id).GetAwaiter().GetResult();
-                productService.DeleteAsync(tempProduct.Id).GetAwaiter().GetResult();
-                courtService.DeleteAsync(tempCourt.Id).GetAwaiter().GetResult();
-                userService.DeleteAsync(tempUser.Id).GetAwaiter().GetResult();
+                await reservationService.DeleteAsync(tempReservation.Id);
+                await productService.DeleteAsync(tempProduct.Id);
+                await courtService.DeleteAsync(tempCourt.Id);
+                await userService.DeleteAsync(tempUser.Id);
 
                 logger.LogInformation("CRUD smoke test completed successfully (temp entities deleted).");
             }
@@ -1023,7 +1194,7 @@ END";
             }
         }
 
-        private static void ApplyMigrationsWithRetry(PadelClubContext db, ILogger logger)
+        private static async Task ApplyMigrationsWithRetryAsync(PadelClubContext db, ILogger logger)
         {
             const int maxAttempts = 10;
             const int delayMilliseconds = 3000;
@@ -1032,7 +1203,7 @@ END";
             {
                 try
                 {
-                    db.Database.Migrate();
+                    await db.Database.MigrateAsync();
                     return;
                 }
                 catch (Exception ex) when (attempt < maxAttempts)
@@ -1043,7 +1214,7 @@ END";
                         attempt,
                         maxAttempts,
                         delayMilliseconds);
-                    Thread.Sleep(delayMilliseconds);
+                    await Task.Delay(delayMilliseconds);
                 }
                 catch (Exception ex)
                 {

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
 
+import 'package:padelclub_desktop/core/localization/app_localizations.dart';
 import 'package:padelclub_desktop/features/home/presentation/screens/mobile_home_screen.dart';
+import 'package:padelclub_desktop/features/operations/presentation/providers/operations_analytics_provider.dart';
 import 'package:padelclub_desktop/layouts/master_screen.dart';
 import 'package:padelclub_desktop/providers/auth_provider.dart';
 
@@ -199,13 +202,15 @@ class _DesktopAccessDenied extends StatelessWidget {
                     color: Color(0xFF2F64E7),
                   ),
                   const SizedBox(height: 18),
-                  const Text(
-                    'Management access required',
+                  Text(
+                    context.tr("Management access required"),
                     style: TextStyle(fontSize: 23, fontWeight: FontWeight.w900),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'The desktop application is reserved for club staff. This account does not currently have an administrator role.',
+                  Text(
+                    context.tr(
+                      "The desktop application is reserved for club staff. This account does not currently have an administrator role.",
+                    ),
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Color(0xFF667085)),
                   ),
@@ -218,7 +223,7 @@ class _DesktopAccessDenied extends StatelessWidget {
                       ).pushNamedAndRemoveUntil('/', (_) => false);
                     },
                     icon: const Icon(Icons.logout_rounded),
-                    label: const Text('Sign out and go back'),
+                    label: Text(context.tr("Sign out and go back")),
                   ),
                 ],
               ),
@@ -230,13 +235,32 @@ class _DesktopAccessDenied extends StatelessWidget {
   }
 }
 
-class _ManagementOverview extends StatelessWidget {
+class _ManagementOverview extends StatefulWidget {
   const _ManagementOverview();
 
   @override
+  State<_ManagementOverview> createState() => _ManagementOverviewState();
+}
+
+class _ManagementOverviewState extends State<_ManagementOverview> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<OperationsAnalyticsProvider>().load();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final operations = context.watch<OperationsAnalyticsProvider>();
+    final analytics = operations.analytics;
+    final unavailableValue = operations.isLoading
+        ? context.tr("Loading...")
+        : '—';
+
     return MasterScreen(
-      title: 'Management overview',
+      title: context.tr("Management overview"),
       section: AppSection.home,
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(30, 26, 30, 40),
@@ -251,41 +275,107 @@ class _ManagementOverview extends StatelessWidget {
                       Navigator.pushNamed(context, '/reservations'),
                 ),
                 const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.insights_rounded,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 7),
+                    Text(
+                      analytics == null
+                          ? context.tr("Live operations data unavailable")
+                          : context.tr("Live operations data · last 30 days"),
+                      style: const TextStyle(
+                        color: Color(0xFF52606D),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      tooltip: context.tr("Refresh operations analytics"),
+                      onPressed: operations.isLoading ? null : operations.load,
+                      icon: const Icon(Icons.refresh_rounded),
+                    ),
+                  ],
+                ),
+                if (operations.errorMessage != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF4E5),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      context.tr("{p1} Use refresh to try again.", {
+                        'p1': operations.errorMessage,
+                      }),
+                      style: const TextStyle(
+                        color: Color(0xFF8A4B08),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 10),
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   crossAxisCount: compact ? 2 : 4,
-                  childAspectRatio: compact ? 2.5 : 2.15,
+                  mainAxisExtent: 160,
                   crossAxisSpacing: 14,
                   mainAxisSpacing: 14,
-                  children: const [
+                  children: [
                     _ManagementMetric(
                       icon: Icons.calendar_month_rounded,
-                      label: "Today's bookings",
-                      value: '18',
+                      label: context.tr("Reservations"),
+                      value: analytics == null
+                          ? unavailableValue
+                          : '${analytics.reservations}',
                       color: Color(0xFF2F64E7),
-                      trend: '+3 from yesterday',
+                      trend: analytics == null
+                          ? context.tr("Live API metric")
+                          : context.tr("{p1} cancelled", {
+                              'p1': analytics.cancelledReservations,
+                            }),
                     ),
                     _ManagementMetric(
-                      icon: Icons.stadium_rounded,
-                      label: 'Court occupancy',
-                      value: '76%',
+                      icon: Icons.shopping_bag_rounded,
+                      label: context.tr("Orders"),
+                      value: analytics == null
+                          ? unavailableValue
+                          : '${analytics.orders}',
                       color: Color(0xFF1F7A63),
-                      trend: 'Peak at 18:00',
+                      trend: context.tr("Last 30 days"),
                     ),
                     _ManagementMetric(
                       icon: Icons.people_alt_rounded,
-                      label: 'Active members',
-                      value: '248',
+                      label: context.tr("Active members"),
+                      value: analytics == null
+                          ? unavailableValue
+                          : '${analytics.activeMemberships}',
                       color: Color(0xFF7657C8),
-                      trend: '+12 this month',
+                      trend: context.tr("Current status"),
                     ),
                     _ManagementMetric(
                       icon: Icons.payments_rounded,
-                      label: "Today's revenue",
-                      value: '684 KM',
+                      label: context.tr("Order revenue"),
+                      value: analytics == null
+                          ? unavailableValue
+                          : '${context.l10n.number(analytics.orderRevenue, decimalDigits: 2)} KM',
                       color: Color(0xFFD17A32),
-                      trend: '82% collected',
+                      trend: analytics == null
+                          ? context.tr("Live API metric")
+                          : context.tr("{p1} low-stock items", {
+                              'p1': analytics.lowStockProducts,
+                            }),
                     ),
                   ],
                 ),
@@ -419,9 +509,9 @@ class _OverviewHero extends StatelessWidget {
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               Text(
-                'Good morning, Admin',
+                context.tr("Management overview"),
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 25,
@@ -430,7 +520,9 @@ class _OverviewHero extends StatelessWidget {
               ),
               SizedBox(height: 7),
               Text(
-                'Your club is running smoothly. Court demand is strongest between 18:00 and 21:00 today.',
+                context.tr(
+                  "Review live booking, sales, membership, and stock figures below.",
+                ),
                 style: TextStyle(color: Color(0xFFDCE7FF), fontSize: 14),
               ),
             ],
@@ -444,7 +536,7 @@ class _OverviewHero extends StatelessWidget {
             foregroundColor: Color(0xFF1D4ED8),
           ),
           icon: const Icon(Icons.add_rounded),
-          label: const Text('New reservation'),
+          label: Text(context.tr("New reservation")),
         ),
       ],
     ),
@@ -455,39 +547,39 @@ class _TodaySchedule extends StatelessWidget {
   const _TodaySchedule();
   @override
   Widget build(BuildContext context) => _DashboardPanel(
-    title: "Today's schedule",
-    subtitle: 'Upcoming court activity',
+    title: context.tr("Schedule preview"),
+    subtitle: context.tr("Example layout — not live reservation data"),
     child: Column(
-      children: const [
+      children: [
         _ScheduleRow(
           time: '16:00',
-          court: 'Court Central',
+          court: context.tr("Court Central"),
           player: 'Casey Player',
-          status: 'Confirmed',
+          status: context.tr("Confirmed"),
           color: Color(0xFF2563EB),
         ),
         Divider(height: 1),
         _ScheduleRow(
           time: '17:00',
-          court: 'Court North',
+          court: context.tr("Court North"),
           player: 'Amar & team',
-          status: 'Paid',
+          status: context.tr("Paid"),
           color: Color(0xFF10B981),
         ),
         Divider(height: 1),
         _ScheduleRow(
           time: '18:00',
-          court: 'Court Central',
-          player: 'League training',
-          status: 'Recurring',
+          court: context.tr("Court Central"),
+          player: context.tr("League training"),
+          status: context.tr("Recurring"),
           color: Color(0xFF7657C8),
         ),
         Divider(height: 1),
         _ScheduleRow(
           time: '19:00',
-          court: 'Court North',
-          player: 'Open match',
-          status: '4 players',
+          court: context.tr("Court North"),
+          player: context.tr("Open match"),
+          status: context.tr("4 players"),
           color: Color(0xFFD17A32),
         ),
       ],
@@ -566,33 +658,33 @@ class _CourtStatus extends StatelessWidget {
   const _CourtStatus();
   @override
   Widget build(BuildContext context) => _DashboardPanel(
-    title: 'Court status',
-    subtitle: 'Live operating overview',
+    title: context.tr("Court-status preview"),
+    subtitle: context.tr("Example layout — not live court data"),
     child: Column(
-      children: const [
+      children: [
         _CourtRow(
-          name: 'Court Central',
-          detail: 'Occupied until 17:00',
+          name: context.tr("Court Central"),
+          detail: context.tr("Occupied until 17:00"),
           progress: .72,
           color: Color(0xFF2563EB),
         ),
         SizedBox(height: 18),
         _CourtRow(
-          name: 'Court North',
-          detail: 'Available now',
+          name: context.tr("Court North"),
+          detail: context.tr("Available now"),
           progress: .48,
           color: Color(0xFF10B981),
         ),
         SizedBox(height: 22),
         _NoticeRow(
           icon: Icons.build_circle_outlined,
-          text: 'No maintenance blocks today',
+          text: context.tr("No maintenance blocks today"),
           color: Color(0xFF1F7A63),
         ),
         SizedBox(height: 10),
         _NoticeRow(
           icon: Icons.schedule_rounded,
-          text: '6 open slots remaining',
+          text: context.tr("6 open slots remaining"),
           color: Color(0xFF2F64E7),
         ),
       ],
@@ -714,8 +806,8 @@ class _QuickActions extends StatelessWidget {
   final VoidCallback onReservations, onCourts, onProducts, onMembers;
   @override
   Widget build(BuildContext context) => _DashboardPanel(
-    title: 'Quick actions',
-    subtitle: 'Jump straight into daily operations',
+    title: context.tr("Quick actions"),
+    subtitle: context.tr("Jump straight into daily operations"),
     child: Wrap(
       spacing: 12,
       runSpacing: 12,
@@ -723,22 +815,22 @@ class _QuickActions extends StatelessWidget {
         FilledButton.icon(
           onPressed: onReservations,
           icon: const Icon(Icons.calendar_month_rounded),
-          label: const Text('Reservations'),
+          label: Text(context.tr("Reservations")),
         ),
         OutlinedButton.icon(
           onPressed: onCourts,
           icon: const Icon(Icons.stadium_outlined),
-          label: const Text('Courts'),
+          label: Text(context.tr("Courts")),
         ),
         OutlinedButton.icon(
           onPressed: onProducts,
           icon: const Icon(Icons.inventory_2_outlined),
-          label: const Text('Products'),
+          label: Text(context.tr("Products")),
         ),
         OutlinedButton.icon(
           onPressed: onMembers,
           icon: const Icon(Icons.people_alt_outlined),
-          label: const Text('Members'),
+          label: Text(context.tr("Members")),
         ),
       ],
     ),
@@ -910,10 +1002,10 @@ class _MatchCard extends StatelessWidget {
                   alignEnd: false,
                 ),
               ),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(horizontal: 10),
                 child: Text(
-                  'VS',
+                  context.tr("VS"),
                   style: TextStyle(
                     color: Color(0xFF98A2B3),
                     fontWeight: FontWeight.w700,

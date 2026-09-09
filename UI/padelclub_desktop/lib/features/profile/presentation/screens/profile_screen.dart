@@ -1,7 +1,17 @@
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
 
+import 'package:padelclub_desktop/core/di/injection.dart';
+import 'package:padelclub_desktop/core/localization/app_localizations.dart';
 import 'package:padelclub_desktop/core/theme/app_theme.dart';
+import 'package:padelclub_desktop/core/validation/form_validators.dart';
+import 'package:padelclub_desktop/features/memberships/presentation/providers/membership_provider.dart';
+import 'package:padelclub_desktop/features/memberships/presentation/screens/membership_self_service_screen.dart';
+import 'package:padelclub_desktop/features/notification_settings/presentation/screens/notification_settings_screen.dart';
+import 'package:padelclub_desktop/features/payment_history/presentation/screens/payment_history_screen.dart';
+import 'package:padelclub_desktop/features/privacy/presentation/providers/privacy_controls_provider.dart';
+import 'package:padelclub_desktop/features/privacy/presentation/screens/privacy_controls_screen.dart';
 import 'package:padelclub_desktop/features/reservations/domain/entities/reservation.dart';
 import 'package:padelclub_desktop/features/reservations/presentation/providers/reservation_provider.dart';
 import 'package:padelclub_desktop/layouts/master_screen.dart';
@@ -35,42 +45,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final submitted = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Edit account details'),
+        title: Text(context.tr("Edit account details")),
         content: Form(
           key: formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextFormField(
                   controller: firstName,
-                  decoration: const InputDecoration(labelText: 'First name'),
-                  validator: _required,
+                  decoration: InputDecoration(
+                    labelText: context.tr("First name"),
+                  ),
+                  validator: (value) => FormValidators.text(
+                    value,
+                    l10n: context.l10n,
+                    label: 'your first name',
+                    maxLength: 100,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: lastName,
-                  decoration: const InputDecoration(labelText: 'Last name'),
-                  validator: _required,
+                  decoration: InputDecoration(
+                    labelText: context.tr("Last name"),
+                  ),
+                  validator: (value) => FormValidators.text(
+                    value,
+                    l10n: context.l10n,
+                    label: 'your last name',
+                    maxLength: 100,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: username,
-                  decoration: const InputDecoration(labelText: 'Username'),
-                  validator: _required,
+                  decoration: InputDecoration(
+                    labelText: context.tr("Username"),
+                  ),
+                  validator: (value) => FormValidators.text(
+                    value,
+                    l10n: context.l10n,
+                    label: 'a username',
+                    maxLength: 100,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: email,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: 'Email'),
-                  validator: _required,
+                  decoration: InputDecoration(labelText: context.tr("Email")),
+                  validator: (value) =>
+                      FormValidators.email(value, l10n: context.l10n),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: phone,
+                  validator: (value) => FormValidators.phone(
+                    value,
+                    l10n: context.l10n,
+                    optional: true,
+                  ),
                   keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(labelText: 'Phone'),
+                  decoration: InputDecoration(labelText: context.tr("Phone")),
                 ),
               ],
             ),
@@ -79,7 +117,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text(context.tr("Cancel")),
           ),
           FilledButton(
             onPressed: () {
@@ -87,7 +125,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Navigator.pop(dialogContext, true);
               }
             },
-            child: const Text('Save changes'),
+            child: Text(context.tr("Save changes")),
           ),
         ],
       ),
@@ -101,7 +139,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       newPhoneNumber: phone.text.trim().isEmpty ? null : phone.text.trim(),
     );
     if (!mounted) return;
-    _showResult(success, auth.errorMessage, 'Account details updated.');
+    _showResult(
+      success,
+      auth.errorMessage,
+      context.tr("Account details updated."),
+    );
   }
 
   Future<void> _changePassword(AuthProvider auth) async {
@@ -111,29 +153,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final submitted = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Change password'),
+        title: Text(context.tr("Change password")),
         content: Form(
           key: formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextFormField(
                 controller: password,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'New password'),
+                decoration: InputDecoration(
+                  labelText: context.tr("New password"),
+                ),
                 validator: (value) => (value?.length ?? 0) < 10
-                    ? 'Use at least 10 characters'
+                    ? context.tr("Use at least 10 characters")
                     : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: confirmation,
                 obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Confirm password',
+                decoration: InputDecoration(
+                  labelText: context.tr("Confirm password"),
                 ),
-                validator: (value) =>
-                    value != password.text ? 'Passwords do not match' : null,
+                validator: (value) => value != password.text
+                    ? context.tr("Passwords do not match")
+                    : null,
               ),
             ],
           ),
@@ -141,7 +187,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text(context.tr("Cancel")),
           ),
           FilledButton(
             onPressed: () {
@@ -149,7 +195,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Navigator.pop(dialogContext, true);
               }
             },
-            child: const Text('Update password'),
+            child: Text(context.tr("Update password")),
           ),
         ],
       ),
@@ -164,10 +210,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       newPassword: password.text,
     );
     if (!mounted) return;
-    _showResult(success, auth.errorMessage, 'Password updated.');
+    _showResult(success, auth.errorMessage, context.tr("Password updated."));
   }
 
   Future<void> _verifyEmail(AuthProvider auth) async {
+    final formKey = GlobalKey<FormState>();
     final sent = await auth.requestEmailVerification();
     if (!mounted) return;
     if (!sent) {
@@ -178,30 +225,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final submitted = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Verify your email'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'We sent a verification code to ${auth.email ?? 'your email address'}.',
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: token,
-              autofocus: true,
-              decoration: const InputDecoration(labelText: 'Verification code'),
-            ),
-          ],
+        title: Text(context.tr("Verify your email")),
+        content: Form(
+          key: formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                context.tr("We sent a verification code to {p1}.", {
+                  'p1': auth.email ?? 'your email address',
+                }),
+              ),
+              const SizedBox(height: 14),
+              TextFormField(
+                controller: token,
+                validator: (value) => FormValidators.text(
+                  value,
+                  l10n: context.l10n,
+                  label: 'the verification code',
+                  minLength: 32,
+                  maxLength: 256,
+                ),
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: context.tr("Verification code"),
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Later'),
+            child: Text(context.tr("Later")),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Verify'),
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(dialogContext, true);
+              }
+            },
+            child: Text(context.tr("Verify")),
           ),
         ],
       ),
@@ -212,14 +278,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _showResult(
       verified,
       auth.errorMessage,
-      'Email verified. Player features are now unlocked.',
+      context.tr("Email verified. Player features are now unlocked."),
+    );
+  }
+
+  Future<void> _openNotificationSettings() {
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider.value(
+          value: sl.notificationSettingsProvider,
+          child: const NotificationSettingsScreen(),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openPrivacyControls() {
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider(
+          create: (_) => PrivacyControlsProvider.live(),
+          child: const PrivacyControlsScreen(),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openMemberships() {
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider(
+          create: (_) => MembershipProvider(),
+          child: const MembershipSelfServiceScreen(),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openPaymentHistory() {
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute(builder: (_) => const PaymentHistoryScreen()),
     );
   }
 
   void _showResult(bool success, String? error, String successMessage) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(success ? successMessage : error ?? 'Update failed.'),
+        content: Text(
+          success ? successMessage : error ?? context.tr("Update failed."),
+        ),
+        backgroundColor: success ? null : PadelColors.danger,
       ),
     );
   }
@@ -230,7 +338,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final reservationProvider = context.watch<ReservationProvider>();
     final reservations = reservationProvider.reservations;
     final name = auth.displayName.isEmpty
-        ? AuthProvider.username ?? 'Player'
+        ? AuthProvider.username ?? context.tr("Player")
         : auth.displayName;
     final initials = _initials(name);
     final completed = reservations.where(_isCompleted).length;
@@ -243,7 +351,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     return MasterScreen(
-      title: 'Profile',
+      title: context.tr("Profile"),
       section: AppSection.profile,
       child: Scrollbar(
         thumbVisibility: true,
@@ -262,7 +370,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             if (reservationProvider.errorMessage != null &&
                 reservations.isEmpty)
               _InlineNotice(
-                message: 'Reservation statistics are temporarily unavailable.',
+                message: context.tr(
+                  "Reservation statistics are temporarily unavailable.",
+                ),
                 onRetry: () =>
                     reservationProvider.loadReservations(management: false),
               ),
@@ -275,17 +385,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 final cards = [
                   _StatCard(
                     value: '$completed',
-                    label: 'Matches',
+                    label: context.tr("Matches"),
                     icon: Icons.sports_tennis_rounded,
                   ),
                   _StatCard(
                     value: '$upcoming',
-                    label: 'Upcoming',
+                    label: context.tr("Upcoming"),
                     icon: Icons.event_available_rounded,
                   ),
                   _StatCard(
                     value: hours.toStringAsFixed(hours % 1 == 0 ? 0 : 1),
-                    label: 'Hours',
+                    label: context.tr("Hours"),
                     icon: Icons.schedule_rounded,
                   ),
                 ];
@@ -310,11 +420,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 );
               },
             ),
-            const _SectionTitle('Achievements'),
+            _SectionTitle(context.tr("Achievements")),
             _AchievementRow(
               icon: Icons.flag_rounded,
-              title: 'First booking',
-              description: 'Complete your first court reservation.',
+              title: context.tr("First booking"),
+              description: context.tr("Complete your first court reservation."),
               unlocked: reservations.any(
                 (item) => item.status.toLowerCase() != 'cancelled',
               ),
@@ -322,17 +432,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 10),
             _AchievementRow(
               icon: Icons.workspace_premium_rounded,
-              title: 'Court regular',
-              description: 'Complete five matches at PadelClub.',
+              title: context.tr("Court regular"),
+              description: context.tr("Complete five matches at PadelClub."),
               unlocked: completed >= 5,
             ),
-            const _SectionTitle('Settings'),
+            _SectionTitle(context.tr("Settings")),
             _SettingsGroup(
               children: [
                 _SettingsTile(
                   icon: Icons.person_outline_rounded,
-                  title: 'Account details',
-                  subtitle: AuthProvider.username ?? 'Signed-in player',
+                  title: context.tr("Account details"),
+                  subtitle:
+                      AuthProvider.username ?? context.tr("Signed-in player"),
                   onTap: () => _editAccount(auth),
                 ),
                 _SettingsTile(
@@ -340,48 +451,80 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ? Icons.verified_rounded
                       : Icons.mark_email_unread_outlined,
                   title: auth.isEmailVerified
-                      ? 'Email verified'
-                      : 'Verify email',
+                      ? context.tr("Email verified")
+                      : context.tr("Verify email"),
                   subtitle: auth.isEmailVerified
-                      ? auth.email ?? 'Verified account'
-                      : 'Required for partner, match, and tournament features',
+                      ? auth.email ?? context.tr("Verified account")
+                      : context.tr(
+                          "Required for partner, match, and tournament features",
+                        ),
                   onTap: auth.isEmailVerified ? null : () => _verifyEmail(auth),
                 ),
                 _SettingsTile(
                   icon: Icons.notifications_none_rounded,
-                  title: 'Notifications',
-                  subtitle: 'Club announcements and booking updates',
-                  onTap: () => _showInformation(
-                    context,
-                    'Notifications',
-                    'Notification preferences are not available in the current API.',
+                  title: context.tr("Notifications"),
+                  subtitle: context.tr("Choose how you receive club updates"),
+                  onTap: _openNotificationSettings,
+                ),
+                _SettingsTile(
+                  icon: Icons.card_membership_outlined,
+                  title: context.tr("My memberships"),
+                  subtitle: context.tr(
+                    "Review membership status and renewal settings",
                   ),
+                  onTap: _openMemberships,
+                ),
+                _SettingsTile(
+                  icon: Icons.payment_outlined,
+                  title: context.tr("Payments"),
+                  subtitle: context.tr("Pay for orders, reservations and memberships"),
+                  onTap: () => Navigator.of(context).pushNamed('/payments'),
+                ),
+                _SettingsTile(
+                  icon: Icons.receipt_long_outlined,
+                  title: context.tr("Payment history"),
+                  subtitle: context.tr(
+                    "Review historical payment records and statuses",
+                  ),
+                  onTap: _openPaymentHistory,
                 ),
                 _SettingsTile(
                   icon: Icons.lock_outline_rounded,
-                  title: 'Privacy and security',
-                  subtitle: 'Password and account security',
+                  title: context.tr("Password and security"),
+                  subtitle: context.tr(
+                    "Change your password and protect your account",
+                  ),
                   onTap: () => _changePassword(auth),
+                ),
+                _SettingsTile(
+                  icon: Icons.privacy_tip_outlined,
+                  title: context.tr("Privacy controls"),
+                  subtitle: context.tr(
+                    "View your data and manage account deletion",
+                  ),
+                  onTap: _openPrivacyControls,
                 ),
               ],
             ),
-            const _SectionTitle('Support'),
+            _SectionTitle(context.tr("Support")),
             _SettingsGroup(
               children: [
                 _SettingsTile(
                   icon: Icons.help_outline_rounded,
-                  title: 'Help center',
-                  subtitle: 'Booking and club assistance',
+                  title: context.tr("Help center"),
+                  subtitle: context.tr("Booking and club assistance"),
                   onTap: () => _showInformation(
                     context,
-                    'Help center',
-                    'Contact the PadelClub front desk for booking and account assistance.',
+                    context.tr("Help center"),
+                    context.tr(
+                      "Contact the PadelClub front desk for booking and account assistance.",
+                    ),
                   ),
                 ),
                 _SettingsTile(
                   icon: Icons.info_outline_rounded,
-                  title: 'About PadelClub',
-                  subtitle: 'Version 1.0.0',
+                  title: context.tr("About PadelClub"),
+                  subtitle: context.tr("Version 1.0.0"),
                   onTap: () => showAboutDialog(
                     context: context,
                     applicationName: 'PadelClub',
@@ -399,7 +542,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             OutlinedButton.icon(
               onPressed: () => _confirmLogout(context),
               icon: const Icon(Icons.logout_rounded),
-              label: const Text('Sign out'),
+              label: Text(context.tr("Sign out")),
               style: OutlinedButton.styleFrom(
                 foregroundColor: PadelColors.danger,
                 side: const BorderSide(color: Color(0xFFF0C9C3)),
@@ -487,8 +630,8 @@ class _ProfileHeader extends StatelessWidget {
                     color: Colors.white.withValues(alpha: 0.16),
                     borderRadius: BorderRadius.circular(999),
                   ),
-                  child: const Text(
-                    'PADELCLUB PLAYER',
+                  child: Text(
+                    context.tr("PADELCLUB PLAYER"),
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 10,
@@ -672,7 +815,7 @@ class _InlineNotice extends StatelessWidget {
       const SizedBox(width: 10),
       Expanded(child: Text(message)),
       IconButton(
-        tooltip: 'Retry',
+        tooltip: context.tr("Retry"),
         onPressed: onRetry,
         icon: const Icon(Icons.refresh_rounded),
       ),
@@ -699,10 +842,6 @@ String _initials(String value) {
   return parts.take(2).map((part) => part[0].toUpperCase()).join();
 }
 
-String? _required(String? value) {
-  return value?.trim().isEmpty == true ? 'This field is required' : null;
-}
-
 void _showInformation(BuildContext context, String title, String message) {
   showDialog<void>(
     context: context,
@@ -712,7 +851,7 @@ void _showInformation(BuildContext context, String title, String message) {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Close'),
+          child: Text(context.tr("Close")),
         ),
       ],
     ),
@@ -723,16 +862,18 @@ Future<void> _confirmLogout(BuildContext context) async {
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('Sign out?'),
-      content: const Text('You will need to enter your credentials again.'),
+      title: Text(context.tr("Sign out?")),
+      content: Text(
+        context.tr("You will need to enter your credentials again."),
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('Stay signed in'),
+          child: Text(context.tr("Stay signed in")),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(context, true),
-          child: const Text('Sign out'),
+          child: Text(context.tr("Sign out")),
         ),
       ],
     ),

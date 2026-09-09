@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
 
+import 'package:padelclub_desktop/core/localization/app_localizations.dart';
 import 'package:padelclub_desktop/core/theme/app_theme.dart';
 import 'package:padelclub_desktop/core/widgets/admin_components.dart';
 import 'package:padelclub_desktop/features/notifications/domain/entities/club_notification.dart';
 import 'package:padelclub_desktop/features/notifications/presentation/providers/notification_provider.dart';
+import 'package:padelclub_desktop/features/notifications/presentation/screens/notification_delivery_diagnostics_screen.dart';
 import 'package:padelclub_desktop/features/users/domain/entities/user.dart';
 import 'package:padelclub_desktop/features/users/presentation/providers/user_provider.dart';
 import 'package:padelclub_desktop/layouts/master_screen.dart';
@@ -37,10 +40,16 @@ class _NotificationManagementScreenState
     super.dispose();
   }
 
+  Future<void> _openDeliveryDiagnostics() => Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => const NotificationDeliveryDiagnosticsScreen(),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     return MasterScreen(
-      title: 'Notifications',
+      title: context.tr("Notifications"),
       section: AppSection.notifications,
       child: Consumer<NotificationProvider>(
         builder: (context, provider, _) {
@@ -49,13 +58,26 @@ class _NotificationManagementScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AdminPageHeader(
-                title: 'Notifications',
-                subtitle:
-                    'Create and manage notifications delivered to club members.',
-                action: FilledButton.icon(
-                  onPressed: provider.isLoading ? null : _sendNotification,
-                  icon: const Icon(Icons.add_rounded, size: 18),
-                  label: const Text('Send Notification'),
+                title: context.tr("Notifications"),
+                subtitle: context.tr(
+                  "Create and manage notifications delivered to club members.",
+                ),
+                action: Wrap(
+                  spacing: PadelSpacing.sm,
+                  runSpacing: PadelSpacing.sm,
+                  children: [
+                    OutlinedButton.icon(
+                      key: const Key('open-delivery-diagnostics'),
+                      onPressed: _openDeliveryDiagnostics,
+                      icon: const Icon(Icons.monitor_heart_outlined, size: 18),
+                      label: Text(context.tr("Delivery diagnostics")),
+                    ),
+                    FilledButton.icon(
+                      onPressed: provider.isLoading ? null : _sendNotification,
+                      icon: const Icon(Icons.add_rounded, size: 18),
+                      label: Text(context.tr("Send Notification")),
+                    ),
+                  ],
                 ),
               ),
               const Divider(height: 1),
@@ -69,17 +91,17 @@ class _NotificationManagementScreenState
                       runSpacing: PadelSpacing.xs,
                       children:
                           [
-                                'All',
-                                'Unread',
-                                'Bookings',
-                                'Orders',
-                                'Users',
-                                'System',
+                                "All",
+                                "Unread",
+                                "Bookings",
+                                "Orders",
+                                "Users",
+                                "System",
                               ]
                               .map(
                                 (filter) => AdminFilterChip(
                                   label: filter == 'All'
-                                      ? 'All Notifications'
+                                      ? context.tr("All Notifications")
                                       : filter,
                                   selected: _filter == filter,
                                   onSelected: (_) =>
@@ -95,19 +117,19 @@ class _NotificationManagementScreenState
                       children: [
                         AdminSearchField(
                           controller: _searchController,
-                          hintText: 'Search notifications...',
+                          hintText: context.tr("Search notifications..."),
                           width: 320,
                           onSubmitted: _setQuery,
                         ),
                         OutlinedButton.icon(
                           onPressed: () => _setQuery(_searchController.text),
                           icon: const Icon(Icons.search_rounded, size: 17),
-                          label: const Text('Search'),
+                          label: Text(context.tr("Search")),
                         ),
                         OutlinedButton.icon(
                           onPressed: provider.loadAdminNotifications,
                           icon: const Icon(Icons.refresh_rounded, size: 17),
-                          label: const Text('Refresh'),
+                          label: Text(context.tr("Refresh")),
                         ),
                       ],
                     ),
@@ -139,16 +161,18 @@ class _NotificationManagementScreenState
     if (provider.errorMessage != null) {
       return _NotificationState(
         icon: Icons.cloud_off_rounded,
-        title: 'Notifications are unavailable',
+        title: context.tr("Notifications are unavailable"),
         message: provider.errorMessage!,
         onRetry: provider.loadAdminNotifications,
       );
     }
     if (items.isEmpty) {
-      return const _NotificationState(
+      return _NotificationState(
         icon: Icons.notifications_none_rounded,
-        title: 'No notifications found',
-        message: 'Send a notification or adjust the current filters.',
+        title: context.tr("No notifications found"),
+        message: context.tr(
+          "Send a notification or adjust the current filters.",
+        ),
       );
     }
     return LayoutBuilder(
@@ -162,12 +186,12 @@ class _NotificationManagementScreenState
               dataRowMinHeight: 72,
               dataRowMaxHeight: 82,
               columnSpacing: 38,
-              columns: const [
-                DataColumn(label: Text('NOTIFICATION')),
-                DataColumn(label: Text('TYPE')),
-                DataColumn(label: Text('DELIVERY')),
-                DataColumn(label: Text('TIME')),
-                DataColumn(label: Text('ACTIONS')),
+              columns: [
+                DataColumn(label: Text(context.tr("NOTIFICATION"))),
+                DataColumn(label: Text(context.tr("TYPE"))),
+                DataColumn(label: Text(context.tr("DELIVERY"))),
+                DataColumn(label: Text(context.tr("TIME"))),
+                DataColumn(label: Text(context.tr("ACTIONS"))),
               ],
               rows: items.map(_row).toList(growable: false),
             ),
@@ -236,7 +260,10 @@ class _NotificationManagementScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${item.readCount} of ${item.recipientCount} read',
+                context.tr("{p1} of {p2} read", {
+                  'p1': item.readCount,
+                  'p2': item.recipientCount,
+                }),
                 style: const TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 12,
@@ -256,26 +283,26 @@ class _NotificationManagementScreenState
             ],
           ),
         ),
-        DataCell(Text(_relativeTime(item.createdAt))),
+        DataCell(Text(_relativeTime(context, item.createdAt))),
         DataCell(
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               AdminActionButton(
                 icon: Icons.visibility_outlined,
-                tooltip: 'View notification',
+                tooltip: context.tr("View notification"),
                 onPressed: () => _showDetails(item),
               ),
               const SizedBox(width: PadelSpacing.xs),
               AdminActionButton(
                 icon: Icons.edit_outlined,
-                tooltip: 'Edit notification',
+                tooltip: context.tr("Edit notification"),
                 onPressed: () => _editNotification(item),
               ),
               const SizedBox(width: PadelSpacing.xs),
               AdminActionButton(
                 icon: Icons.delete_outline_rounded,
-                tooltip: 'Delete notification',
+                tooltip: context.tr("Delete notification"),
                 onPressed: () => _deleteNotification(item),
                 destructive: true,
               ),
@@ -324,7 +351,9 @@ class _NotificationManagementScreenState
     );
     if (!mounted) return;
     _notice(
-      sent ? 'Notification sent.' : provider.errorMessage ?? 'Send failed.',
+      sent
+          ? context.tr("Notification sent.")
+          : provider.errorMessage ?? context.tr("Send failed."),
     );
   }
 
@@ -350,8 +379,9 @@ class _NotificationManagementScreenState
     if (!mounted) return;
     _notice(
       updated
-          ? 'Notification updated.'
-          : provider.errorMessage ?? 'Update failed.',
+          ? context.tr("Notification updated.")
+          : provider.errorMessage ?? context.tr("Update failed."),
+      isError: !updated,
     );
   }
 
@@ -359,16 +389,18 @@ class _NotificationManagementScreenState
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete notification?'),
-        content: Text('Delete “${item.title}” for all recipients?'),
+        title: Text(context.tr("Delete notification?")),
+        content: Text(
+          context.tr("Delete “{p1}” for all recipients?", {'p1': item.title}),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Keep'),
+            child: Text(context.tr("Keep")),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: Text(context.tr("Delete")),
           ),
         ],
       ),
@@ -379,8 +411,9 @@ class _NotificationManagementScreenState
     if (!mounted) return;
     _notice(
       deleted
-          ? 'Notification deleted.'
-          : provider.errorMessage ?? 'Delete failed.',
+          ? context.tr("Notification deleted.")
+          : provider.errorMessage ?? context.tr("Delete failed."),
+      isError: !deleted,
     );
   }
 
@@ -390,14 +423,21 @@ class _NotificationManagementScreenState
       builder: (context) => AlertDialog(
         title: Text(item.title),
         content: Text(
-          '${item.message}\n\nType: ${item.type}\n'
-          'Delivered to: ${item.recipientCount} users\n'
-          'Read by: ${item.readCount} users\nCreated: ${_dateTime(item.createdAt)}',
+          context.tr(
+            "{p1}\n\nType: {p2}\nDelivered to: {p3} users\nRead by: {p4} users\nCreated: {p5}",
+            {
+              'p1': item.message,
+              'p2': item.type,
+              'p3': item.recipientCount,
+              'p4': item.readCount,
+              'p5': _dateTime(context, item.createdAt),
+            },
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text(context.tr("Close")),
           ),
         ],
       ),
@@ -408,10 +448,13 @@ class _NotificationManagementScreenState
     setState(() => _query = value.trim().toLowerCase());
   }
 
-  void _notice(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _notice(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? PadelColors.danger : null,
+      ),
+    );
   }
 }
 
@@ -453,7 +496,7 @@ class _NotificationDialogState extends State<_NotificationDialog> {
     super.initState();
     _title = TextEditingController(text: widget.notification?.title ?? '');
     _message = TextEditingController(text: widget.notification?.message ?? '');
-    _type = widget.notification?.type ?? 'System';
+    _type = widget.notification?.type ?? context.tr("System");
   }
 
   @override
@@ -467,38 +510,47 @@ class _NotificationDialogState extends State<_NotificationDialog> {
   Widget build(BuildContext context) {
     const types = ['System', 'Bookings', 'Orders', 'Users', 'Payments'];
     return AlertDialog(
-      title: Text(_isEditing ? 'Edit notification' : 'Send notification'),
+      title: Text(
+        _isEditing
+            ? context.tr("Edit notification")
+            : context.tr("Send notification"),
+      ),
       content: SizedBox(
         width: 500,
         child: Form(
           key: _formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextFormField(
                 controller: _title,
-                decoration: const InputDecoration(labelText: 'Title'),
+                decoration: InputDecoration(labelText: context.tr("Title")),
                 maxLength: 200,
-                validator: (value) =>
-                    value?.trim().isEmpty == true ? 'Enter a title' : null,
+                validator: (value) => value?.trim().isEmpty == true
+                    ? context.tr("Enter a title")
+                    : null,
               ),
               const SizedBox(height: PadelSpacing.sm),
               TextFormField(
                 controller: _message,
-                decoration: const InputDecoration(labelText: 'Message'),
+                decoration: InputDecoration(labelText: context.tr("Message")),
                 maxLength: 2000,
                 maxLines: 4,
-                validator: (value) =>
-                    value?.trim().isEmpty == true ? 'Enter a message' : null,
+                validator: (value) => value?.trim().isEmpty == true
+                    ? context.tr("Enter a message")
+                    : null,
               ),
               const SizedBox(height: PadelSpacing.sm),
               DropdownButtonFormField<String>(
                 initialValue: types.contains(_type) ? _type : 'System',
-                decoration: const InputDecoration(labelText: 'Type'),
+                decoration: InputDecoration(labelText: context.tr("Type")),
                 items: types
                     .map(
-                      (type) =>
-                          DropdownMenuItem(value: type, child: Text(type)),
+                      (type) => DropdownMenuItem(
+                        value: type,
+                        child: Text(context.tr(type)),
+                      ),
                     )
                     .toList(growable: false),
                 onChanged: (value) => _type = value ?? 'System',
@@ -507,11 +559,13 @@ class _NotificationDialogState extends State<_NotificationDialog> {
                 const SizedBox(height: PadelSpacing.sm),
                 DropdownButtonFormField<int>(
                   initialValue: _recipientSelection,
-                  decoration: const InputDecoration(labelText: 'Recipients'),
+                  decoration: InputDecoration(
+                    labelText: context.tr("Recipients"),
+                  ),
                   items: [
-                    const DropdownMenuItem<int>(
+                    DropdownMenuItem<int>(
                       value: 0,
-                      child: Text('All active users'),
+                      child: Text(context.tr("All active users")),
                     ),
                     ...widget.users.map(
                       (user) => DropdownMenuItem<int>(
@@ -530,11 +584,11 @@ class _NotificationDialogState extends State<_NotificationDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(context.tr("Cancel")),
         ),
         FilledButton(
           onPressed: _submit,
-          child: Text(_isEditing ? 'Save' : 'Send'),
+          child: Text(_isEditing ? context.tr("Save") : context.tr("Send")),
         ),
       ],
     );
@@ -584,7 +638,10 @@ class _NotificationState extends StatelessWidget {
           ),
           if (onRetry != null) ...[
             const SizedBox(height: PadelSpacing.md),
-            FilledButton(onPressed: onRetry, child: const Text('Try again')),
+            FilledButton(
+              onPressed: onRetry,
+              child: Text(context.tr("Try again")),
+            ),
           ],
         ],
       ),
@@ -623,31 +680,20 @@ Color _toneSurface(AdminStatusTone tone) => switch (tone) {
   AdminStatusTone.neutral => PadelColors.canvas,
 };
 
-String _relativeTime(DateTime value) {
+String _relativeTime(BuildContext context, DateTime value) {
   final difference = DateTime.now().difference(value);
-  if (difference.inMinutes < 1) return 'Just now';
-  if (difference.inHours < 1) return '${difference.inMinutes} min ago';
-  if (difference.inDays < 1) return '${difference.inHours} hr ago';
-  if (difference.inDays < 7) return '${difference.inDays} days ago';
-  return _dateTime(value);
+  if (difference.inMinutes < 1) return context.tr("Just now");
+  if (difference.inHours < 1) {
+    return context.tr("{p1} min ago", {'p1': difference.inMinutes});
+  }
+  if (difference.inDays < 1) {
+    return context.tr("{p1} hr ago", {'p1': difference.inHours});
+  }
+  if (difference.inDays < 7) {
+    return context.tr("{p1} days ago", {'p1': difference.inDays});
+  }
+  return _dateTime(context, value);
 }
 
-String _dateTime(DateTime value) {
-  const months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  final time =
-      '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
-  return '${months[value.month - 1]} ${value.day}, ${value.year} · $time';
-}
+String _dateTime(BuildContext context, DateTime value) =>
+    '${context.l10n.date(value)} · ${TimeOfDay.fromDateTime(value.toLocal()).format(context)}';

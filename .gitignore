@@ -17,6 +17,14 @@ coverage/
 # Logs
 *.log
 
+# Local configuration
+.env
+.env.*
+!.env.example
+
+# Local and CI Compose smoke evidence
+artifacts/clean-compose-smoke/
+
 # Database
 *.db
 

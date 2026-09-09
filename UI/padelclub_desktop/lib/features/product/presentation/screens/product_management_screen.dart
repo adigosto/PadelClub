@@ -1,21 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 import 'package:provider/provider.dart';
 
+import 'package:padelclub_desktop/core/localization/app_localizations.dart';
 import 'package:padelclub_desktop/core/theme/app_theme.dart';
 import 'package:padelclub_desktop/core/widgets/admin_components.dart';
+import 'package:padelclub_desktop/features/coupons/presentation/screens/coupon_management_screen.dart';
+import 'package:padelclub_desktop/features/inventory_operations/presentation/providers/inventory_operations_provider.dart';
 import 'package:padelclub_desktop/features/product/domain/entities/product.dart';
 import 'package:padelclub_desktop/features/product/presentation/providers/product_provider.dart';
 import 'package:padelclub_desktop/layouts/master_screen.dart';
 
-class ProductManagementScreen extends StatefulWidget {
+class ProductManagementScreen extends StatelessWidget {
   const ProductManagementScreen({super.key});
 
   @override
-  State<ProductManagementScreen> createState() =>
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider<InventoryOperationsProvider>(
+      create: (_) => InventoryOperationsProvider.live(),
+      child: const _ProductManagementContent(),
+    );
+  }
+}
+
+class _ProductManagementContent extends StatefulWidget {
+  const _ProductManagementContent();
+
+  @override
+  State<_ProductManagementContent> createState() =>
       _ProductManagementScreenState();
 }
 
-class _ProductManagementScreenState extends State<ProductManagementScreen> {
+class _ProductManagementScreenState extends State<_ProductManagementContent> {
   final _searchController = TextEditingController();
   List<Product> _products = const [];
   bool _isLoading = true;
@@ -61,21 +78,37 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   @override
   Widget build(BuildContext context) {
     final products = _filtered();
+    final inventoryOperations = context.watch<InventoryOperationsProvider>();
     return MasterScreen(
-      title: 'Product Management',
+      title: context.tr("Product Management"),
       section: AppSection.products,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AdminPageHeader(
-            title: 'Product Management',
-            subtitle:
-                'Manage club products, inventory, pricing, and availability.',
-            action: FilledButton.icon(
-              onPressed: () =>
-                  _notice('Product creation will use the inventory form.'),
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Add Product'),
+            title: context.tr("Product Management"),
+            subtitle: context.tr(
+              "Manage club products, inventory, pricing, and availability.",
+            ),
+            action: Wrap(
+              spacing: PadelSpacing.sm,
+              runSpacing: PadelSpacing.sm,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const CouponManagementScreen(),
+                    ),
+                  ),
+                  icon: const Icon(Icons.local_offer_outlined, size: 18),
+                  label: Text(context.tr("Manage coupons")),
+                ),
+                FilledButton.icon(
+                  onPressed: null,
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: Text(context.tr("Add Product")),
+                ),
+              ],
             ),
           ),
           const Divider(height: 1),
@@ -87,10 +120,12 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                 Wrap(
                   spacing: PadelSpacing.xs,
                   runSpacing: PadelSpacing.xs,
-                  children: ['All', 'In Stock', 'Low Stock', 'Unavailable']
+                  children: ["All", "In Stock", "Low Stock", "Unavailable"]
                       .map(
                         (filter) => AdminFilterChip(
-                          label: filter == 'All' ? 'All Products' : filter,
+                          label: filter == 'All'
+                              ? context.tr("All Products")
+                              : filter,
                           selected: _filter == filter,
                           onSelected: (_) => setState(() => _filter = filter),
                         ),
@@ -104,19 +139,19 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                   children: [
                     AdminSearchField(
                       controller: _searchController,
-                      hintText: 'Search products...',
+                      hintText: context.tr("Search products..."),
                       width: 320,
                       onSubmitted: _setQuery,
                     ),
                     OutlinedButton.icon(
                       onPressed: () => _setQuery(_searchController.text),
                       icon: const Icon(Icons.search_rounded, size: 17),
-                      label: const Text('Search'),
+                      label: Text(context.tr("Search")),
                     ),
                     OutlinedButton.icon(
                       onPressed: _load,
                       icon: const Icon(Icons.refresh_rounded, size: 17),
-                      label: const Text('Refresh'),
+                      label: Text(context.tr("Refresh")),
                     ),
                   ],
                 ),
@@ -131,7 +166,9 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                 PadelSpacing.lg,
                 PadelSpacing.lg,
               ),
-              child: AdminTableSurface(child: _content(products)),
+              child: AdminTableSurface(
+                child: _content(products, inventoryOperations),
+              ),
             ),
           ),
         ],
@@ -139,21 +176,24 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     );
   }
 
-  Widget _content(List<Product> products) {
+  Widget _content(
+    List<Product> products,
+    InventoryOperationsProvider inventoryOperations,
+  ) {
     if (_isLoading) return const Center(child: CircularProgressIndicator());
     if (_errorMessage != null) {
       return _ProductMessage(
         icon: Icons.cloud_off_rounded,
-        title: 'Products are unavailable',
+        title: context.tr("Products are unavailable"),
         message: _errorMessage!,
         onRetry: _load,
       );
     }
     if (products.isEmpty) {
-      return const _ProductMessage(
+      return _ProductMessage(
         icon: Icons.inventory_2_outlined,
-        title: 'No products found',
-        message: 'Adjust the search or inventory filter.',
+        title: context.tr("No products found"),
+        message: context.tr("Adjust the search or inventory filter."),
       );
     }
     return LayoutBuilder(
@@ -167,14 +207,16 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
               dataRowMinHeight: 70,
               dataRowMaxHeight: 80,
               columnSpacing: 34,
-              columns: const [
-                DataColumn(label: Text('PRODUCT')),
-                DataColumn(label: Text('CATEGORY')),
-                DataColumn(label: Text('PRICE')),
-                DataColumn(label: Text('STOCK')),
-                DataColumn(label: Text('ACTIONS')),
+              columns: [
+                DataColumn(label: Text(context.tr("PRODUCT"))),
+                DataColumn(label: Text(context.tr("CATEGORY"))),
+                DataColumn(label: Text(context.tr("PRICE"))),
+                DataColumn(label: Text(context.tr("STOCK"))),
+                DataColumn(label: Text(context.tr("ACTIONS"))),
               ],
-              rows: products.map(_row).toList(growable: false),
+              rows: products
+                  .map((product) => _row(product, inventoryOperations))
+                  .toList(growable: false),
             ),
           ),
         ),
@@ -182,9 +224,20 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     );
   }
 
-  DataRow _row(Product product) {
+  DataRow _row(
+    Product product,
+    InventoryOperationsProvider inventoryOperations,
+  ) {
     final unavailable = _unavailable(product);
     final lowStock = !unavailable && product.stockQuantity <= 10;
+    final productId = product.id;
+    final inventoryBusy =
+        inventoryOperations.adjustingProductId != null ||
+        inventoryOperations.loadingHistoryProductId != null;
+    final isAdjusting =
+        productId != null && inventoryOperations.isAdjusting(productId);
+    final isLoadingHistory =
+        productId != null && inventoryOperations.isLoadingHistory(productId);
     return DataRow(
       cells: [
         DataCell(
@@ -236,17 +289,17 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
         ),
         DataCell(
           Text(
-            '${product.price.toStringAsFixed(2)} KM',
+            '${context.l10n.number(product.price, decimalDigits: 2)} KM',
             style: const TextStyle(fontWeight: FontWeight.w800),
           ),
         ),
         DataCell(
           AdminStatusBadge(
             label: unavailable
-                ? 'Unavailable'
+                ? context.tr("Unavailable")
                 : lowStock
-                ? '${product.stockQuantity} units'
-                : '${product.stockQuantity} units',
+                ? context.tr("{p1} units", {'p1': product.stockQuantity})
+                : context.tr("{p1} units", {'p1': product.stockQuantity}),
             tone: unavailable
                 ? AdminStatusTone.danger
                 : lowStock
@@ -259,18 +312,46 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (isAdjusting)
+                _InventoryActionProgress(
+                  label: context.tr("Saving stock adjustment"),
+                )
+              else
+                AdminActionButton(
+                  icon: Icons.tune_rounded,
+                  tooltip: context.tr("Adjust stock for {p1}", {
+                    'p1': product.name,
+                  }),
+                  onPressed: productId == null || inventoryBusy
+                      ? null
+                      : () => _adjustStock(product),
+                ),
+              const SizedBox(width: PadelSpacing.xs),
+              if (isLoadingHistory)
+                _InventoryActionProgress(
+                  label: context.tr("Loading inventory history"),
+                )
+              else
+                AdminActionButton(
+                  icon: Icons.history_rounded,
+                  tooltip: context.tr("View stock history for {p1}", {
+                    'p1': product.name,
+                  }),
+                  onPressed: productId == null || inventoryBusy
+                      ? null
+                      : () => _showInventoryHistory(product),
+                ),
+              const SizedBox(width: PadelSpacing.xs),
               AdminActionButton(
                 icon: Icons.edit_outlined,
-                tooltip: 'Edit product',
-                onPressed: () => _showProduct(product),
+                tooltip: context.tr("Edit product"),
+                onPressed: inventoryBusy ? null : () => _showProduct(product),
               ),
               const SizedBox(width: PadelSpacing.xs),
               AdminActionButton(
                 icon: Icons.delete_outline_rounded,
-                tooltip: 'Delete product',
-                onPressed: () => _notice(
-                  'Product deletion will be connected after inventory confirmation is added.',
-                ),
+                tooltip: context.tr("Delete product"),
+                onPressed: null,
                 destructive: true,
               ),
             ],
@@ -314,23 +395,229 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
       builder: (context) => AlertDialog(
         title: Text(product.name),
         content: Text(
-          '${product.description}\n\nPrice: ${product.price.toStringAsFixed(2)} KM\n'
-          'Stock: ${product.stockQuantity}\nState: ${product.productState}',
+          context.tr("{p1}\n\nPrice: {p2} KM\nStock: {p3}\nState: {p4}", {
+            'p1': product.description,
+            'p2': context.l10n.number(product.price, decimalDigits: 2),
+            'p3': product.stockQuantity,
+            'p4': product.productState,
+          }),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text(context.tr("Close")),
           ),
         ],
       ),
     );
   }
 
-  void _notice(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  Future<void> _adjustStock(Product product) async {
+    final productId = product.id;
+    if (productId == null) return;
+    final quantity = TextEditingController();
+    final reason = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final adjustment = await showDialog<({int quantityChange, String reason})>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(context.tr("Adjust stock · {p1}", {'p1': product.name})),
+        content: Form(
+          key: formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                context.tr("Current recorded stock: {p1} units.", {
+                  'p1': product.stockQuantity,
+                }),
+              ),
+              const SizedBox(height: PadelSpacing.md),
+              TextFormField(
+                controller: quantity,
+                keyboardType: const TextInputType.numberWithOptions(
+                  signed: true,
+                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'-|[0-9]')),
+                ],
+                decoration: InputDecoration(
+                  labelText: context.tr("Quantity change"),
+                  hintText: context.tr("Example: 12 or -3"),
+                ),
+                validator: (value) {
+                  final parsed = int.tryParse(value?.trim() ?? '');
+                  if (parsed == null || parsed == 0) {
+                    return context.tr(
+                      "Enter a non-zero whole-number adjustment.",
+                    );
+                  }
+                  if (parsed.abs() > 10000) {
+                    return context.tr(
+                      "Use an adjustment between -10,000 and 10,000.",
+                    );
+                  }
+                  if (product.stockQuantity + parsed < 0) {
+                    return context.tr("This would make stock negative.");
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: PadelSpacing.md),
+              TextFormField(
+                controller: reason,
+                maxLength: 200,
+                maxLines: 2,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: InputDecoration(
+                  labelText: context.tr("Audit reason"),
+                  hintText: context.tr("Example: Counted delivery received"),
+                ),
+                validator: (value) => (value?.trim().length ?? 0) < 3
+                    ? context.tr(
+                        "Give a reason with at least three characters.",
+                      )
+                    : null,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(context.tr("Cancel")),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() != true) return;
+              Navigator.pop(dialogContext, (
+                quantityChange: int.parse(quantity.text.trim()),
+                reason: reason.text.trim(),
+              ));
+            },
+            child: Text(context.tr("Save adjustment")),
+          ),
+        ],
+      ),
+    );
+    quantity.dispose();
+    reason.dispose();
+    if (adjustment == null || !mounted) return;
+
+    final inventory = context.read<InventoryOperationsProvider>();
+    try {
+      final history = await inventory.adjustAndRefresh(
+        productId: productId,
+        quantityChange: adjustment.quantityChange,
+        reason: adjustment.reason,
+      );
+      if (!mounted) return;
+      if (history.isNotEmpty) {
+        setState(() => product.stockQuantity = history.first.balanceAfter);
+      } else {
+        await _load();
+      }
+      if (!mounted) return;
+      _notice(
+        context.tr(
+          "Stock adjusted by {p1}{p2}. The server audit history is up to date.",
+          {
+            'p1': adjustment.quantityChange > 0 ? '+' : '',
+            'p2': adjustment.quantityChange,
+          },
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      _notice(
+        inventory.errorMessage ??
+            context.tr("The stock adjustment could not be saved."),
+        isError: true,
+      );
+    }
+  }
+
+  Future<void> _showInventoryHistory(Product product) async {
+    final productId = product.id;
+    if (productId == null) return;
+    final inventory = context.read<InventoryOperationsProvider>();
+    try {
+      final history = await inventory.loadHistory(productId);
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(context.tr("Stock history · {p1}", {'p1': product.name})),
+          content: SizedBox(
+            width: 620,
+            height: 360,
+            child: history.isEmpty
+                ? Center(
+                    child: Text(
+                      context.tr("No inventory movements are recorded yet."),
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount: history.length,
+                    separatorBuilder: (_, _) => const Divider(height: 1),
+                    itemBuilder: (_, index) {
+                      final movement = history[index];
+                      final timestamp = MaterialLocalizations.of(
+                        dialogContext,
+                      ).formatFullDate(movement.createdAt.toLocal());
+                      return ListTile(
+                        dense: true,
+                        leading: CircleAvatar(
+                          backgroundColor: movement.quantityChange < 0
+                              ? PadelColors.dangerSoft
+                              : PadelColors.greenSoft,
+                          foregroundColor: movement.quantityChange < 0
+                              ? PadelColors.danger
+                              : PadelColors.greenDark,
+                          child: Text(movement.signedQuantityChange),
+                        ),
+                        title: Text(movement.reason),
+                        subtitle: Text(
+                          '$timestamp · ${movement.referenceType}',
+                        ),
+                        trailing: Text(
+                          context.tr("Balance\n{p1}", {
+                            'p1': movement.balanceAfter,
+                          }),
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(context.tr("Close")),
+            ),
+          ],
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      _notice(
+        inventory.errorMessage ??
+            context.tr("The inventory history could not be loaded."),
+        isError: true,
+      );
+    }
+  }
+
+  void _notice(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? PadelColors.danger : null,
+      ),
+    );
   }
 }
 
@@ -380,12 +667,34 @@ class _ProductMessage extends StatelessWidget {
           Text(message, style: Theme.of(context).textTheme.bodySmall),
           if (onRetry != null) ...[
             const SizedBox(height: PadelSpacing.md),
-            FilledButton(onPressed: onRetry, child: const Text('Try again')),
+            FilledButton(
+              onPressed: onRetry,
+              child: Text(context.tr("Try again")),
+            ),
           ],
         ],
       ),
     );
   }
+}
+
+class _InventoryActionProgress extends StatelessWidget {
+  const _InventoryActionProgress({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: label,
+    child: const SizedBox(
+      width: 44,
+      height: 44,
+      child: Padding(
+        padding: EdgeInsets.all(12),
+        child: CircularProgressIndicator(strokeWidth: 2),
+      ),
+    ),
+  );
 }
 
 String _category(String productName) {

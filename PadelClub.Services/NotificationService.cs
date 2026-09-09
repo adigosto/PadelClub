@@ -26,11 +26,8 @@ namespace PadelClub.Services
             int? totalCount = search.IncludeTotalCount ? await query.CountAsync() : null;
             query = query.OrderByDescending(x => x.CreatedAt);
             var page = Math.Max(search.Page.GetValueOrDefault(1), 1);
-            var pageSize = search.PageSize.GetValueOrDefault(10);
-            if (pageSize > 0)
-            {
-                query = query.Skip((page - 1) * pageSize).Take(pageSize);
-            }
+            var pageSize = Math.Clamp(search.PageSize.GetValueOrDefault(10), 1, 100);
+            query = query.Skip((page - 1) * pageSize).Take(pageSize);
 
             var items = await query.ToListAsync();
             return new PagedResult<NotificationResponse>
@@ -137,11 +134,8 @@ namespace PadelClub.Services
             int? totalCount = search.IncludeTotalCount ? await query.CountAsync() : null;
             query = query.OrderByDescending(x => x.CreatedAt);
             var page = Math.Max(search.Page.GetValueOrDefault(1), 1);
-            var pageSize = search.PageSize.GetValueOrDefault(10);
-            if (pageSize > 0)
-            {
-                query = query.Skip((page - 1) * pageSize).Take(pageSize);
-            }
+            var pageSize = Math.Clamp(search.PageSize.GetValueOrDefault(10), 1, 100);
+            query = query.Skip((page - 1) * pageSize).Take(pageSize);
 
             var items = await query.ToListAsync();
             return new PagedResult<NotificationResponse>

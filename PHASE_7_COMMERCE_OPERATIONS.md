@@ -5,7 +5,9 @@
 - Checkout decrements stock inside a serializable transaction.
 - Manual adjustments require an administrator and a reason.
 - Order cancellation restores stock; shipped and delivered orders cannot be cancelled.
-- Approved returns restore stock.
+- Manual/non-provider returns restore stock on approval. Stripe-backed returns
+  restore stock only after the durable provider refund has been reconciled and
+  settled locally.
 - Every change records quantity delta, resulting balance, actor, reason, and reference.
 
 ## Coupons
@@ -21,7 +23,10 @@
 - Duplicate or excessive return quantities are rejected.
 - Discounts are allocated proportionally when refund amounts are calculated.
 - Administrators approve or reject requests.
-- Approved Stripe orders are refunded through Stripe before inventory is restored.
+- Approving a Stripe return commits a `RefundPending` operation before provider
+  I/O. A leased worker reconciles/creates the Stripe refund idempotently, then
+  records the refund and restores inventory exactly once in a final SQL
+  transaction. It is a recoverable saga, not a distributed transaction.
 
 ## Analytics and auditing
 

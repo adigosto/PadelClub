@@ -2,6 +2,7 @@ using MapsterMapper;
 using PadelClub.Model;
 using PadelClub.Model.Requests;
 using PadelClub.Model.SearchObjects;
+using PadelClub.Model.Responses;
 using PadelClub.Services.Database;
 using DbMembership = PadelClub.Services.Database.Membership;
 using Microsoft.EntityFrameworkCore;
@@ -26,11 +27,44 @@ namespace PadelClub.Services
             return result;
         }
 
+        public override Task<bool> DeleteAsync(int id) =>
+            throw new InvalidOperationException("Membership history cannot be deleted. Use the cancellation workflow.");
+
+        public override Task<MembershipResponse?> UpdateAsync(int id, MembershipUpdateRequest request) =>
+            throw new InvalidOperationException("Memberships can only be changed through the lifecycle workflow.");
+
+        public Task<List<MembershipTypeReferenceResponse>> GetTypeReferencesAsync(CancellationToken cancellationToken) =>
+            _dbContext.MembershipTypeReferences.AsNoTracking()
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.Name)
+                .Select(x => new MembershipTypeReferenceResponse { Id = x.Id, Name = x.Name, IsActive = x.IsActive })
+                .ToListAsync(cancellationToken);
+
+        protected override async Task BeforeInsert(DbMembership entity, MembershipInsertRequest request)
+        {
+            var typeName = request.MembershipType.Trim();
+            var reference = request.MembershipTypeReferenceId.HasValue
+                ? await _dbContext.MembershipTypeReferences.SingleOrDefaultAsync(
+                    x => x.Id == request.MembershipTypeReferenceId.Value && x.IsActive)
+                : await _dbContext.MembershipTypeReferences.SingleOrDefaultAsync(
+                    x => x.IsActive && x.Name == typeName);
+            if (reference is null)
+                throw new InvalidOperationException("Membership type must be selected from the configured reference list.");
+
+            entity.MembershipType = reference.Name;
+            entity.MembershipTypeReferenceId = reference.Id;
+        }
+
         protected override IQueryable<DbMembership> ApplyFilter(IQueryable<DbMembership> query, MembershipSearchObject search)
         {
             if (search.UserId.HasValue)
             {
                 query = query.Where(x => x.UserId == search.UserId.Value);
+            }
+
+            if (search.MembershipTypeReferenceId.HasValue)
+            {
+                query = query.Where(x => x.MembershipTypeReferenceId == search.MembershipTypeReferenceId.Value);
             }
 
             if (!string.IsNullOrWhiteSpace(search.MembershipType))

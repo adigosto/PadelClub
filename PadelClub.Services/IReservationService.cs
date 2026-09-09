@@ -14,12 +14,13 @@ namespace PadelClub.Services
     {
         Task<List<CourtAvailabilityResponse>> GetAvailabilityAsync(DateTime date);
         Task<PagedResult<ReservationResponse>> GetForUserAsync(int userId, ReservationSearchObject search);
-        Task<ReservationResponse?> CancelAsync(int id, int userId, bool isAdministrator);
+        Task<ReservationResponse?> GetOwnedByIdAsync(int id, int userId, bool isAdministrator);
+        Task<ReservationResponse?> CancelAsync(int id, int userId, bool isAdministrator, string reason);
         Task<List<ReservationResponse>> CreateRecurringAsync(int userId, RecurringReservationRequest request);
         Task<WaitlistEntryResponse> JoinWaitlistAsync(int userId, WaitlistRequest request);
-        Task<List<WaitlistEntryResponse>> GetWaitlistAsync(int userId);
-        Task<List<AccountCreditResponse>> GetCreditsAsync(int userId);
+        Task<List<WaitlistEntryResponse>> GetWaitlistAsync(int userId, int page = 1, int pageSize = 50);
+        Task<List<AccountCreditResponse>> GetCreditsAsync(int userId, int page = 1, int pageSize = 50);
         Task<int> AddMaintenanceBlockAsync(MaintenanceBlockRequest request);
-        Task<bool> MarkNoShowAsync(int reservationId);
+        Task<bool> MarkNoShowAsync(int reservationId, int actorUserId);
     }
 }

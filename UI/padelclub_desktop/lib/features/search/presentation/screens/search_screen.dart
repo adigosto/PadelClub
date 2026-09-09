@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
 
+import 'package:padelclub_desktop/core/localization/app_localizations.dart';
 import 'package:padelclub_desktop/core/theme/app_theme.dart';
+import 'package:padelclub_desktop/features/player_experience/presentation/providers/player_experience_provider.dart';
+import 'package:padelclub_desktop/features/player_experience/presentation/screens/player_hub_screen.dart';
 import 'package:padelclub_desktop/features/search/domain/entities/discovery_match.dart';
 import 'package:padelclub_desktop/features/search/domain/entities/player_ranking.dart';
 import 'package:padelclub_desktop/features/search/presentation/providers/discovery_provider.dart';
@@ -66,7 +70,7 @@ class _SearchScreenState extends State<SearchScreen> {
     final provider = context.watch<TournamentProvider>();
     final discovery = context.watch<DiscoveryProvider>();
     return MasterScreen(
-      title: 'Search',
+      title: context.tr("Search"),
       section: AppSection.search,
       child: Scrollbar(
         thumbVisibility: true,
@@ -75,8 +79,8 @@ class _SearchScreenState extends State<SearchScreen> {
           padding: const EdgeInsets.fromLTRB(18, 20, 18, 32),
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           children: [
-            const Text(
-              'Discover your next match',
+            Text(
+              context.tr("Discover your next match"),
               style: TextStyle(
                 color: PadelColors.text,
                 fontSize: 27,
@@ -85,9 +89,22 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
-              'Explore club activity, players, and upcoming competitions.',
+            Text(
+              context.tr(
+                "Explore club activity, players, and upcoming competitions.",
+              ),
               style: TextStyle(color: PadelColors.textMuted),
+            ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push<void>(
+                  MaterialPageRoute(builder: (_) => const PlayerHubScreen()),
+                ),
+                icon: const Icon(Icons.sports_tennis_rounded),
+                label: Text(context.tr("Open player hub")),
+              ),
             ),
             const SizedBox(height: 18),
             TextField(
@@ -96,7 +113,7 @@ class _SearchScreenState extends State<SearchScreen> {
               onSubmitted: (_) => _search(),
               onTapOutside: (_) => FocusScope.of(context).unfocus(),
               decoration: InputDecoration(
-                hintText: _searchHint(_section),
+                hintText: context.tr(_searchHint(_section)),
                 prefixIcon: const Icon(Icons.search_rounded),
                 suffixIcon: IconButton(
                   tooltip: _searchHint(_section),
@@ -114,7 +131,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       (section) => Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: ChoiceChip(
-                          label: Text(_sectionLabel(section)),
+                          label: Text(context.tr(_sectionLabel(section))),
                           selected: _section == section,
                           onSelected: (_) => _selectSection(section),
                         ),
@@ -125,25 +142,25 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
             if (_section == _SearchSection.all ||
                 _section == _SearchSection.matches) ...[
-              const _SectionTitle(
+              _SectionTitle(
                 icon: Icons.sports_tennis_rounded,
-                title: 'Recent matches',
+                title: context.tr("Recent matches"),
               ),
               _MatchContent(provider: discovery, onRetry: _search),
             ],
             if (_section == _SearchSection.all ||
                 _section == _SearchSection.players) ...[
-              const _SectionTitle(
+              _SectionTitle(
                 icon: Icons.leaderboard_rounded,
-                title: 'Player rankings',
+                title: context.tr("Player rankings"),
               ),
               _RankingContent(provider: discovery, onRetry: _search),
             ],
             if (_section == _SearchSection.all ||
                 _section == _SearchSection.tournaments) ...[
-              const _SectionTitle(
+              _SectionTitle(
                 icon: Icons.emoji_events_rounded,
-                title: 'Upcoming tournaments',
+                title: context.tr("Upcoming tournaments"),
               ),
               _TournamentContent(provider: provider, onRetry: _search),
             ],
@@ -167,17 +184,19 @@ class _MatchContent extends StatelessWidget {
     if (provider.errorMessage != null && provider.matches.isEmpty) {
       return _UnavailableCard(
         icon: Icons.cloud_off_rounded,
-        title: 'Matches are unavailable',
+        title: context.tr("Matches are unavailable"),
         message: provider.errorMessage!,
-        actionLabel: 'Try again',
+        actionLabel: context.tr("Try again"),
         onAction: onRetry,
       );
     }
     if (provider.matches.isEmpty) {
-      return const _UnavailableCard(
+      return _UnavailableCard(
         icon: Icons.scoreboard_outlined,
-        title: 'No matches found',
-        message: 'Scheduled and completed tournament matches will appear here.',
+        title: context.tr("No matches found"),
+        message: context.tr(
+          "Scheduled and completed tournament matches will appear here.",
+        ),
       );
     }
     return Column(
@@ -223,7 +242,12 @@ class _MatchCard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        Text('${match.teamOne.join(' / ')}  vs  ${match.teamTwo.join(' / ')}'),
+        Text(
+          context.tr("{p1}  vs  {p2}", {
+            'p1': match.teamOne.join(' / '),
+            'p2': match.teamTwo.join(' / '),
+          }),
+        ),
         const SizedBox(height: 8),
         Wrap(
           spacing: 12,
@@ -255,17 +279,19 @@ class _RankingContent extends StatelessWidget {
     if (provider.errorMessage != null && provider.rankings.isEmpty) {
       return _UnavailableCard(
         icon: Icons.cloud_off_rounded,
-        title: 'Rankings are unavailable',
+        title: context.tr("Rankings are unavailable"),
         message: provider.errorMessage!,
-        actionLabel: 'Try again',
+        actionLabel: context.tr("Try again"),
         onAction: onRetry,
       );
     }
     if (provider.rankings.isEmpty) {
-      return const _UnavailableCard(
+      return _UnavailableCard(
         icon: Icons.groups_2_outlined,
-        title: 'No ranked players found',
-        message: 'Rankings are calculated from completed club matches.',
+        title: context.tr("No ranked players found"),
+        message: context.tr(
+          "Rankings are calculated from completed club matches.",
+        ),
       );
     }
     return Column(
@@ -308,7 +334,11 @@ class _RankingRow extends StatelessWidget {
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),
               Text(
-                '${player.wins} wins · ${player.matchesPlayed} played · ${player.winRate.toStringAsFixed(0)}% win rate',
+                context.tr("{p1} wins · {p2} played · {p3}% win rate", {
+                  'p1': player.wins,
+                  'p2': player.matchesPlayed,
+                  'p3': context.l10n.number(player.winRate, decimalDigits: 0),
+                }),
                 style: const TextStyle(
                   color: PadelColors.textMuted,
                   fontSize: 12,
@@ -324,7 +354,7 @@ class _RankingRow extends StatelessWidget {
             borderRadius: BorderRadius.circular(999),
           ),
           child: Text(
-            '${player.rating} rating',
+            context.tr("{p1} rating", {'p1': player.rating}),
             style: const TextStyle(
               fontWeight: FontWeight.w800,
               color: PadelColors.blue,
@@ -353,17 +383,19 @@ class _TournamentContent extends StatelessWidget {
     if (provider.errorMessage != null) {
       return _UnavailableCard(
         icon: Icons.cloud_off_rounded,
-        title: 'Tournaments are unavailable',
+        title: context.tr("Tournaments are unavailable"),
         message: provider.errorMessage!,
-        actionLabel: 'Try again',
+        actionLabel: context.tr("Try again"),
         onAction: onRetry,
       );
     }
     if (provider.tournaments.isEmpty) {
-      return const _UnavailableCard(
+      return _UnavailableCard(
         icon: Icons.event_busy_rounded,
-        title: 'No tournaments found',
-        message: 'There are no published tournaments matching this search.',
+        title: context.tr("No tournaments found"),
+        message: context.tr(
+          "There are no published tournaments matching this search.",
+        ),
       );
     }
     return Column(
@@ -378,6 +410,77 @@ class _TournamentCard extends StatelessWidget {
   const _TournamentCard({required this.tournament});
 
   final Tournament tournament;
+
+  Future<void> _register(BuildContext context) async {
+    final tournamentId = tournament.id;
+    if (tournamentId == null) return;
+    final player = context.read<PlayerExperienceProvider>();
+    if (player.partners.isEmpty && !player.isLoading) {
+      await player.load();
+    }
+    if (!context.mounted) return;
+    if (player.partners.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: PadelColors.danger,
+          content: Text(
+            player.errorMessage ??
+                context.tr(
+                  "Complete a discoverable player profile and find a partner before registering.",
+                ),
+          ),
+        ),
+      );
+      return;
+    }
+    final partner = await showDialog<PartnerCandidate>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: Text(context.tr("Register for {p1}", {'p1': tournament.name})),
+        children: player.partners
+            .map(
+              (candidate) => SimpleDialogOption(
+                onPressed: () => Navigator.pop(dialogContext, candidate),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(candidate.playerName),
+                    Text(
+                      '${candidate.skillLevel} · ${candidate.preferredSide} · ${candidate.city}',
+                      style: const TextStyle(
+                        color: PadelColors.textMuted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+            .toList(growable: false),
+      ),
+    );
+    if (partner == null || !context.mounted) return;
+    final registered = await player.registerTournament(
+      tournamentId: tournamentId,
+      partnerUserId: partner.userId,
+    );
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: registered ? null : PadelColors.danger,
+        content: Text(
+          registered
+              ? context.tr("{p1} has been invited to join your team.", {
+                  'p1': partner.playerName,
+                })
+              : player.actionErrorMessage ??
+                    context.tr(
+                      "Tournament registration could not be completed.",
+                    ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -402,7 +505,7 @@ class _TournamentCard extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  _month(tournament.startDate),
+                  context.tr(_month(tournament.startDate)),
                   style: const TextStyle(
                     color: PadelColors.blue,
                     fontSize: 10,
@@ -448,15 +551,30 @@ class _TournamentCard extends StatelessWidget {
                   children: [
                     _Meta(
                       icon: Icons.groups_rounded,
-                      text: '${tournament.maxParticipants} players',
+                      text: context.tr("{p1} players", {
+                        'p1': tournament.maxParticipants,
+                      }),
                     ),
                     _Meta(
                       icon: Icons.payments_outlined,
-                      text: '${tournament.entryFee.toStringAsFixed(0)} KM',
+                      text:
+                          '${context.l10n.number(tournament.entryFee, decimalDigits: 0)} KM',
                     ),
                     _Meta(icon: Icons.flag_rounded, text: tournament.status),
                   ],
                 ),
+                if (tournament.id != null &&
+                    tournament.status == 'Upcoming' &&
+                    tournament.registrationDeadline.isAfter(
+                      DateTime.now(),
+                    )) ...[
+                  const SizedBox(height: 12),
+                  FilledButton.tonalIcon(
+                    onPressed: () => _register(context),
+                    icon: const Icon(Icons.group_add_outlined),
+                    label: Text(context.tr("Register with partner")),
+                  ),
+                ],
               ],
             ),
           ),

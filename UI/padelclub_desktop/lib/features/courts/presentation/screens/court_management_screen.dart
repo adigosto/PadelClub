@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
 
+import 'package:padelclub_desktop/core/localization/app_localizations.dart';
 import 'package:padelclub_desktop/core/theme/app_theme.dart';
+import 'package:padelclub_desktop/core/validation/form_validators.dart';
 import 'package:padelclub_desktop/core/widgets/admin_components.dart';
 import 'package:padelclub_desktop/features/courts/domain/entities/court.dart';
 import 'package:padelclub_desktop/features/courts/presentation/providers/court_provider.dart';
@@ -36,7 +39,7 @@ class _CourtManagementScreenState extends State<CourtManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return MasterScreen(
-      title: 'Court Management',
+      title: context.tr("Court Management"),
       section: AppSection.courts,
       child: Consumer<CourtProvider>(
         builder: (context, provider, _) {
@@ -45,13 +48,14 @@ class _CourtManagementScreenState extends State<CourtManagementScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AdminPageHeader(
-                title: 'Court Management',
-                subtitle:
-                    'Manage padel courts, availability, pricing, and maintenance.',
+                title: context.tr("Court Management"),
+                subtitle: context.tr(
+                  "Manage padel courts, availability, pricing, and maintenance.",
+                ),
                 action: FilledButton.icon(
                   onPressed: () => _showCourtForm(),
                   icon: const Icon(Icons.add_rounded, size: 18),
-                  label: const Text('Add Court'),
+                  label: Text(context.tr("Add Court")),
                 ),
               ),
               const Divider(height: 1),
@@ -65,16 +69,16 @@ class _CourtManagementScreenState extends State<CourtManagementScreen> {
                       runSpacing: PadelSpacing.xs,
                       children:
                           [
-                                'All',
-                                'Available',
-                                'Indoor',
-                                'Outdoor',
-                                'Maintenance',
+                                "All",
+                                "Available",
+                                "Indoor",
+                                "Outdoor",
+                                "Maintenance",
                               ]
                               .map(
                                 (filter) => AdminFilterChip(
                                   label: filter == 'All'
-                                      ? 'All Courts'
+                                      ? context.tr("All Courts")
                                       : filter,
                                   selected: _filter == filter,
                                   onSelected: (_) =>
@@ -90,19 +94,19 @@ class _CourtManagementScreenState extends State<CourtManagementScreen> {
                       children: [
                         AdminSearchField(
                           controller: _searchController,
-                          hintText: 'Search courts...',
+                          hintText: context.tr("Search courts..."),
                           width: 320,
                           onSubmitted: _setQuery,
                         ),
                         OutlinedButton.icon(
                           onPressed: () => _setQuery(_searchController.text),
                           icon: const Icon(Icons.search_rounded, size: 17),
-                          label: const Text('Search'),
+                          label: Text(context.tr("Search")),
                         ),
                         OutlinedButton.icon(
                           onPressed: provider.loadCourts,
                           icon: const Icon(Icons.refresh_rounded, size: 17),
-                          label: const Text('Refresh'),
+                          label: Text(context.tr("Refresh")),
                         ),
                       ],
                     ),
@@ -134,16 +138,16 @@ class _CourtManagementScreenState extends State<CourtManagementScreen> {
     if (provider.errorMessage != null) {
       return _CourtMessage(
         icon: Icons.cloud_off_rounded,
-        title: 'Courts are unavailable',
+        title: context.tr("Courts are unavailable"),
         message: provider.errorMessage!,
         onRetry: provider.loadCourts,
       );
     }
     if (courts.isEmpty) {
-      return const _CourtMessage(
+      return _CourtMessage(
         icon: Icons.stadium_outlined,
-        title: 'No courts found',
-        message: 'Adjust the search or court filter.',
+        title: context.tr("No courts found"),
+        message: context.tr("Adjust the search or court filter."),
       );
     }
     return LayoutBuilder(
@@ -157,12 +161,12 @@ class _CourtManagementScreenState extends State<CourtManagementScreen> {
               dataRowMinHeight: 70,
               dataRowMaxHeight: 80,
               columnSpacing: 36,
-              columns: const [
-                DataColumn(label: Text('COURT')),
-                DataColumn(label: Text('TYPE')),
-                DataColumn(label: Text('RATE')),
-                DataColumn(label: Text('STATUS')),
-                DataColumn(label: Text('ACTIONS')),
+              columns: [
+                DataColumn(label: Text(context.tr("COURT"))),
+                DataColumn(label: Text(context.tr("TYPE"))),
+                DataColumn(label: Text(context.tr("RATE"))),
+                DataColumn(label: Text(context.tr("STATUS"))),
+                DataColumn(label: Text(context.tr("ACTIONS"))),
               ],
               rows: courts.map(_row).toList(growable: false),
             ),
@@ -209,7 +213,10 @@ class _CourtManagementScreenState extends State<CourtManagementScreen> {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${court.description} · Up to ${court.maxPlayers} players',
+                      context.tr("{p1} · Up to {p2} players", {
+                        'p1': court.description,
+                        'p2': court.maxPlayers,
+                      }),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -225,7 +232,9 @@ class _CourtManagementScreenState extends State<CourtManagementScreen> {
         ),
         DataCell(
           AdminStatusBadge(
-            label: court.isIndoor ? 'Indoor' : 'Outdoor',
+            label: court.isIndoor
+                ? context.tr("Indoor")
+                : context.tr("Outdoor"),
             tone: court.isIndoor
                 ? AdminStatusTone.info
                 : AdminStatusTone.success,
@@ -233,13 +242,15 @@ class _CourtManagementScreenState extends State<CourtManagementScreen> {
         ),
         DataCell(
           Text(
-            '${court.hourlyRate.toStringAsFixed(2)} KM/h',
+            '${context.l10n.number(court.hourlyRate, decimalDigits: 2)} KM/h',
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
         ),
         DataCell(
           AdminStatusBadge(
-            label: court.isActive ? 'Available' : 'Maintenance',
+            label: court.isActive
+                ? context.tr("Available")
+                : context.tr("Maintenance"),
             tone: court.isActive
                 ? AdminStatusTone.success
                 : AdminStatusTone.warning,
@@ -252,13 +263,13 @@ class _CourtManagementScreenState extends State<CourtManagementScreen> {
             children: [
               AdminActionButton(
                 icon: Icons.edit_outlined,
-                tooltip: 'Edit court',
+                tooltip: context.tr("Edit court"),
                 onPressed: () => _showCourtForm(court),
               ),
               const SizedBox(width: PadelSpacing.xs),
               AdminActionButton(
                 icon: Icons.delete_outline_rounded,
-                tooltip: 'Delete court',
+                tooltip: context.tr("Delete court"),
                 onPressed: () => _confirmDelete(court),
                 destructive: true,
               ),
@@ -311,8 +322,9 @@ class _CourtManagementScreenState extends State<CourtManagementScreen> {
     if (!mounted) return;
     _notice(
       saved
-          ? 'Court saved.'
-          : provider.errorMessage ?? 'Court could not be saved.',
+          ? context.tr("Court saved.")
+          : provider.errorMessage ?? context.tr("Court could not be saved."),
+      isError: !saved,
     );
   }
 
@@ -320,18 +332,21 @@ class _CourtManagementScreenState extends State<CourtManagementScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete court?'),
+        title: Text(context.tr("Delete court?")),
         content: Text(
-          'Delete ${court.name}? Existing reservation history may prevent this.',
+          context.tr(
+            "Delete {p1}? Existing reservation history may prevent this.",
+            {'p1': court.name},
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Keep court'),
+            child: Text(context.tr("Keep court")),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: Text(context.tr("Delete")),
           ),
         ],
       ),
@@ -342,15 +357,19 @@ class _CourtManagementScreenState extends State<CourtManagementScreen> {
     if (!mounted) return;
     _notice(
       deleted
-          ? 'Court deleted.'
-          : provider.errorMessage ?? 'Court could not be deleted.',
+          ? context.tr("Court deleted.")
+          : provider.errorMessage ?? context.tr("Court could not be deleted."),
+      isError: !deleted,
     );
   }
 
-  void _notice(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _notice(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? PadelColors.danger : null,
+      ),
+    );
   }
 }
 
@@ -416,26 +435,38 @@ class _CourtFormDialogState extends State<_CourtFormDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.court == null ? 'Add court' : 'Edit court'),
+      title: Text(
+        widget.court == null
+            ? context.tr("Add court")
+            : context.tr("Edit court"),
+      ),
       content: SizedBox(
         width: 460,
         child: Form(
           key: _formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextFormField(
                   controller: _name,
-                  decoration: const InputDecoration(labelText: 'Court name'),
-                  validator: (value) => value?.trim().isEmpty == true
-                      ? 'Enter a court name'
-                      : null,
+                  decoration: InputDecoration(
+                    labelText: context.tr("Court name"),
+                  ),
+                  validator: (value) => FormValidators.text(
+                    value,
+                    l10n: context.l10n,
+                    label: 'a court name',
+                    maxLength: 100,
+                  ),
                 ),
                 const SizedBox(height: PadelSpacing.sm),
                 TextFormField(
                   controller: _description,
-                  decoration: const InputDecoration(labelText: 'Description'),
+                  decoration: InputDecoration(
+                    labelText: context.tr("Description"),
+                  ),
                   maxLines: 2,
                 ),
                 const SizedBox(height: PadelSpacing.sm),
@@ -444,40 +475,43 @@ class _CourtFormDialogState extends State<_CourtFormDialog> {
                     Expanded(
                       child: TextFormField(
                         controller: _rate,
-                        decoration: const InputDecoration(
-                          labelText: 'Hourly rate (KM)',
+                        decoration: InputDecoration(
+                          labelText: context.tr("Hourly rate (KM)"),
                         ),
                         keyboardType: TextInputType.number,
-                        validator: (value) =>
-                            double.tryParse(value ?? '') == null
-                            ? 'Enter a valid rate'
-                            : null,
+                        validator: (value) => FormValidators.decimal(
+                          value,
+                          l10n: context.l10n,
+                          label: 'an hourly rate',
+                        ),
                       ),
                     ),
                     const SizedBox(width: PadelSpacing.sm),
                     Expanded(
                       child: TextFormField(
                         controller: _players,
-                        decoration: const InputDecoration(
-                          labelText: 'Max players',
+                        decoration: InputDecoration(
+                          labelText: context.tr("Max players"),
                         ),
                         keyboardType: TextInputType.number,
-                        validator: (value) => int.tryParse(value ?? '') == null
-                            ? 'Enter a number'
-                            : null,
+                        validator: (value) => FormValidators.integer(
+                          value,
+                          l10n: context.l10n,
+                          label: 'the maximum players',
+                        ),
                       ),
                     ),
                   ],
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Indoor court'),
+                  title: Text(context.tr("Indoor court")),
                   value: _isIndoor,
                   onChanged: (value) => setState(() => _isIndoor = value),
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Available for booking'),
+                  title: Text(context.tr("Available for booking")),
                   value: _isActive,
                   onChanged: (value) => setState(() => _isActive = value),
                 ),
@@ -489,9 +523,9 @@ class _CourtFormDialogState extends State<_CourtFormDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(context.tr("Cancel")),
         ),
-        FilledButton(onPressed: _submit, child: const Text('Save court')),
+        FilledButton(onPressed: _submit, child: Text(context.tr("Save court"))),
       ],
     );
   }
@@ -505,7 +539,7 @@ class _CourtFormDialogState extends State<_CourtFormDialog> {
         description: _description.text.trim(),
         isIndoor: _isIndoor,
         isActive: _isActive,
-        hourlyRate: double.parse(_rate.text),
+        hourlyRate: FormValidators.decimalValue(_rate.text)!,
         maxPlayers: int.parse(_players.text),
       ),
     );
@@ -538,7 +572,10 @@ class _CourtMessage extends StatelessWidget {
           Text(message, style: Theme.of(context).textTheme.bodySmall),
           if (onRetry != null) ...[
             const SizedBox(height: PadelSpacing.md),
-            FilledButton(onPressed: onRetry, child: const Text('Try again')),
+            FilledButton(
+              onPressed: onRetry,
+              child: Text(context.tr("Try again")),
+            ),
           ],
         ],
       ),

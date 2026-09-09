@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:padelclub_desktop/core/network/api_error.dart';
 import 'package:padelclub_desktop/core/network/api_config.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -106,6 +107,68 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> requestPasswordReset(String emailAddress) async {
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse('${ApiConfig.baseUrl}/Users/forgot-password'),
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode({'email': emailAddress.trim()}),
+          )
+          .timeout(const Duration(seconds: 12));
+
+      if (response.statusCode != 202) {
+        errorMessage = 'Password reset is currently unavailable.';
+        return false;
+      }
+      return true;
+    } catch (error) {
+      debugPrint('Password reset request to ${ApiConfig.baseUrl} failed: $error');
+      errorMessage =
+          'Could not connect to PadelClub at ${ApiConfig.baseUrl}. Check the selected device and API address.';
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> resetPassword(String token, String newPassword) async {
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse('${ApiConfig.baseUrl}/Users/reset-password'),
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode({'token': token.trim(), 'newPassword': newPassword}),
+          )
+          .timeout(const Duration(seconds: 12));
+
+      if (response.statusCode != 204) {
+        errorMessage = response.statusCode == 400
+            ? 'The reset token is invalid or expired.'
+            : 'Password reset is currently unavailable.';
+        return false;
+      }
+      return true;
+    } catch (error) {
+      debugPrint('Password reset to ${ApiConfig.baseUrl} failed: $error');
+      errorMessage =
+          'Could not connect to PadelClub at ${ApiConfig.baseUrl}. Check the selected device and API address.';
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<bool> restoreRememberedLogin() async {
     final savedUsername = await _storage.read(key: _usernameKey);
     final savedRefreshToken = await _storage.read(key: _refreshTokenKey);
@@ -158,7 +221,7 @@ class AuthProvider extends ChangeNotifier {
         throw Exception(
           response.body.trim().isEmpty
               ? 'Profile could not be updated.'
-              : response.body.replaceAll('"', ''),
+              : apiErrorMessage(response.body),
         );
       }
       final data = jsonDecode(response.body) as Map<String, dynamic>;

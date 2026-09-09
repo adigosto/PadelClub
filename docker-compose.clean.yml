@@ -1,0 +1,25 @@
+# Overlay for a clean, isolated exam-rehearsal stack.
+#
+# Run it with a distinct Compose project name, for example:
+# docker compose --project-name padelclub-clean-smoke --env-file .env.example -f docker-compose.yml -f docker-compose.clean.yml up --build --detach
+#
+# The base file keeps its normal host ports for everyday development. This overlay
+# removes those conflicting bindings and exposes only the isolated API on 5100.
+# Compose namespaces volumes and networks by project name, so this stack never
+# shares SQL, RabbitMQ, or data-protection volumes with the normal `padelclub`
+# project.
+services:
+  padelclub-api:
+    ports: !override
+      - "5100:5001"
+
+  padelclub-sql:
+    ports: !reset []
+    volumes: !override
+      - sql_data:/var/opt/mssql
+
+  padelclub-rabbitmq:
+    ports: !reset []
+
+  padelclub-mailpit:
+    ports: !reset []

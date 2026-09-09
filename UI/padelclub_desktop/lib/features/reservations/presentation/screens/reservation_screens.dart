@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
 
+import 'package:padelclub_desktop/core/localization/app_localizations.dart';
 import 'package:padelclub_desktop/core/theme/app_theme.dart';
 import 'package:padelclub_desktop/core/widgets/admin_components.dart';
+import 'package:padelclub_desktop/features/courts/domain/entities/court.dart';
+import 'package:padelclub_desktop/features/courts/presentation/providers/court_provider.dart';
+import 'package:padelclub_desktop/features/reservations/domain/entities/account_credit.dart';
 import 'package:padelclub_desktop/features/reservations/domain/entities/court_availability.dart';
 import 'package:padelclub_desktop/features/reservations/domain/entities/reservation.dart';
+import 'package:padelclub_desktop/features/reservations/domain/entities/waitlist_entry.dart';
 import 'package:padelclub_desktop/features/reservations/presentation/providers/reservation_provider.dart';
 import 'package:padelclub_desktop/layouts/master_screen.dart';
 
@@ -33,14 +39,14 @@ class _MobileReservationsScreenState extends State<MobileReservationsScreen> {
     if (_section == 0) {
       await provider.loadAvailability(_selectedDate);
     } else {
-      await provider.loadReservations(management: false);
+      await provider.loadMyBookingActivity();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return MasterScreen(
-      title: 'Court booking',
+      title: context.tr("Court booking"),
       section: AppSection.reservations,
       child: SafeArea(
         child: Column(
@@ -57,12 +63,12 @@ class _MobileReservationsScreenState extends State<MobileReservationsScreen> {
                 child: Row(
                   children: [
                     _SectionButton(
-                      label: 'Book a court',
+                      label: context.tr("Book a court"),
                       selected: _section == 0,
                       onTap: () => _changeSection(0),
                     ),
                     _SectionButton(
-                      label: 'My bookings',
+                      label: context.tr("My bookings"),
                       selected: _section == 1,
                       onTap: () => _changeSection(1),
                     ),
@@ -99,8 +105,8 @@ class _MobileReservationsScreenState extends State<MobileReservationsScreen> {
                 _selectedSlot == null ? 24 : 142,
               ),
               children: [
-                const Text(
-                  'Choose your next match',
+                Text(
+                  context.tr("Choose your next match"),
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w900,
@@ -108,16 +114,16 @@ class _MobileReservationsScreenState extends State<MobileReservationsScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Live availability for every active court.',
+                Text(
+                  context.tr("Live availability for every active court."),
                   style: TextStyle(color: Color(0xFF5C6B64)),
                 ),
                 const SizedBox(height: 18),
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Select a date',
+                        context.tr("Select a date"),
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w900,
@@ -125,7 +131,7 @@ class _MobileReservationsScreenState extends State<MobileReservationsScreen> {
                       ),
                     ),
                     IconButton(
-                      tooltip: 'Open calendar',
+                      tooltip: context.tr("Open calendar"),
                       onPressed: _pickDate,
                       icon: const Icon(Icons.calendar_month_rounded),
                     ),
@@ -164,11 +170,12 @@ class _MobileReservationsScreenState extends State<MobileReservationsScreen> {
                 if (!provider.isLoading &&
                     provider.errorMessage == null &&
                     provider.availability.isEmpty)
-                  const _EmptyCard(
+                  _EmptyCard(
                     icon: Icons.stadium_outlined,
-                    title: 'No courts available',
-                    message:
-                        'There are no active courts available for this date.',
+                    title: context.tr("No courts available"),
+                    message: context.tr(
+                      "There are no active courts available for this date.",
+                    ),
                   ),
                 if (!provider.isLoading && provider.errorMessage == null)
                   ...provider.availability.map(
@@ -181,6 +188,7 @@ class _MobileReservationsScreenState extends State<MobileReservationsScreen> {
                         _selectedCourt = court;
                         _selectedSlot = slot;
                       }),
+                      onJoinWaitlist: (slot) => _joinWaitlist(court, slot),
                     ),
                   ),
               ],
@@ -211,8 +219,8 @@ class _MobileReservationsScreenState extends State<MobileReservationsScreen> {
         child: ListView(
           padding: const EdgeInsets.all(18),
           children: [
-            const Text(
-              'My bookings',
+            Text(
+              context.tr("My bookings"),
               style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.w900,
@@ -220,8 +228,10 @@ class _MobileReservationsScreenState extends State<MobileReservationsScreen> {
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
-              'Your upcoming and previous court sessions.',
+            Text(
+              context.tr(
+                "Your court sessions, waitlists, and available booking credits.",
+              ),
               style: TextStyle(color: Color(0xFF5C6B64)),
             ),
             const SizedBox(height: 18),
@@ -234,19 +244,59 @@ class _MobileReservationsScreenState extends State<MobileReservationsScreen> {
               _ErrorCard(message: provider.errorMessage!, onRetry: _refresh),
             if (!provider.isLoading &&
                 provider.errorMessage == null &&
-                provider.reservations.isEmpty)
-              const _EmptyCard(
+                provider.reservations.isEmpty &&
+                provider.waitlistEntries.isEmpty &&
+                provider.accountCredits.isEmpty)
+              _EmptyCard(
                 icon: Icons.event_available_rounded,
-                title: 'No bookings yet',
-                message: 'Choose “Book a court” to schedule your first match.',
+                title: context.tr("No bookings yet"),
+                message: context.tr(
+                  "Choose “Book a court” to schedule your first match.",
+                ),
               ),
-            if (!provider.isLoading && provider.errorMessage == null)
+            if (!provider.isLoading &&
+                provider.errorMessage == null &&
+                provider.reservations.isNotEmpty) ...[
+              _BookingActivityTitle(
+                icon: Icons.calendar_month_rounded,
+                title: context.tr("Court sessions"),
+              ),
+              const SizedBox(height: 10),
               ...provider.reservations.map(
                 (reservation) => _MobileReservationCard(
                   reservation: reservation,
                   onCancel: () => _cancel(reservation),
                 ),
               ),
+            ],
+            if (!provider.isLoading &&
+                provider.errorMessage == null &&
+                provider.waitlistEntries.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              _BookingActivityTitle(
+                icon: Icons.notifications_active_outlined,
+                title: context.tr("Waitlist"),
+              ),
+              const SizedBox(height: 10),
+              ...provider.waitlistEntries.map(
+                (entry) => _WaitlistEntryCard(entry: entry),
+              ),
+            ],
+            if (!provider.isLoading &&
+                provider.errorMessage == null &&
+                provider.accountCredits.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              _BookingActivityTitle(
+                icon: Icons.account_balance_wallet_outlined,
+                title: context.tr("Booking credit"),
+              ),
+              const SizedBox(height: 10),
+              _AccountCreditSummary(credits: provider.accountCredits),
+              const SizedBox(height: 10),
+              ...provider.accountCredits.map(
+                (credit) => _AccountCreditCard(credit: credit),
+              ),
+            ],
           ],
         ),
       ),
@@ -280,57 +330,68 @@ class _MobileReservationsScreenState extends State<MobileReservationsScreen> {
     var weeks = 1;
     final selectedWeeks = await showModalBottomSheet<int>(
       context: context,
+      // Let the summary grow beyond the default half-height sheet on phones.
+      isScrollControlled: true,
+      useSafeArea: true,
       showDragHandle: true,
       builder: (context) => StatefulBuilder(
-        builder: (context, setSheetState) => Padding(
-          padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Confirm your court',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-              ),
-              const SizedBox(height: 16),
-              _SummaryRow(
-                icon: Icons.sports_tennis_rounded,
-                label: court.courtName,
-              ),
-              _SummaryRow(
-                icon: Icons.schedule_rounded,
-                label:
-                    '${_dateLabel(slot.startTime)} · ${_time(slot.startTime)}–${_time(slot.endTime)}',
-              ),
-              _SummaryRow(
-                icon: Icons.payments_outlined,
-                label: '${slot.price.toStringAsFixed(2)} KM',
-              ),
-              const SizedBox(height: 10),
-              DropdownButtonFormField<int>(
-                initialValue: weeks,
-                decoration: const InputDecoration(labelText: 'Repeat weekly'),
-                items: const [1, 2, 4, 8, 12]
-                    .map(
-                      (value) => DropdownMenuItem(
-                        value: value,
-                        child: Text(
-                          value == 1 ? 'One booking' : '$value weeks',
-                        ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) => setSheetState(() => weeks = value ?? 1),
-              ),
-              const SizedBox(height: 18),
-              FilledButton(
-                onPressed: () => Navigator.pop(context, weeks),
-                child: const SizedBox(
-                  width: double.infinity,
-                  child: Center(child: Text('Confirm booking')),
+        builder: (context, setSheetState) => SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.tr("Confirm your court"),
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                _SummaryRow(
+                  icon: Icons.sports_tennis_rounded,
+                  label: court.courtName,
+                ),
+                _SummaryRow(
+                  icon: Icons.schedule_rounded,
+                  label:
+                      '${_dateLabel(context, slot.startTime)} · ${_time(slot.startTime)}–${_time(slot.endTime)}',
+                ),
+                _SummaryRow(
+                  icon: Icons.payments_outlined,
+                  label:
+                      '${context.l10n.number(slot.price, decimalDigits: 2)} KM',
+                ),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<int>(
+                  initialValue: weeks,
+                  decoration: InputDecoration(
+                    labelText: context.tr("Repeat weekly"),
+                  ),
+                  items: const [1, 2, 4, 8, 12]
+                      .map(
+                        (value) => DropdownMenuItem(
+                          value: value,
+                          child: Text(
+                            value == 1
+                                ? context.tr("One booking")
+                                : context.tr("{p1} weeks", {'p1': value}),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) => setSheetState(() => weeks = value ?? 1),
+                ),
+                const SizedBox(height: 18),
+                FilledButton(
+                  onPressed: () => Navigator.pop(context, weeks),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Center(child: Text(context.tr("Confirm booking"))),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -347,12 +408,15 @@ class _MobileReservationsScreenState extends State<MobileReservationsScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+        backgroundColor: success ? null : PadelColors.danger,
         content: Text(
           success
               ? (selectedWeeks == 1
-                    ? 'Court booked successfully.'
-                    : '$selectedWeeks weekly courts booked successfully.')
-              : provider.errorMessage ?? 'Booking failed.',
+                    ? context.tr("Court booked successfully.")
+                    : context.tr("{p1} weekly courts booked successfully.", {
+                        'p1': selectedWeeks,
+                      }))
+              : provider.errorMessage ?? context.tr("Booking failed."),
         ),
       ),
     );
@@ -365,40 +429,119 @@ class _MobileReservationsScreenState extends State<MobileReservationsScreen> {
     }
   }
 
-  Future<void> _cancel(Reservation reservation) async {
+  Future<void> _joinWaitlist(
+    CourtAvailability court,
+    AvailabilitySlot slot,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Cancel reservation?'),
-        content: const Text(
-          'This court will become available to other players.',
+        title: Text(context.tr("Join waitlist?")),
+        content: Text(
+          context.tr(
+            "{p1} is currently full on {p2} from {p3} to {p4}. We will notify you if it becomes available.",
+            {
+              'p1': court.courtName,
+              'p2': _dateLabel(context, slot.startTime),
+              'p3': _time(slot.startTime),
+              'p4': _time(slot.endTime),
+            },
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Keep booking'),
+            child: Text(context.tr("Not now")),
           ),
-          FilledButton(
+          FilledButton.icon(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Cancel reservation'),
+            icon: const Icon(Icons.notifications_active_outlined),
+            label: Text(context.tr("Join waitlist")),
           ),
         ],
       ),
     );
     if (confirmed != true || !mounted) return;
+
     final provider = context.read<ReservationProvider>();
-    final success = await provider.cancel(reservation.id);
+    final joined = await provider.joinWaitlist(
+      courtId: court.courtId,
+      slot: slot,
+    );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+        backgroundColor: joined ? null : PadelColors.danger,
         content: Text(
-          success
-              ? 'Reservation cancelled.'
-              : provider.errorMessage ?? 'Cancellation failed.',
+          joined
+              ? context.tr(
+                  "You are on the waitlist. We will notify you if the court opens.",
+                )
+              : provider.errorMessage ??
+                    context.tr("Could not join the waitlist."),
         ),
       ),
     );
-    await provider.loadReservations(management: false);
+    if (joined) await provider.loadMyBookingActivity();
+  }
+
+  Future<void> _cancel(Reservation reservation) async {
+    final reasonController = TextEditingController();
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(context.tr("Cancel reservation?")),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.tr("This court will become available to other players."),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: reasonController,
+              maxLength: 500,
+              maxLines: 3,
+              decoration: InputDecoration(
+                labelText: context.tr("Cancellation reason"),
+                hintText: context.tr("Enter a reason"),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(context.tr("Keep booking")),
+          ),
+          FilledButton(
+            onPressed: () {
+              final value = reasonController.text.trim();
+              if (value.length < 3) return;
+              Navigator.pop(context, value);
+            },
+            child: Text(context.tr("Cancel reservation")),
+          ),
+        ],
+      ),
+    );
+    reasonController.dispose();
+    if (reason == null || !mounted) return;
+    final provider = context.read<ReservationProvider>();
+    final success = await provider.cancel(reservation.id, reason: reason);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: success ? null : PadelColors.danger,
+        content: Text(
+          success
+              ? context.tr("Reservation cancelled.")
+              : provider.errorMessage ?? context.tr("Cancellation failed."),
+        ),
+      ),
+    );
+    await provider.loadMyBookingActivity();
   }
 }
 
@@ -432,10 +575,57 @@ class _ManagementReservationsScreenState
     super.dispose();
   }
 
+  Future<void> _cancelReservation(int id) async {
+    final reasonController = TextEditingController();
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(context.tr("Cancel reservation?")),
+        content: TextField(
+          controller: reasonController,
+          maxLength: 500,
+          maxLines: 3,
+          decoration: InputDecoration(
+            labelText: context.tr("Cancellation reason"),
+            hintText: context.tr("Enter a reason"),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(context.tr("Keep booking")),
+          ),
+          FilledButton(
+            onPressed: () {
+              final value = reasonController.text.trim();
+              if (value.length < 3) return;
+              Navigator.pop(context, value);
+            },
+            child: Text(context.tr("Cancel reservation")),
+          ),
+        ],
+      ),
+    );
+    reasonController.dispose();
+    if (reason == null || !mounted) return;
+    final provider = context.read<ReservationProvider>();
+    final cancelled = await provider.cancel(id, reason: reason);
+    if (!mounted) return;
+    if (!cancelled) {
+      _notice(
+        provider.errorMessage ??
+            context.tr("Could not cancel this reservation."),
+        isError: true,
+      );
+      return;
+    }
+    await provider.loadReservations(management: true);
+  }
+
   @override
   Widget build(BuildContext context) {
     return MasterScreen(
-      title: 'Reservation management',
+      title: context.tr("Reservation management"),
       section: AppSection.reservations,
       child: Consumer<ReservationProvider>(
         builder: (context, provider, _) {
@@ -444,15 +634,14 @@ class _ManagementReservationsScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AdminPageHeader(
-                title: 'Reservation Management',
-                subtitle:
-                    'Manage court bookings, schedules, and player reservations.',
+                title: context.tr("Reservation Management"),
+                subtitle: context.tr(
+                  "Manage court bookings, schedules, and player reservations.",
+                ),
                 action: FilledButton.icon(
-                  onPressed: () => _notice(
-                    'New reservations are created from the booking flow.',
-                  ),
-                  icon: const Icon(Icons.add_rounded, size: 18),
-                  label: const Text('New Reservation'),
+                  onPressed: provider.isLoading ? null : _showMaintenanceDialog,
+                  icon: const Icon(Icons.build_rounded, size: 18),
+                  label: Text(context.tr("Schedule maintenance")),
                 ),
               ),
               const Divider(height: 1),
@@ -465,11 +654,11 @@ class _ManagementReservationsScreenState
                       spacing: PadelSpacing.xs,
                       runSpacing: PadelSpacing.xs,
                       children:
-                          ['All', 'Today', 'Confirmed', 'Pending', 'Cancelled']
+                          ["All", "Today", "Confirmed", "Pending", "Cancelled"]
                               .map(
                                 (filter) => AdminFilterChip(
                                   label: filter == 'All'
-                                      ? 'All Reservations'
+                                      ? context.tr("All Reservations")
                                       : filter,
                                   selected: _filter == filter,
                                   onSelected: (_) =>
@@ -485,8 +674,9 @@ class _ManagementReservationsScreenState
                       children: [
                         AdminSearchField(
                           controller: _searchController,
-                          hintText:
-                              'Search by player, court, or reservation...',
+                          hintText: context.tr(
+                            "Search by player, court, or reservation...",
+                          ),
                           width: 320,
                           onSubmitted: (value) => setState(
                             () => _query = value.trim().toLowerCase(),
@@ -499,13 +689,13 @@ class _ManagementReservationsScreenState
                                 .toLowerCase(),
                           ),
                           icon: const Icon(Icons.search_rounded, size: 17),
-                          label: const Text('Search'),
+                          label: Text(context.tr("Search")),
                         ),
                         OutlinedButton.icon(
                           onPressed: () =>
                               provider.loadReservations(management: true),
                           icon: const Icon(Icons.refresh_rounded, size: 17),
-                          label: const Text('Refresh'),
+                          label: Text(context.tr("Refresh")),
                         ),
                       ],
                     ),
@@ -533,13 +723,8 @@ class _ManagementReservationsScreenState
                           )
                         : _ManagementTable(
                             reservations: reservations,
-                            onEdit: (item) => _notice(
-                              'Reservation #${item.id} editing will be connected with the booking form.',
-                            ),
-                            onCancel: (id) async {
-                              await provider.cancel(id);
-                              await provider.loadReservations(management: true);
-                            },
+                            onMarkNoShow: _confirmNoShow,
+                            onCancel: _cancelReservation,
                           ),
                   ),
                 ),
@@ -566,18 +751,359 @@ class _ManagementReservationsScreenState
             'Cancelled' => status == 'cancelled' || status == 'canceled',
             _ => true,
           };
-          final haystack =
-              '${item.id} ${item.userId} ${item.courtId} ${item.status}'
-                  .toLowerCase();
+          final haystack = '${item.userName} ${item.courtName} ${item.status}'
+              .toLowerCase();
           return matchesFilter && (_query.isEmpty || haystack.contains(_query));
         })
         .toList(growable: false);
   }
 
-  void _notice(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _notice(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? PadelColors.danger : null,
+      ),
+    );
+  }
+
+  Future<void> _showMaintenanceDialog() async {
+    final courts = context.read<CourtProvider>();
+    await courts.loadCourts();
+    if (!mounted) return;
+    if (courts.errorMessage != null) {
+      _notice(courts.errorMessage!);
+      return;
+    }
+    final scheduled = await showDialog<bool>(
+      context: context,
+      builder: (_) => _MaintenanceBlockDialog(
+        courts: courts.courts.where((court) => court.isActive).toList(),
+      ),
+    );
+    if (scheduled != true || !mounted) return;
+
+    _notice(context.tr("Maintenance block scheduled."));
+    await context.read<ReservationProvider>().loadReservations(
+      management: true,
+    );
+  }
+
+  Future<void> _confirmNoShow(Reservation reservation) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(context.tr("Mark player as no-show?")),
+        content: Text(
+          context.tr(
+            "The booking for {p1} will be marked as not attended. This action cannot be undone from the reservation screen.",
+            {'p1': reservation.courtName},
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(context.tr("Keep reservation")),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(context, true),
+            icon: const Icon(Icons.person_off_rounded),
+            label: Text(context.tr("Mark no-show")),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final provider = context.read<ReservationProvider>();
+    final marked = await provider.markNoShow(reservation.id);
+    if (!mounted) return;
+    if (!marked) {
+      _notice(
+        provider.errorMessage ?? context.tr("Could not mark the reservation."),
+      );
+      return;
+    }
+
+    _notice(
+      context.tr("Booking for {p1} marked as no-show.", {
+        'p1': reservation.courtName,
+      }),
+    );
+    await provider.loadReservations(management: true);
+  }
+}
+
+class _MaintenanceBlockDialog extends StatefulWidget {
+  const _MaintenanceBlockDialog({required this.courts});
+  final List<Court> courts;
+
+  @override
+  State<_MaintenanceBlockDialog> createState() =>
+      _MaintenanceBlockDialogState();
+}
+
+class _MaintenanceBlockDialogState extends State<_MaintenanceBlockDialog> {
+  final _formKey = GlobalKey<FormState>();
+  int _selectedCourtId = 0;
+  final _reasonController = TextEditingController();
+  late DateTime _startTime;
+  late DateTime _endTime;
+  bool _isSubmitting = false;
+  String? _timeError;
+  String? _submissionError;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _startTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+    ).add(const Duration(hours: 1));
+    _endTime = _startTime.add(const Duration(hours: 1));
+  }
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(context.tr("Schedule court maintenance")),
+      content: SizedBox(
+        width: 480,
+        child: Form(
+          key: _formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.tr(
+                    "Select a court or all active courts for this maintenance block.",
+                  ),
+                ),
+                const SizedBox(height: PadelSpacing.md),
+                DropdownButtonFormField<int>(
+                  initialValue: _selectedCourtId,
+                  decoration: InputDecoration(labelText: context.tr('Court')),
+                  items: [
+                    DropdownMenuItem(
+                      value: 0,
+                      child: Text(context.tr('All active courts')),
+                    ),
+                    ...widget.courts.map(
+                      (court) => DropdownMenuItem(
+                        value: court.id,
+                        child: Text(court.name),
+                      ),
+                    ),
+                  ],
+                  onChanged: _isSubmitting
+                      ? null
+                      : (value) =>
+                            setState(() => _selectedCourtId = value ?? 0),
+                ),
+                const SizedBox(height: PadelSpacing.md),
+                _DateTimePickerButton(
+                  label: context.tr("Maintenance start"),
+                  value: _startTime,
+                  enabled: !_isSubmitting,
+                  onPressed: () => _pickDateTime(isStart: true),
+                ),
+                const SizedBox(height: PadelSpacing.sm),
+                _DateTimePickerButton(
+                  label: context.tr("Maintenance end"),
+                  value: _endTime,
+                  enabled: !_isSubmitting,
+                  onPressed: () => _pickDateTime(isStart: false),
+                ),
+                if (_timeError != null) ...[
+                  const SizedBox(height: PadelSpacing.xs),
+                  Semantics(
+                    liveRegion: true,
+                    label: context.tr("Maintenance interval error: {p1}", {
+                      'p1': _timeError,
+                    }),
+                    child: Text(
+                      _timeError!,
+                      style: const TextStyle(color: PadelColors.danger),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: PadelSpacing.md),
+                TextFormField(
+                  controller: _reasonController,
+                  enabled: !_isSubmitting,
+                  decoration: InputDecoration(
+                    labelText: context.tr("Maintenance reason"),
+                  ),
+                  maxLength: 500,
+                  maxLines: 2,
+                  validator: (value) => value?.trim().isEmpty == true
+                      ? context.tr("Enter a maintenance reason")
+                      : null,
+                ),
+                if (_submissionError != null) ...[
+                  const SizedBox(height: PadelSpacing.xs),
+                  Semantics(
+                    liveRegion: true,
+                    label: context.tr("Maintenance request failed: {p1}", {
+                      'p1': _submissionError,
+                    }),
+                    child: Text(
+                      _submissionError!,
+                      style: const TextStyle(color: PadelColors.danger),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+          child: Text(context.tr("Cancel")),
+        ),
+        FilledButton.icon(
+          onPressed: _isSubmitting ? null : _submit,
+          icon: _isSubmitting
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.build_rounded),
+          label: Text(
+            _isSubmitting
+                ? context.tr("Scheduling maintenance...")
+                : context.tr("Schedule maintenance"),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pickDateTime({required bool isStart}) async {
+    final initial = isStart ? _startTime : _endTime;
+    final selectedDate = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (selectedDate == null || !mounted) return;
+
+    final selectedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+    );
+    if (selectedTime == null || !mounted) return;
+
+    final selected = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+      selectedTime.hour,
+      selectedTime.minute,
+    );
+    setState(() {
+      if (isStart) {
+        _startTime = selected;
+      } else {
+        _endTime = selected;
+      }
+      _timeError = null;
+      _submissionError = null;
+    });
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (!_endTime.isAfter(_startTime)) {
+      setState(() {
+        _timeError = context.tr("Maintenance end must be after its start.");
+        _submissionError = null;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+      _timeError = null;
+      _submissionError = null;
+    });
+    final saved = await context.read<ReservationProvider>().addMaintenanceBlock(
+      courtId: _selectedCourtId == 0 ? null : _selectedCourtId,
+      startTime: _startTime,
+      endTime: _endTime,
+      reason: _reasonController.text,
+    );
+    if (!mounted) return;
+    if (saved) {
+      Navigator.pop(context, true);
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = false;
+      _submissionError =
+          context.read<ReservationProvider>().errorMessage ??
+          context.tr("Maintenance could not be scheduled.");
+    });
+  }
+}
+
+class _DateTimePickerButton extends StatelessWidget {
+  const _DateTimePickerButton({
+    required this.label,
+    required this.value,
+    required this.enabled,
+    required this.onPressed,
+  });
+
+  final String label;
+  final DateTime value;
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: context.tr("{p1}: {p2} at {p3}", {
+        'p1': label,
+        'p2': _dateLabel(context, value),
+        'p3': _time(value),
+      }),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: enabled ? onPressed : null,
+          icon: const Icon(Icons.schedule_rounded),
+          label: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              context.tr("{p1}: {p2} at {p3}", {
+                'p1': label,
+                'p2': _dateLabel(context, value),
+                'p3': _time(value),
+              }),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -586,14 +1112,19 @@ class _CourtAvailabilityCard extends StatelessWidget {
     required this.court,
     required this.selectedSlot,
     required this.onSelect,
+    required this.onJoinWaitlist,
   });
   final CourtAvailability court;
   final AvailabilitySlot? selectedSlot;
   final ValueChanged<AvailabilitySlot> onSelect;
+  final ValueChanged<AvailabilitySlot> onJoinWaitlist;
 
   @override
   Widget build(BuildContext context) {
     final available = court.slots.where((slot) => slot.isAvailable).toList();
+    final occupied = court.slots
+        .where((slot) => slot.isWaitlistEligible)
+        .toList();
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(17),
@@ -637,7 +1168,10 @@ class _CourtAvailabilityCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '${court.isIndoor ? 'Indoor' : 'Outdoor'} · Up to ${court.maxPlayers} players',
+                      context.tr("{p1} · Up to {p2} players", {
+                        'p1': court.isIndoor ? 'Indoor' : 'Outdoor',
+                        'p2': court.maxPlayers,
+                      }),
                       style: const TextStyle(
                         color: Color(0xFF667085),
                         fontSize: 12,
@@ -647,7 +1181,7 @@ class _CourtAvailabilityCard extends StatelessWidget {
                 ),
               ),
               Text(
-                '${court.hourlyRate.toStringAsFixed(0)} KM',
+                '${context.l10n.number(court.hourlyRate, decimalDigits: 0)} KM',
                 style: const TextStyle(
                   color: Color(0xFF1F7A63),
                   fontWeight: FontWeight.w900,
@@ -656,12 +1190,17 @@ class _CourtAvailabilityCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          if (available.isEmpty)
-            const Text(
-              'No times available for this day.',
+          if (available.isEmpty && occupied.isEmpty)
+            Text(
+              context.tr("No times available for this day."),
               style: TextStyle(color: Color(0xFF98A2B3)),
             )
-          else
+          else if (available.isNotEmpty) ...[
+            Text(
+              context.tr("Available times"),
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 9),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -676,6 +1215,42 @@ class _CourtAvailabilityCard extends StatelessWidget {
                   )
                   .toList(),
             ),
+          ],
+          if (occupied.isNotEmpty) ...[
+            if (available.isNotEmpty) const SizedBox(height: 16),
+            Text(
+              context.tr("Full times"),
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              context.tr(
+                "Join the waitlist and we will notify you if a spot opens.",
+              ),
+              style: TextStyle(color: PadelColors.textMuted, fontSize: 12),
+            ),
+            const SizedBox(height: 9),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: occupied
+                  .map(
+                    (slot) => ActionChip(
+                      avatar: const Icon(
+                        Icons.notifications_active_outlined,
+                        size: 16,
+                      ),
+                      label: Text(
+                        context.tr("{p1} · Waitlist", {
+                          'p1': _time(slot.startTime),
+                        }),
+                      ),
+                      onPressed: () => onJoinWaitlist(slot),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
         ],
       ),
     );
@@ -699,7 +1274,7 @@ class _DateCard extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: _dateLabel(date),
+      label: _dateLabel(context, date),
       child: Material(
         color: selected ? PadelColors.greenDark : Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -719,7 +1294,7 @@ class _DateCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  weekdays[date.weekday - 1],
+                  context.tr(weekdays[date.weekday - 1]),
                   style: TextStyle(
                     color: selected ? Colors.white70 : PadelColors.textMuted,
                     fontSize: 11,
@@ -790,7 +1365,7 @@ class _BookingAction extends StatelessWidget {
                 ),
               ),
               Text(
-                '${slot.price.toStringAsFixed(2)} KM',
+                '${context.l10n.number(slot.price, decimalDigits: 2)} KM',
                 style: const TextStyle(
                   color: PadelColors.greenDark,
                   fontWeight: FontWeight.w900,
@@ -804,7 +1379,7 @@ class _BookingAction extends StatelessWidget {
             child: FilledButton.icon(
               onPressed: onPressed,
               icon: const Icon(Icons.arrow_forward_rounded),
-              label: const Text('Continue to booking'),
+              label: Text(context.tr("Continue to booking")),
             ),
           ),
         ],
@@ -850,17 +1425,21 @@ class _MobileReservationCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _dateLabel(reservation.startTime),
+                    _dateLabel(context, reservation.startTime),
                     style: const TextStyle(fontWeight: FontWeight.w900),
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    '${_time(reservation.startTime)}–${_time(reservation.endTime)} · Court ${reservation.courtId}',
+                    context.tr("{p1}–{p2} · Court {p3}", {
+                      'p1': _time(reservation.startTime),
+                      'p2': _time(reservation.endTime),
+                      'p3': reservation.courtName,
+                    }),
                     style: const TextStyle(color: Color(0xFF667085)),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${reservation.totalPrice.toStringAsFixed(2)} KM · ${reservation.status}',
+                    '${context.l10n.number(reservation.totalPrice, decimalDigits: 2)} KM · ${reservation.status}',
                     style: TextStyle(
                       color: reservation.status == 'Cancelled'
                           ? const Color(0xFFC95C4C)
@@ -874,7 +1453,7 @@ class _MobileReservationCard extends StatelessWidget {
             ),
             if (cancellable)
               IconButton(
-                tooltip: 'Cancel reservation',
+                tooltip: context.tr("Cancel reservation"),
                 onPressed: onCancel,
                 icon: const Icon(Icons.close_rounded),
               ),
@@ -885,21 +1464,212 @@ class _MobileReservationCard extends StatelessWidget {
   }
 }
 
+class _BookingActivityTitle extends StatelessWidget {
+  const _BookingActivityTitle({required this.icon, required this.title});
+
+  final IconData icon;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: PadelColors.greenDark, size: 20),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+        ),
+      ],
+    );
+  }
+}
+
+class _WaitlistEntryCard extends StatelessWidget {
+  const _WaitlistEntryCard({required this.entry});
+
+  final WaitlistEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final notified = entry.status.toLowerCase() == 'notified';
+    final color = notified ? PadelColors.greenDark : PadelColors.blue;
+    final background = notified ? PadelColors.greenSoft : PadelColors.blueSoft;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Padding(
+        padding: const EdgeInsets.all(15),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: background,
+                borderRadius: BorderRadius.circular(PadelRadii.medium),
+              ),
+              child: Icon(Icons.notifications_active_outlined, color: color),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.tr("Court {p1}", {'p1': entry.courtName}),
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '${_dateLabel(context, entry.startTime)} · ${_time(entry.startTime)}–${_time(entry.endTime)}',
+                    style: const TextStyle(
+                      color: PadelColors.textMuted,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+              decoration: BoxDecoration(
+                color: background,
+                borderRadius: BorderRadius.circular(99),
+              ),
+              child: Text(
+                entry.status,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AccountCreditSummary extends StatelessWidget {
+  const _AccountCreditSummary({required this.credits});
+
+  final List<AccountCredit> credits;
+
+  @override
+  Widget build(BuildContext context) {
+    final available = credits
+        .where((credit) => credit.isAvailable)
+        .fold<double>(0, (total, credit) => total + credit.amount);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: PadelColors.greenSoft,
+        borderRadius: BorderRadius.circular(PadelRadii.large),
+        border: Border.all(color: const Color(0xFFBFE2D5)),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.account_balance_wallet_rounded,
+            color: PadelColors.greenDark,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.tr("Available balance"),
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  context.tr("Credit from eligible reservation cancellations."),
+                  style: TextStyle(color: PadelColors.textMuted, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            '${context.l10n.number(available, decimalDigits: 2)} KM',
+            style: const TextStyle(
+              color: PadelColors.greenDark,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccountCreditCard extends StatelessWidget {
+  const _AccountCreditCard({required this.credit});
+
+  final AccountCredit credit;
+
+  @override
+  Widget build(BuildContext context) {
+    final available = credit.isAvailable;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: available
+              ? PadelColors.greenSoft
+              : PadelColors.canvas,
+          foregroundColor: available
+              ? PadelColors.greenDark
+              : PadelColors.textMuted,
+          child: Icon(
+            available
+                ? Icons.add_card_rounded
+                : Icons.check_circle_outline_rounded,
+          ),
+        ),
+        title: Text(
+          credit.reason,
+          style: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+        subtitle: Text(
+          available
+              ? context.tr("Available since {p1}", {
+                  'p1': _dateLabel(context, credit.createdAt),
+                })
+              : context.tr("Used on {p1}", {
+                  'p1': _dateLabel(context, credit.usedAt!),
+                }),
+        ),
+        trailing: Text(
+          '${context.l10n.number(credit.amount, decimalDigits: 2)} KM',
+          style: TextStyle(
+            color: available ? PadelColors.greenDark : PadelColors.textMuted,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ManagementTable extends StatelessWidget {
   const _ManagementTable({
     required this.reservations,
-    required this.onEdit,
+    required this.onMarkNoShow,
     required this.onCancel,
   });
 
   final List<Reservation> reservations;
-  final ValueChanged<Reservation> onEdit;
+  final ValueChanged<Reservation> onMarkNoShow;
   final ValueChanged<int> onCancel;
 
   @override
   Widget build(BuildContext context) {
     if (reservations.isEmpty) {
-      return const Center(child: Text('No reservations found.'));
+      return Center(child: Text(context.tr("No reservations found.")));
     }
     return LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(
@@ -912,19 +1682,24 @@ class _ManagementTable extends StatelessWidget {
               dataRowMinHeight: 66,
               dataRowMaxHeight: 74,
               columnSpacing: 32,
-              columns: const [
-                DataColumn(label: Text('RESERVATION')),
-                DataColumn(label: Text('TIME SLOT')),
-                DataColumn(label: Text('DATE')),
-                DataColumn(label: Text('AMOUNT')),
-                DataColumn(label: Text('STATUS')),
-                DataColumn(label: Text('ACTIONS')),
+              columns: [
+                DataColumn(label: Text(context.tr("RESERVATION"))),
+                DataColumn(label: Text(context.tr("TIME SLOT"))),
+                DataColumn(label: Text(context.tr("DATE"))),
+                DataColumn(label: Text(context.tr("AMOUNT"))),
+                DataColumn(label: Text(context.tr("STATUS"))),
+                DataColumn(label: Text(context.tr("ACTIONS"))),
               ],
               rows: reservations
                   .map((item) {
                     final cancelled = item.status.toLowerCase().contains(
                       'cancel',
                     );
+                    final markedNoShow = item.status.toLowerCase() == 'noshow';
+                    final canMarkNoShow =
+                        !cancelled &&
+                        !markedNoShow &&
+                        item.endTime.isBefore(DateTime.now());
                     return DataRow(
                       cells: [
                         DataCell(
@@ -941,7 +1716,7 @@ class _ManagementTable extends StatelessWidget {
                                   ),
                                 ),
                                 child: Text(
-                                  'C${item.courtId}',
+                                  'P',
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w800,
@@ -954,14 +1729,23 @@ class _ManagementTable extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Court ${item.courtId}',
+                                    context.tr("Court {p1}", {
+                                      'p1': item.courtName,
+                                    }),
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                   const SizedBox(height: 3),
                                   Text(
-                                    'Reservation #${item.id} · User #${item.userId}',
+                                    context
+                                        .tr("{p1} ? {p2}", {
+                                          'p1': _dateLabel(
+                                            context,
+                                            item.startTime,
+                                          ),
+                                          'p2': item.userName,
+                                        }),
                                     style: const TextStyle(
                                       color: PadelColors.textMuted,
                                       fontSize: 11,
@@ -977,10 +1761,10 @@ class _ManagementTable extends StatelessWidget {
                             '${_time(item.startTime)}–${_time(item.endTime)}',
                           ),
                         ),
-                        DataCell(Text(_dateLabel(item.startTime))),
+                        DataCell(Text(_dateLabel(context, item.startTime))),
                         DataCell(
                           Text(
-                            '${item.totalPrice.toStringAsFixed(2)} KM',
+                            '${context.l10n.number(item.totalPrice, decimalDigits: 2)} KM',
                             style: const TextStyle(fontWeight: FontWeight.w700),
                           ),
                         ),
@@ -995,14 +1779,17 @@ class _ManagementTable extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               AdminActionButton(
-                                icon: Icons.edit_outlined,
-                                tooltip: 'Edit reservation',
-                                onPressed: () => onEdit(item),
+                                icon: Icons.person_off_rounded,
+                                tooltip: context.tr("Mark player as no-show"),
+                                onPressed: canMarkNoShow
+                                    ? () => onMarkNoShow(item)
+                                    : null,
+                                destructive: true,
                               ),
                               const SizedBox(width: PadelSpacing.xs),
                               AdminActionButton(
                                 icon: Icons.close_rounded,
-                                tooltip: 'Cancel reservation',
+                                tooltip: context.tr("Cancel reservation"),
                                 onPressed: cancelled
                                     ? null
                                     : () => onCancel(item.id),
@@ -1046,7 +1833,7 @@ class _LegacyManagementTable extends StatelessWidget {
         width: double.infinity,
         child: DataTable(
           columns: const [DataColumn(label: Text('Date')), DataColumn(label: Text('Time')), DataColumn(label: Text('Court')), DataColumn(label: Text('User')), DataColumn(label: Text('Amount')), DataColumn(label: Text('Status')), DataColumn(label: Text('Actions'))],
-          rows: reservations.map((item) => DataRow(cells: [DataCell(Text(_dateLabel(item.startTime))), DataCell(Text('${_time(item.startTime)}–${_time(item.endTime)}')), DataCell(Text('#${item.courtId}')), DataCell(Text('#${item.userId}')), DataCell(Text('${item.totalPrice.toStringAsFixed(2)} KM')), DataCell(Text(item.status)), DataCell(item.status == 'Cancelled' ? const SizedBox.shrink() : TextButton(onPressed: () => onCancel(item.id), child: const Text('Cancel')))])).toList(),
+          rows: reservations.map((item) => DataRow(cells: [DataCell(Text(_dateLabel(context, item.startTime))), DataCell(Text('${_time(item.startTime)}–${_time(item.endTime)}')), DataCell(Text(item.courtName)), DataCell(Text(item.userName)), DataCell(Text('${item.totalPrice.toStringAsFixed(2)} KM')), DataCell(Text(context.tr(item.status))), DataCell(item.status == 'Cancelled' ? const SizedBox.shrink() : TextButton(onPressed: () => onCancel(item.id), child: const Text('Cancel')))])).toList(),
         ),
       ),
     );
@@ -1133,7 +1920,7 @@ class _ErrorCard extends StatelessWidget {
         const SizedBox(height: 10),
         Text(message, textAlign: TextAlign.center),
         const SizedBox(height: 10),
-        TextButton(onPressed: onRetry, child: const Text('Try again')),
+        TextButton(onPressed: onRetry, child: Text(context.tr("Try again"))),
       ],
     ),
   );
@@ -1176,20 +1963,5 @@ class _EmptyCard extends StatelessWidget {
 
 String _time(DateTime value) =>
     '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
-String _dateLabel(DateTime value) {
-  const months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  return '${value.day} ${months[value.month - 1]} ${value.year}';
-}
+String _dateLabel(BuildContext context, DateTime value) =>
+    context.l10n.date(value);

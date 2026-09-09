@@ -13,4 +13,10 @@ public sealed class StripeRefundRequest
 {
     public decimal? Amount { get; set; }
     [StringLength(300)] public string Reason { get; set; } = "requested_by_customer";
+    /// <summary>
+    /// A caller-supplied stable key for an administrator-initiated refund.
+    /// Retrying the same request with this key returns the original durable
+    /// operation instead of scheduling a second provider refund.
+    /// </summary>
+    [StringLength(100, MinimumLength = 8)] public string? IdempotencyKey { get; set; }
 }

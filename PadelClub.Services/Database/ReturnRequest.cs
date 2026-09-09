@@ -13,6 +13,7 @@ public class ReturnRequest
     public DateTime? ResolvedAt { get; set; }
     public Order Order { get; set; } = null!;
     public ICollection<ReturnRequestItem> Items { get; set; } = new List<ReturnRequestItem>();
+    public ICollection<ProviderRefundOperation> ProviderRefundOperations { get; set; } = new List<ProviderRefundOperation>();
 }
 
 public class ReturnRequestItem

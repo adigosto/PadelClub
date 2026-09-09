@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:padelclub_desktop/core/localization/app_localizations.dart';
 import 'package:padelclub_desktop/core/theme/app_theme.dart';
 
 enum AdminStatusTone { success, info, warning, danger, neutral }
@@ -23,9 +24,15 @@ class AdminPageHeader extends StatelessWidget {
         final content = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: Theme.of(context).textTheme.headlineSmall),
+            Text(
+              context.tr(title),
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
             const SizedBox(height: PadelSpacing.xxs),
-            Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+            Text(
+              context.tr(subtitle),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ],
         );
         return Padding(
@@ -75,7 +82,7 @@ class AdminFilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FilterChip(
-      label: Text(label),
+      label: Text(context.tr(label)),
       selected: selected,
       showCheckmark: false,
       onSelected: onSelected,
@@ -109,7 +116,7 @@ class AdminSearchField extends StatelessWidget {
         onSubmitted: onSubmitted,
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(
-          hintText: hintText,
+          hintText: context.tr(hintText),
           prefixIcon: Icon(icon, size: 18, color: PadelColors.textMuted),
         ),
       ),
@@ -140,7 +147,7 @@ class AdminStatusBadge extends StatelessWidget {
     };
 
     return Semantics(
-      label: 'Status: $label',
+      label: context.tr("Status: {p1}", {'p1': context.tr(label)}),
       child: ExcludeSemantics(
         child: Container(
           padding: EdgeInsets.symmetric(
@@ -166,7 +173,7 @@ class AdminStatusBadge extends StatelessWidget {
                 const SizedBox(width: 7),
               ],
               Text(
-                label,
+                context.tr(label),
                 style: TextStyle(
                   color: showDot ? PadelColors.textMuted : colors.$1,
                   fontSize: 11,
@@ -198,7 +205,7 @@ class AdminActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      tooltip: tooltip,
+      tooltip: context.tr(tooltip),
       onPressed: onPressed,
       icon: Icon(icon, size: 17),
       color: destructive ? PadelColors.danger : PadelColors.text,

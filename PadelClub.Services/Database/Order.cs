@@ -19,6 +19,7 @@ namespace PadelClub.Services.Database
         public DateTime? UpdatedAt { get; set; }
 
         // Navigation properties
+        public string? IdempotencyKey { get; set; }
         public virtual User User { get; set; } = null!;
         public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
         public virtual Payment? Payment { get; set; }
@@ -27,6 +28,19 @@ namespace PadelClub.Services.Database
         public int? CouponId { get; set; }
         public string? CouponCode { get; set; }
         public DateTime? DeliveredAt { get; set; }
+        /// <summary>
+        /// Marks development seed data. These records remain available to the
+        /// player-facing demo recommender but are never valid offline-quality
+        /// evaluation evidence.
+        /// </summary>
+        public bool IsSeededForDemo { get; set; }
+        /// <summary>
+        /// Explicit provenance used by the operational recommendation evidence
+        /// path. Only <see cref="OrderOrigin.CustomerCheckout"/> and
+        /// <see cref="OrderOrigin.VerifiedImport"/> may contribute to a
+        /// qualified cohort.
+        /// </summary>
+        public OrderOrigin Origin { get; set; } = OrderOrigin.UnverifiedLegacy;
         public virtual ICollection<ReturnRequest> ReturnRequests { get; set; } = new List<ReturnRequest>();
     }
 }

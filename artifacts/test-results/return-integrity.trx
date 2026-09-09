@@ -1,0 +1,71 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="240b4d3c-f1a4-44b9-bac2-67174fec3a96" name="User@DESKTOP-MPRVV8J 2026-09-04 20:31:49" runUser="DESKTOP-MPRVV8J\User" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-09-04T20:31:49.6706520+02:00" queuing="2026-09-04T20:31:49.6706526+02:00" start="2026-09-04T20:31:26.1285354+02:00" finish="2026-09-04T20:31:50.1039767+02:00" />
+  <TestSettings name="default" id="42d211da-9343-4c4a-b4fb-814f21143feb">
+    <Deployment runDeploymentRoot="User_DESKTOP-MPRVV8J_2026-09-04_20_31_49" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="2e59b57d-cf59-4b62-b4da-39d747896152" testId="ac98b72c-928e-47b2-55f8-439a497b4c84" testName="PadelClub.WebAPI.Tests.ApiIntegrationTests.Return_eligible_orders_are_owner_scoped_windowed_and_subtract_non_rejected_quantities" computerName="DESKTOP-MPRVV8J" duration="00:00:00.8632492" startTime="2026-09-04T20:31:48.9990204+02:00" endTime="2026-09-04T20:31:48.9990513+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="2e59b57d-cf59-4b62-b4da-39d747896152" />
+    <UnitTestResult executionId="5a97fc87-9129-4fa9-be0a-9dbbeb9fa9d6" testId="d833928d-b96a-8063-4b92-68d05f05c081" testName="PadelClub.WebAPI.Tests.ApiIntegrationTests.Return_requests_serialize_line_reservations_and_reject_overflowed_quantities" computerName="DESKTOP-MPRVV8J" duration="00:00:00.1075746" startTime="2026-09-04T20:31:49.4098462+02:00" endTime="2026-09-04T20:31:49.4098465+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5a97fc87-9129-4fa9-be0a-9dbbeb9fa9d6" />
+    <UnitTestResult executionId="e807be84-5454-4191-90f5-3e57ab0a35e3" testId="1bd3444a-632f-03b2-5cb4-6e035036a241" testName="PadelClub.WebAPI.Tests.ApiIntegrationTests.Return_requests_exclude_future_deliveries_and_allocate_fractional_refunds_without_overrun" computerName="DESKTOP-MPRVV8J" duration="00:00:00.3007693" startTime="2026-09-04T20:31:49.3018332+02:00" endTime="2026-09-04T20:31:49.3018336+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e807be84-5454-4191-90f5-3e57ab0a35e3" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="PadelClub.WebAPI.Tests.ApiIntegrationTests.Return_requests_serialize_line_reservations_and_reject_overflowed_quantities" storage="c:\users\user\desktop\padelclub\padelclub.webapi.tests\bin\release\net8.0\padelclub.webapi.tests.dll" id="d833928d-b96a-8063-4b92-68d05f05c081">
+      <Execution id="5a97fc87-9129-4fa9-be0a-9dbbeb9fa9d6" />
+      <TestMethod codeBase="C:\Users\User\Desktop\PadelClub\PadelClub.WebAPI.Tests\bin\Release\net8.0\PadelClub.WebAPI.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="PadelClub.WebAPI.Tests.ApiIntegrationTests" name="Return_requests_serialize_line_reservations_and_reject_overflowed_quantities" />
+    </UnitTest>
+    <UnitTest name="PadelClub.WebAPI.Tests.ApiIntegrationTests.Return_requests_exclude_future_deliveries_and_allocate_fractional_refunds_without_overrun" storage="c:\users\user\desktop\padelclub\padelclub.webapi.tests\bin\release\net8.0\padelclub.webapi.tests.dll" id="1bd3444a-632f-03b2-5cb4-6e035036a241">
+      <Execution id="e807be84-5454-4191-90f5-3e57ab0a35e3" />
+      <TestMethod codeBase="C:\Users\User\Desktop\PadelClub\PadelClub.WebAPI.Tests\bin\Release\net8.0\PadelClub.WebAPI.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="PadelClub.WebAPI.Tests.ApiIntegrationTests" name="Return_requests_exclude_future_deliveries_and_allocate_fractional_refunds_without_overrun" />
+    </UnitTest>
+    <UnitTest name="PadelClub.WebAPI.Tests.ApiIntegrationTests.Return_eligible_orders_are_owner_scoped_windowed_and_subtract_non_rejected_quantities" storage="c:\users\user\desktop\padelclub\padelclub.webapi.tests\bin\release\net8.0\padelclub.webapi.tests.dll" id="ac98b72c-928e-47b2-55f8-439a497b4c84">
+      <Execution id="2e59b57d-cf59-4b62-b4da-39d747896152" />
+      <TestMethod codeBase="C:\Users\User\Desktop\PadelClub\PadelClub.WebAPI.Tests\bin\Release\net8.0\PadelClub.WebAPI.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="PadelClub.WebAPI.Tests.ApiIntegrationTests" name="Return_eligible_orders_are_owner_scoped_windowed_and_subtract_non_rejected_quantities" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="ac98b72c-928e-47b2-55f8-439a497b4c84" executionId="2e59b57d-cf59-4b62-b4da-39d747896152" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d833928d-b96a-8063-4b92-68d05f05c081" executionId="5a97fc87-9129-4fa9-be0a-9dbbeb9fa9d6" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="1bd3444a-632f-03b2-5cb4-6e035036a241" executionId="e807be84-5454-4191-90f5-3e57ab0a35e3" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="3" executed="3" passed="3" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 8.0.12)&#xD;
+[xUnit.net 00:00:00.12]   Discovering: PadelClub.WebAPI.Tests&#xD;
+[xUnit.net 00:00:00.18]   Discovered:  PadelClub.WebAPI.Tests&#xD;
+[xUnit.net 00:00:00.18]   Starting:    PadelClub.WebAPI.Tests&#xD;
+[testcontainers.org 00:00:00.25] Connected to Docker:&#xD;
+  Host: npipe://./pipe/docker_engine&#xD;
+  Server Version: 28.5.1&#xD;
+  Kernel Version: 6.18.33.2-microsoft-standard-WSL2&#xD;
+  API Version: 1.51&#xD;
+  Operating System: Docker Desktop&#xD;
+  Total Memory: 7.63 GB&#xD;
+  Labels: &#xD;
+    com.docker.desktop.address=npipe://\\.\pipe\docker_cli&#xD;
+[testcontainers.org 00:00:00.61] Docker container 9987a7094199 created&#xD;
+[testcontainers.org 00:00:00.70] Start Docker container 9987a7094199&#xD;
+[testcontainers.org 00:00:01.11] Wait for Docker container 9987a7094199 to complete readiness checks&#xD;
+[testcontainers.org 00:00:02.18] Docker container 9987a7094199 ready&#xD;
+[testcontainers.org 00:00:02.38] Docker container 65c0a8816121 created&#xD;
+[testcontainers.org 00:00:02.42] Start Docker container 65c0a8816121&#xD;
+[testcontainers.org 00:00:02.76] Wait for Docker container 65c0a8816121 to complete readiness checks&#xD;
+[testcontainers.org 00:00:02.77] Execute "/bin/sh -c find /opt/mssql-tools*/bin/sqlcmd -type f -print -quit" at Docker container 65c0a8816121&#xD;
+[testcontainers.org 00:00:02.90] Execute "/opt/mssql-tools18/bin/sqlcmd -C -b -r 1 -d master -Q SELECT 1;" at Docker container 65c0a8816121&#xD;
+[testcontainers.org 00:00:11.58] Execute "/opt/mssql-tools18/bin/sqlcmd -C -b -r 1 -d master -Q SELECT 1;" at Docker container 65c0a8816121&#xD;
+[testcontainers.org 00:00:12.73] Execute "/opt/mssql-tools18/bin/sqlcmd -C -b -r 1 -d master -Q SELECT 1;" at Docker container 65c0a8816121&#xD;
+[testcontainers.org 00:00:13.87] Execute "/opt/mssql-tools18/bin/sqlcmd -C -b -r 1 -d master -Q SELECT 1;" at Docker container 65c0a8816121&#xD;
+[testcontainers.org 00:00:14.02] Docker container 65c0a8816121 ready&#xD;
+info: PadelClub.WebAPI[0]&#xD;
+      Database bootstrap is disabled by configuration.&#xD;
+[testcontainers.org 00:00:22.38] Delete Docker container 65c0a8816121&#xD;
+[xUnit.net 00:00:23.34]   Finished:    PadelClub.WebAPI.Tests&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

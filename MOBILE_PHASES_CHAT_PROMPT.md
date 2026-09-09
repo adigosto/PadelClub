@@ -8,8 +8,8 @@ Continue the PadelClub UI modernization, now focusing on the mobile Flutter app.
 - Review all applicable `AGENTS.md` files before making changes.
 - The existing Flutter project currently visible in the repository is `UI/padelclub_desktop`. First inspect the repository and identify whether the mobile app exists under another path. If it does not exist, report that clearly before scaffolding anything; do not assume that the desktop project should be converted into the mobile app.
 - Desktop UI modernization phases are already complete.
-- Notifications have been implemented on the backend and connected to the desktop frontend.
-- The notification API runs through Docker on `http://localhost:5001`.
+- Notification endpoints exist on the backend; verify client integration instead of assuming it is complete.
+- The API runs through Docker on `http://localhost:5000`.
 
 ## Design direction
 

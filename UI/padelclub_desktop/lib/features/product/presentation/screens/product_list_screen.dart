@@ -1,14 +1,22 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'dart:async';
 
-import 'package:padelclub_desktop/features/product/domain/entities/product.dart';
+import 'package:flutter/material.dart';
+
+import 'package:provider/provider.dart';
+
+import 'package:padelclub_desktop/core/localization/app_localizations.dart';
 import 'package:padelclub_desktop/features/orders/domain/entities/order.dart';
 import 'package:padelclub_desktop/features/orders/presentation/providers/order_provider.dart';
+import 'package:padelclub_desktop/features/product/domain/entities/product.dart';
 import 'package:padelclub_desktop/features/product/presentation/providers/cart_provider.dart';
 import 'package:padelclub_desktop/features/product/presentation/providers/product_provider.dart';
+import 'package:padelclub_desktop/features/product/presentation/widgets/checkout_sheet.dart';
+import 'package:padelclub_desktop/features/recommendations/domain/entities/product_recommendation.dart';
+import 'package:padelclub_desktop/features/recommendations/presentation/providers/product_recommendation_provider.dart';
+import 'package:padelclub_desktop/features/returns/domain/entities/return_eligible_order.dart';
+import 'package:padelclub_desktop/features/returns/domain/entities/return_request_status.dart';
+import 'package:padelclub_desktop/features/returns/presentation/providers/return_requests_provider.dart';
 import 'package:padelclub_desktop/layouts/master_screen.dart';
-import 'package:padelclub_desktop/providers/auth_provider.dart';
 
 import 'product_details_screen.dart';
 
@@ -41,7 +49,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadProducts());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _loadProducts();
+      context.read<ProductRecommendationProvider>().load();
+    });
   }
 
   @override
@@ -89,16 +101,21 @@ class _ProductListScreenState extends State<ProductListScreen> {
     _loadProducts();
   }
 
-  void _openProduct(Product product) {
+  void _openProduct(Product product, {String? recommendationExposureId}) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => ProductDetailsScreen(product: product)),
+      MaterialPageRoute(
+        builder: (_) => ProductDetailsScreen(
+          product: product,
+          recommendationExposureId: recommendationExposureId,
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return MasterScreen(
-      title: 'Shop',
+      title: context.tr("Shop"),
       section: AppSection.products,
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -114,9 +131,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 children: [
                   Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'Club shop',
+                          context.tr("Club shop"),
                           style: TextStyle(
                             color: Color(0xFF27423A),
                             fontSize: 28,
@@ -128,24 +145,24 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  const Text(
-                    'Everything you need for your next match.',
+                  Text(
+                    context.tr("Everything you need for your next match."),
                     style: TextStyle(color: Color(0xFF5C6B64), fontSize: 15),
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
                     child: SegmentedButton<int>(
-                      segments: const [
+                      segments: [
                         ButtonSegment(
                           value: 0,
                           icon: Icon(Icons.storefront_outlined),
-                          label: Text('Products'),
+                          label: Text(context.tr("Products")),
                         ),
                         ButtonSegment(
                           value: 1,
                           icon: Icon(Icons.receipt_long_outlined),
-                          label: Text('My orders'),
+                          label: Text(context.tr("My orders")),
                         ),
                       ],
                       selected: {_selectedTab},
@@ -154,6 +171,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         setState(() => _selectedTab = value);
                         if (value == 1) {
                           context.read<OrderProvider>().loadMine();
+                          context
+                              .read<ReturnRequestsProvider>()
+                              .loadCustomerData();
                         }
                       },
                     ),
@@ -166,10 +186,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
                       onSubmitted: (_) => _search(),
                       onTapOutside: (_) => FocusScope.of(context).unfocus(),
                       decoration: InputDecoration(
-                        hintText: 'Search rackets, balls, apparel…',
+                        hintText: context.tr("Search rackets, balls, apparel…"),
                         prefixIcon: const Icon(Icons.search_rounded),
                         suffixIcon: IconButton(
-                          tooltip: 'Search',
+                          tooltip: context.tr("Search"),
                           onPressed: _search,
                           icon: const Icon(Icons.arrow_forward_rounded),
                         ),
@@ -185,7 +205,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                               (category) => Padding(
                                 padding: const EdgeInsets.only(right: 8),
                                 child: ChoiceChip(
-                                  label: Text(category),
+                                  label: Text(context.tr(category)),
                                   selected: _category == category,
                                   onSelected: (_) {
                                     _searchController.clear();
@@ -203,6 +223,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     ),
                     const SizedBox(height: 14),
                     const _PromoBanner(),
+                    const SizedBox(height: 16),
+                    _RecommendationStrip(
+                      onOpen: _openRecommendedProduct,
+                      onAdd: _addRecommendedToCart,
+                    ),
                     const SizedBox(height: 16),
                     _buildContent(isWide),
                   ] else ...[
@@ -228,18 +253,18 @@ class _ProductListScreenState extends State<ProductListScreen> {
     if (_errorMessage != null) {
       return _MessageState(
         icon: Icons.cloud_off_rounded,
-        title: 'Products are unavailable',
+        title: context.tr("Products are unavailable"),
         message: _errorMessage!,
-        actionLabel: 'Try again',
+        actionLabel: context.tr("Try again"),
         onAction: _loadProducts,
       );
     }
     if (_products.isEmpty) {
       return _MessageState(
         icon: Icons.inventory_2_outlined,
-        title: 'No products found',
-        message: 'Try another search or clear the current one.',
-        actionLabel: 'Clear search',
+        title: context.tr("No products found"),
+        message: context.tr("Try another search or clear the current one."),
+        actionLabel: context.tr("Clear search"),
         onAction: () {
           _searchController.clear();
           _search();
@@ -280,7 +305,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
                       : null,
                   icon: const Icon(Icons.chevron_left_rounded),
                 ),
-                Text('Page $_page of ${(_totalCount / _pageSize).ceil()}'),
+                Text(
+                  context.tr("Page {p1} of {p2}", {
+                    'p1': _page,
+                    'p2': (_totalCount / _pageSize).ceil(),
+                  }),
+                ),
                 IconButton(
                   onPressed: _page * _pageSize < _totalCount
                       ? () {
@@ -297,13 +327,41 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
-  void _addToCart(Product product) {
-    context.read<CartProvider>().add(product);
+  void _addToCart(Product product, {String? recommendationExposureId}) {
+    context.read<CartProvider>().add(
+      product,
+      recommendationExposureId: recommendationExposureId,
+    );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${product.name} added to cart.'),
+        content: Text(context.tr("{p1} added to cart.", {'p1': product.name})),
         duration: const Duration(seconds: 1),
       ),
+    );
+  }
+
+  Future<void> _openRecommendedProduct(
+    ProductRecommendation recommendation,
+  ) async {
+    await context.read<ProductRecommendationProvider>().recordClick(
+      recommendation.exposureId,
+    );
+    if (!mounted) return;
+    _openProduct(
+      recommendation.product,
+      recommendationExposureId: recommendation.exposureId,
+    );
+  }
+
+  void _addRecommendedToCart(ProductRecommendation recommendation) {
+    unawaited(
+      context.read<ProductRecommendationProvider>().recordClick(
+        recommendation.exposureId,
+      ),
+    );
+    _addToCart(
+      recommendation.product,
+      recommendationExposureId: recommendation.exposureId,
     );
   }
 
@@ -326,13 +384,15 @@ class _CartButton extends StatelessWidget {
     final count = context.watch<CartProvider>().itemCount;
     return Semantics(
       button: true,
-      label: count == 0 ? 'Open cart, empty' : 'Open cart, $count items',
+      label: count == 0
+          ? context.tr("Open cart, empty")
+          : context.tr("Open cart, {p1} items", {'p1': count}),
       child: ExcludeSemantics(
         child: Badge(
           isLabelVisible: count > 0,
           label: Text('$count'),
           child: IconButton.filledTonal(
-            tooltip: 'Open cart',
+            tooltip: context.tr("Open cart"),
             onPressed: onPressed,
             icon: const Icon(Icons.shopping_cart_rounded),
           ),
@@ -355,14 +415,14 @@ class _PromoBanner extends StatelessWidget {
       ),
       borderRadius: BorderRadius.circular(20),
     ),
-    child: const Row(
+    child: Row(
       children: [
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Match-day essentials',
+                context.tr("Match-day essentials"),
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 17,
@@ -371,7 +431,7 @@ class _PromoBanner extends StatelessWidget {
               ),
               SizedBox(height: 4),
               Text(
-                'Club gear ready for your next court.',
+                context.tr("Club gear ready for your next court."),
                 style: TextStyle(color: Colors.white70, fontSize: 12),
               ),
             ],
@@ -381,6 +441,206 @@ class _PromoBanner extends StatelessWidget {
       ],
     ),
   );
+}
+
+class _RecommendationStrip extends StatelessWidget {
+  const _RecommendationStrip({required this.onOpen, required this.onAdd});
+
+  final ValueChanged<ProductRecommendation> onOpen;
+  final ValueChanged<ProductRecommendation> onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    final recommendations = context.watch<ProductRecommendationProvider>();
+    if (recommendations.isLoading && recommendations.items.isEmpty) {
+      return const ClipRRect(
+        borderRadius: BorderRadius.all(Radius.circular(99)),
+        child: LinearProgressIndicator(minHeight: 3),
+      );
+    }
+    if (recommendations.items.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.auto_awesome_rounded, color: Color(0xFF1F7A63)),
+            SizedBox(width: 8),
+            Text(
+              context.tr("Recommended for you"),
+              style: TextStyle(
+                color: Color(0xFF27423A),
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          context.tr("Personalized from completed shop purchases."),
+          style: TextStyle(color: Color(0xFF5C6B64), fontSize: 13),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 232,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: recommendations.items.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 12),
+            itemBuilder: (_, index) {
+              final recommendation = recommendations.items[index];
+              return _RecommendationCard(
+                recommendation: recommendation,
+                onOpen: () => onOpen(recommendation),
+                onAdd: () => onAdd(recommendation),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RecommendationCard extends StatelessWidget {
+  const _RecommendationCard({
+    required this.recommendation,
+    required this.onOpen,
+    required this.onAdd,
+  });
+
+  final ProductRecommendation recommendation;
+  final VoidCallback onOpen;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    final product = recommendation.product;
+    final available =
+        product.stockQuantity > 0 &&
+        !product.productState.toLowerCase().contains('deactivated');
+    final label = switch (recommendation.strategy) {
+      'new-arrivals-fallback' => context.tr("New in the club shop"),
+      'popular-fallback' => context.tr("Popular in the club shop"),
+      _ when recommendation.isFallback => context.tr(
+        "Popular in the club shop",
+      ),
+      _ => context.tr("Based on similar purchases"),
+    };
+
+    return SizedBox(
+      width: 226,
+      child: Semantics(
+        button: true,
+        label: '${product.name}. $label. ${recommendation.reason}',
+        child: Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onOpen,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8F4EF),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: _ProductImage(
+                          url: product.imageUrl,
+                          iconSize: 25,
+                        ),
+                      ),
+                      const SizedBox(width: 9),
+                      Expanded(
+                        child: Text(
+                          product.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF27423A),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 11),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: recommendation.isFallback
+                          ? const Color(0xFFFFF3D6)
+                          : const Color(0xFFE8F4EF),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF27423A),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: Text(
+                      recommendation.reason,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF5C6B64),
+                        fontSize: 12,
+                        height: 1.25,
+                      ),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${context.l10n.number(product.price, decimalDigits: 2)} KM',
+                          style: const TextStyle(
+                            color: Color(0xFF1F7A63),
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      IconButton.filled(
+                        tooltip: available
+                            ? context.tr("Add to cart")
+                            : context.tr("Unavailable"),
+                        onPressed: available ? onAdd : null,
+                        icon: const Icon(Icons.add_shopping_cart_rounded),
+                        iconSize: 18,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _CartSheet extends StatelessWidget {
@@ -402,9 +662,9 @@ class _CartSheet extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Your cart',
+                      context.tr("Your cart"),
                       style: TextStyle(
                         fontSize: 23,
                         fontWeight: FontWeight.w900,
@@ -414,14 +674,14 @@ class _CartSheet extends StatelessWidget {
                   if (cart.lines.isNotEmpty)
                     TextButton(
                       onPressed: cart.clear,
-                      child: const Text('Clear'),
+                      child: Text(context.tr("Clear")),
                     ),
                 ],
               ),
               const SizedBox(height: 10),
               if (cart.lines.isEmpty)
-                const Expanded(
-                  child: Center(child: Text('Your cart is empty.')),
+                Expanded(
+                  child: Center(child: Text(context.tr("Your cart is empty."))),
                 )
               else
                 Flexible(
@@ -436,19 +696,25 @@ class _CartSheet extends StatelessWidget {
                           line.product.name,
                           style: const TextStyle(fontWeight: FontWeight.w800),
                         ),
-                        subtitle: Text('${line.total.toStringAsFixed(2)} KM'),
+                        subtitle: Text(
+                          '${context.l10n.number(line.total, decimalDigits: 2)} KM',
+                        ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              tooltip: 'Remove one ${line.product.name}',
+                              tooltip: context.tr("Remove one {p1}", {
+                                'p1': line.product.name,
+                              }),
                               onPressed: () => cart.decrement(line.product),
                               icon: const Icon(
                                 Icons.remove_circle_outline_rounded,
                               ),
                             ),
                             Semantics(
-                              label: 'Quantity ${line.quantity}',
+                              label: context.tr("Quantity {p1}", {
+                                'p1': line.quantity,
+                              }),
                               child: Text(
                                 '${line.quantity}',
                                 style: const TextStyle(
@@ -457,7 +723,9 @@ class _CartSheet extends StatelessWidget {
                               ),
                             ),
                             IconButton(
-                              tooltip: 'Add one ${line.product.name}',
+                              tooltip: context.tr("Add one {p1}", {
+                                'p1': line.product.name,
+                              }),
                               onPressed:
                                   line.quantity < line.product.stockQuantity
                                   ? () => cart.add(line.product)
@@ -476,14 +744,14 @@ class _CartSheet extends StatelessWidget {
                 const Divider(),
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Total',
+                        context.tr("Total"),
                         style: TextStyle(fontWeight: FontWeight.w800),
                       ),
                     ),
                     Text(
-                      '${cart.total.toStringAsFixed(2)} KM',
+                      '${context.l10n.number(cart.total, decimalDigits: 2)} KM',
                       style: const TextStyle(
                         color: Color(0xFF1F7A63),
                         fontSize: 20,
@@ -498,7 +766,7 @@ class _CartSheet extends StatelessWidget {
                   child: FilledButton.icon(
                     onPressed: () => _showCheckout(context),
                     icon: const Icon(Icons.lock_outline_rounded),
-                    label: const Text('Proceed to checkout'),
+                    label: Text(context.tr("Proceed to checkout")),
                   ),
                 ),
               ],
@@ -516,7 +784,7 @@ Future<void> _showCheckout(BuildContext context) async {
     isScrollControlled: true,
     showDragHandle: true,
     useSafeArea: true,
-    builder: (sheetContext) => const _CheckoutSheet(),
+    builder: (sheetContext) => const CheckoutSheet(),
   );
   if (orderNumber != null && context.mounted) {
     Navigator.pop(context);
@@ -525,12 +793,16 @@ Future<void> _showCheckout(BuildContext context) async {
       context: context,
       builder: (context) => AlertDialog(
         icon: const Icon(Icons.check_circle_rounded, color: Color(0xFF1F7A63)),
-        title: const Text('Order placed'),
-        content: Text('Order $orderNumber was submitted successfully.'),
+        title: Text(context.tr("Order placed")),
+        content: Text(
+          context.tr("Order {p1} was submitted successfully.", {
+            'p1': orderNumber,
+          }),
+        ),
         actions: [
           FilledButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Done'),
+            child: Text(context.tr("Done")),
           ),
         ],
       ),
@@ -543,54 +815,632 @@ class _MyOrdersView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<OrderProvider>();
-    if (provider.isLoading && provider.orders.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 80),
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-    if (provider.errorMessage != null && provider.orders.isEmpty) {
-      return _MessageState(
-        icon: Icons.cloud_off_rounded,
-        title: 'Orders are unavailable',
-        message: provider.errorMessage!,
-        actionLabel: 'Try again',
-        onAction: provider.loadMine,
-      );
-    }
-    if (provider.orders.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 70),
-        child: Column(
+    final orders = context.watch<OrderProvider>();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _MyReturnsWorkspace(),
+        const SizedBox(height: 28),
+        Row(
           children: [
-            Icon(
-              Icons.receipt_long_outlined,
-              size: 56,
-              color: Color(0xFF1F7A63),
+            Expanded(
+              child: Text(
+                context.tr("Order history"),
+                style: TextStyle(
+                  color: Color(0xFF27423A),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 19,
+                ),
+              ),
             ),
-            SizedBox(height: 14),
-            Text(
-              'No orders yet',
-              style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
+            IconButton(
+              tooltip: context.tr("Refresh orders"),
+              onPressed: orders.isLoading ? null : orders.loadMine,
+              icon: const Icon(Icons.refresh_rounded),
             ),
-            SizedBox(height: 6),
-            Text('Completed checkouts will appear here.'),
           ],
         ),
-      );
-    }
-    return RefreshIndicator(
-      onRefresh: provider.loadMine,
-      child: ListView.separated(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: provider.orders.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 12),
-        itemBuilder: (_, index) => _OrderCard(order: provider.orders[index]),
+        const SizedBox(height: 8),
+        if (orders.isLoading && orders.orders.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 48),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (orders.errorMessage != null && orders.orders.isEmpty)
+          _MessageState(
+            icon: Icons.cloud_off_rounded,
+            title: context.tr("Orders are unavailable"),
+            message: orders.errorMessage!,
+            actionLabel: context.tr("Try again"),
+            onAction: orders.loadMine,
+          )
+        else if (orders.orders.isEmpty)
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 42),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.receipt_long_outlined,
+                  size: 56,
+                  color: Color(0xFF1F7A63),
+                ),
+                SizedBox(height: 14),
+                Text(
+                  context.tr("No orders yet"),
+                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
+                ),
+                SizedBox(height: 6),
+                Text(context.tr("Completed checkouts will appear here.")),
+              ],
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: orders.orders.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
+            itemBuilder: (_, index) => _OrderCard(order: orders.orders[index]),
+          ),
+      ],
+    );
+  }
+}
+
+class _MyReturnsWorkspace extends StatelessWidget {
+  const _MyReturnsWorkspace();
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<ReturnRequestsProvider>();
+    final isLoading =
+        provider.isLoadingCustomerData &&
+        provider.eligibleOrders.isEmpty &&
+        provider.myReturns.isEmpty;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5FAF8),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFD6E8DF)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.assignment_return_outlined,
+                color: Color(0xFF1F7A63),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  context.tr("Returns"),
+                  style: TextStyle(
+                    color: Color(0xFF27423A),
+                    fontWeight: FontWeight.w900,
+                    fontSize: 19,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: context.tr("Refresh returns"),
+                onPressed: provider.isLoadingCustomerData
+                    ? null
+                    : provider.loadCustomerData,
+                icon: const Icon(Icons.refresh_rounded),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            context.tr(
+              "Select eligible delivered items and track the status of each request.",
+            ),
+            style: TextStyle(color: Color(0xFF5C6B64)),
+          ),
+          if (isLoading) ...[
+            const SizedBox(height: 18),
+            const LinearProgressIndicator(),
+          ] else ...[
+            if (provider.customerErrorMessage != null) ...[
+              const SizedBox(height: 14),
+              _ReturnNotice(
+                icon: Icons.info_outline_rounded,
+                message: provider.customerErrorMessage!,
+                actionLabel: context.tr("Retry"),
+                onAction: provider.loadCustomerData,
+              ),
+            ],
+            const SizedBox(height: 18),
+            Text(
+              context.tr("Eligible items"),
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 8),
+            if (provider.eligibleOrders.isEmpty)
+              _ReturnNotice(
+                icon: Icons.inventory_2_outlined,
+                message: context.tr(
+                  "There are no returnable delivered items right now. Eligibility is checked by PadelClub.",
+                ),
+              )
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: provider.eligibleOrders.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 10),
+                itemBuilder: (_, index) => _ReturnEligibleOrderCard(
+                  order: provider.eligibleOrders[index],
+                ),
+              ),
+            const SizedBox(height: 18),
+            Text(
+              context.tr("My return requests"),
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 8),
+            if (provider.myReturns.isEmpty)
+              _ReturnNotice(
+                icon: Icons.hourglass_empty_rounded,
+                message: context.tr("You have not submitted a return request."),
+              )
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: provider.myReturns.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 10),
+                itemBuilder: (_, index) =>
+                    _ReturnStatusCard(request: provider.myReturns[index]),
+              ),
+          ],
+        ],
       ),
     );
   }
+}
+
+class _ReturnEligibleOrderCard extends StatelessWidget {
+  const _ReturnEligibleOrderCard({required this.order});
+
+  final ReturnEligibleOrder order;
+
+  @override
+  Widget build(BuildContext context) {
+    final returnableItems = order.items
+        .where((item) => item.remainingReturnableQuantity > 0)
+        .toList(growable: false);
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFDDE5DC)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  order.orderNumber.isEmpty
+                      ? context.tr("Order #{p1}", {'p1': order.orderId})
+                      : order.orderNumber,
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+              ),
+              Text(
+                context.tr("Window ends {p1}", {
+                  'p1': _orderDate(context, order.returnWindowEndsAt),
+                }),
+                style: const TextStyle(color: Color(0xFF5C6B64), fontSize: 12),
+              ),
+            ],
+          ),
+          const SizedBox(height: 5),
+          Text(
+            context.tr("{p1} eligible line{p2} · delivered {p3}", {
+              'p1': returnableItems.length,
+              'p2': returnableItems.length == 1 ? '' : 's',
+              'p3': _orderDate(context, order.deliveredAt),
+            }),
+            style: const TextStyle(color: Color(0xFF5C6B64), fontSize: 13),
+          ),
+          const SizedBox(height: 11),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton.tonalIcon(
+              onPressed: returnableItems.isEmpty
+                  ? null
+                  : () => _showReturnRequestDialog(context, order),
+              icon: const Icon(Icons.assignment_return_outlined, size: 18),
+              label: Text(context.tr("Request return")),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReturnStatusCard extends StatelessWidget {
+  const _ReturnStatusCard({required this.request});
+
+  final ReturnRequestStatus request;
+
+  @override
+  Widget build(BuildContext context) {
+    final statusColor = _returnStatusColor(request.status);
+    final hasNotes = request.adminNotes?.trim().isNotEmpty == true;
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFDDE5DC)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  context.tr("Return #{p1} · order #{p2}", {
+                    'p1': request.id,
+                    'p2': request.orderId,
+                  }),
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+              ),
+              _ReturnStatusBadge(label: request.status, color: statusColor),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            request.reason,
+            style: const TextStyle(color: Color(0xFF5C6B64)),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 14,
+            runSpacing: 4,
+            children: [
+              Text(
+                context.tr("Submitted {p1}", {
+                  'p1': _orderDate(context, request.createdAt),
+                }),
+                style: const TextStyle(color: Color(0xFF5C6B64), fontSize: 12),
+              ),
+              Text(
+                context.tr("Server-calculated amount: {p1} KM", {
+                  'p1': context.l10n.number(
+                    request.refundAmount,
+                    decimalDigits: 2,
+                  ),
+                }),
+                style: const TextStyle(color: Color(0xFF5C6B64), fontSize: 12),
+              ),
+            ],
+          ),
+          if (request.resolvedAt != null) ...[
+            const SizedBox(height: 5),
+            Text(
+              context.tr("Resolved {p1}", {
+                'p1': _orderDate(context, request.resolvedAt!),
+              }),
+              style: const TextStyle(color: Color(0xFF5C6B64), fontSize: 12),
+            ),
+          ],
+          if (hasNotes) ...[
+            const SizedBox(height: 8),
+            Text(
+              context.tr("Club note: {p1}", {'p1': request.adminNotes!.trim()}),
+              style: const TextStyle(
+                color: Color(0xFF27423A),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ReturnStatusBadge extends StatelessWidget {
+  const _ReturnStatusBadge({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Text(
+      label,
+      style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w800),
+    ),
+  );
+}
+
+class _ReturnNotice extends StatelessWidget {
+  const _ReturnNotice({
+    required this.icon,
+    required this.message,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final IconData icon;
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0xFFDDE5DC)),
+    ),
+    child: Row(
+      children: [
+        Icon(icon, color: const Color(0xFF1F7A63)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            message,
+            style: const TextStyle(color: Color(0xFF5C6B64)),
+          ),
+        ),
+        if (actionLabel != null && onAction != null) ...[
+          const SizedBox(width: 8),
+          TextButton(onPressed: onAction, child: Text(actionLabel!)),
+        ],
+      ],
+    ),
+  );
+}
+
+Future<void> _showReturnRequestDialog(
+  BuildContext context,
+  ReturnEligibleOrder order,
+) async {
+  final submitted = await showDialog<bool>(
+    context: context,
+    builder: (_) => _ReturnRequestDialog(order: order),
+  );
+  if (submitted != true || !context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        context.tr(
+          "Return request submitted. Its current status is shown in My return requests.",
+        ),
+      ),
+    ),
+  );
+}
+
+class _ReturnRequestDialog extends StatefulWidget {
+  const _ReturnRequestDialog({required this.order});
+
+  final ReturnEligibleOrder order;
+
+  @override
+  State<_ReturnRequestDialog> createState() => _ReturnRequestDialogState();
+}
+
+class _ReturnRequestDialogState extends State<_ReturnRequestDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _reasonController = TextEditingController();
+  late final Map<int, int> _selectedQuantities;
+  String? _selectionError;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedQuantities = {
+      for (final item in widget.order.items) item.orderItemId: 0,
+    };
+  }
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final selectedItems = _selectedQuantities.entries
+        .where((entry) => entry.value > 0)
+        .map(
+          (entry) =>
+              ReturnRequestLine(orderItemId: entry.key, quantity: entry.value),
+        )
+        .toList(growable: false);
+    if (selectedItems.isEmpty) {
+      setState(
+        () =>
+            _selectionError = context.tr("Select at least one item to return."),
+      );
+      return;
+    }
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final provider = context.read<ReturnRequestsProvider>();
+    final submission = await provider.submit(
+      orderId: widget.order.orderId,
+      reason: _reasonController.text,
+      items: selectedItems,
+    );
+    if (!mounted) return;
+    if (submission == null) {
+      setState(
+        () => _selectionError =
+            provider.customerErrorMessage ??
+            context.tr("Could not submit this return."),
+      );
+      return;
+    }
+    Navigator.of(context).pop(true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<ReturnRequestsProvider>();
+    final items = widget.order.items
+        .where((item) => item.remainingReturnableQuantity > 0)
+        .toList(growable: false);
+    return AlertDialog(
+      title: Text(
+        widget.order.orderNumber.isEmpty
+            ? context.tr("Request a return")
+            : context.tr("Return {p1}", {'p1': widget.order.orderNumber}),
+      ),
+      content: SizedBox(
+        width: 540,
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.tr(
+                    "Choose the quantities to return and explain the issue. PadelClub rechecks the items, return window, and amounts when you submit.",
+                  ),
+                  style: TextStyle(color: Color(0xFF5C6B64)),
+                ),
+                const SizedBox(height: 16),
+                ...items.map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: DropdownButtonFormField<int>(
+                      initialValue: _selectedQuantities[item.orderItemId],
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: context.tr("{p1} ({p2} available)", {
+                          'p1': item.productName,
+                          'p2': item.remainingReturnableQuantity,
+                        }),
+                        helperText: context
+                            .tr("{p1} KM each · {p2} originally ordered", {
+                              'p1': context.l10n.number(
+                                item.unitPrice,
+                                decimalDigits: 2,
+                              ),
+                              'p2': item.quantity,
+                            }),
+                      ),
+                      items: List.generate(
+                        item.remainingReturnableQuantity + 1,
+                        (index) => DropdownMenuItem<int>(
+                          value: index,
+                          child: Text(
+                            index == 0
+                                ? context.tr("Do not return this item")
+                                : context.tr("Return {p1}", {'p1': index}),
+                          ),
+                        ),
+                      ),
+                      onChanged: provider.isSubmitting
+                          ? null
+                          : (value) => setState(() {
+                              _selectedQuantities[item.orderItemId] =
+                                  value ?? 0;
+                              _selectionError = null;
+                            }),
+                    ),
+                  ),
+                ),
+                TextFormField(
+                  controller: _reasonController,
+                  enabled: !provider.isSubmitting,
+                  minLines: 3,
+                  maxLines: 6,
+                  maxLength: 1000,
+                  decoration: InputDecoration(
+                    labelText: context.tr("Reason for return"),
+                    hintText: context.tr(
+                      "Describe the issue with the selected items.",
+                    ),
+                    alignLabelWithHint: true,
+                  ),
+                  validator: (value) {
+                    final length = value?.trim().length ?? 0;
+                    if (length < 5) {
+                      return context.tr("Use at least 5 characters.");
+                    }
+                    return null;
+                  },
+                ),
+                if (_selectionError != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    _selectionError!,
+                    style: const TextStyle(
+                      color: Color(0xFFC95C4C),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: provider.isSubmitting
+              ? null
+              : () => Navigator.of(context).pop(),
+          child: Text(context.tr("Cancel")),
+        ),
+        FilledButton.icon(
+          onPressed: provider.isSubmitting ? null : _submit,
+          icon: provider.isSubmitting
+              ? const SizedBox.square(
+                  dimension: 17,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Icon(Icons.send_outlined),
+          label: Text(
+            provider.isSubmitting
+                ? context.tr("Submitting...")
+                : context.tr("Submit return request"),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+Color _returnStatusColor(String status) {
+  return switch (status.trim().toLowerCase()) {
+    'requested' => const Color(0xFF2E6BD7),
+    'approved' || 'refunded' => const Color(0xFF1F7A63),
+    'rejected' => const Color(0xFFC95C4C),
+    _ => const Color(0xFF5C6B64),
+  };
 }
 
 class _OrderCard extends StatelessWidget {
@@ -647,7 +1497,7 @@ class _OrderCard extends StatelessWidget {
           const SizedBox(height: 12),
           _orderDetail(
             Icons.calendar_today_outlined,
-            _orderDate(order.createdAt),
+            _orderDate(context, order.createdAt),
           ),
           _orderDetail(
             Icons.location_on_outlined,
@@ -662,14 +1512,14 @@ class _OrderCard extends StatelessWidget {
           const Divider(height: 22),
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Total',
+                  context.tr("Total"),
                   style: TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
               Text(
-                '${order.totalAmount.toStringAsFixed(2)} KM',
+                '${context.l10n.number(order.totalAmount, decimalDigits: 2)} KM',
                 style: const TextStyle(
                   color: Color(0xFF1F7A63),
                   fontWeight: FontWeight.w900,
@@ -697,242 +1547,8 @@ class _OrderCard extends StatelessWidget {
   );
 }
 
-String _orderDate(DateTime value) {
-  final local = value.toLocal();
-  return '${local.day.toString().padLeft(2, '0')}.${local.month.toString().padLeft(2, '0')}.${local.year}';
-}
-
-class _CheckoutSheet extends StatefulWidget {
-  const _CheckoutSheet();
-
-  @override
-  State<_CheckoutSheet> createState() => _CheckoutSheetState();
-}
-
-class _CheckoutSheetState extends State<_CheckoutSheet> {
-  final _recipientController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _addressController = TextEditingController();
-  final _cityController = TextEditingController();
-  final _postalCodeController = TextEditingController();
-  final _notesController = TextEditingController();
-  String? _validationMessage;
-  late final int _itemCount;
-  late final double _total;
-
-  @override
-  void initState() {
-    super.initState();
-    final auth = context.read<AuthProvider>();
-    final cart = context.read<CartProvider>();
-    _recipientController.text = auth.displayName;
-    _phoneController.text = auth.phoneNumber ?? '';
-    _itemCount = cart.itemCount;
-    _total = cart.total;
-  }
-
-  @override
-  void dispose() {
-    _recipientController.dispose();
-    _phoneController.dispose();
-    _addressController.dispose();
-    _cityController.dispose();
-    _postalCodeController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _openInMaps() async {
-    final parts = [
-      _addressController.text.trim(),
-      _postalCodeController.text.trim(),
-      _cityController.text.trim(),
-    ].where((part) => part.isNotEmpty).join(', ');
-    if (parts.length < 5) {
-      setState(
-        () => _validationMessage = 'Enter an address before opening Maps.',
-      );
-      return;
-    }
-    final uri = Uri.https('www.google.com', '/maps/search/', {
-      'api': '1',
-      'query': parts,
-    });
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication) &&
-        mounted) {
-      setState(() => _validationMessage = 'Google Maps could not be opened.');
-    }
-  }
-
-  Future<void> _submit() async {
-    final recipient = _recipientController.text.trim();
-    final phone = _phoneController.text.trim();
-    final address = _addressController.text.trim();
-    final city = _cityController.text.trim();
-    final postalCode = _postalCodeController.text.trim();
-    if (recipient.length < 2 || phone.length < 6) {
-      setState(
-        () => _validationMessage = 'Enter the recipient name and phone number.',
-      );
-      return;
-    }
-    if (address.length < 5 || city.length < 2 || postalCode.length < 3) {
-      setState(
-        () =>
-            _validationMessage = 'Complete the address, city, and postal code.',
-      );
-      return;
-    }
-    final cart = context.read<CartProvider>();
-    final number = await cart.checkout(
-      recipientName: recipient,
-      phoneNumber: phone,
-      shippingAddress: address,
-      city: city,
-      postalCode: postalCode,
-      notes: _notesController.text,
-    );
-    if (!mounted) return;
-    if (number != null) {
-      Navigator.pop(context, number);
-    } else {
-      setState(() => _validationMessage = cart.checkoutError);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final cart = context.watch<CartProvider>();
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        20,
-        0,
-        20,
-        MediaQuery.viewInsetsOf(context).bottom + 20,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Checkout', style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 6),
-            Text(
-              '$_itemCount items · ${_total.toStringAsFixed(2)} KM',
-              style: const TextStyle(color: Color(0xFF5C6B64)),
-            ),
-            const SizedBox(height: 20),
-            _checkoutField(
-              controller: _recipientController,
-              label: 'Recipient name',
-              icon: Icons.person_outline_rounded,
-              enabled: !cart.isCheckingOut,
-            ),
-            const SizedBox(height: 12),
-            _checkoutField(
-              controller: _phoneController,
-              label: 'Phone number',
-              icon: Icons.phone_outlined,
-              enabled: !cart.isCheckingOut,
-              keyboardType: TextInputType.phone,
-            ),
-            const SizedBox(height: 12),
-            _checkoutField(
-              controller: _addressController,
-              label: 'Street address',
-              icon: Icons.location_on_outlined,
-              enabled: !cart.isCheckingOut,
-              keyboardType: TextInputType.streetAddress,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: _checkoutField(
-                    controller: _cityController,
-                    label: 'City',
-                    enabled: !cart.isCheckingOut,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  flex: 2,
-                  child: _checkoutField(
-                    controller: _postalCodeController,
-                    label: 'Postal code',
-                    enabled: !cart.isCheckingOut,
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-              ],
-            ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: cart.isCheckingOut ? null : _openInMaps,
-                icon: const Icon(Icons.map_outlined),
-                label: const Text('Check address in Google Maps'),
-              ),
-            ),
-            TextField(
-              controller: _notesController,
-              enabled: !cart.isCheckingOut,
-              minLines: 2,
-              maxLines: 4,
-              maxLength: 1000,
-              decoration: const InputDecoration(
-                labelText: 'Delivery notes (optional)',
-              ),
-            ),
-            if (_validationMessage != null)
-              Text(
-                _validationMessage!,
-                style: const TextStyle(color: Color(0xFFC95C4C)),
-              ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: cart.isCheckingOut ? null : _submit,
-                icon: cart.isCheckingOut
-                    ? const SizedBox.square(
-                        dimension: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.lock_outline_rounded),
-                label: Text(cart.isCheckingOut ? 'Submitting…' : 'Place order'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _checkoutField({
-    required TextEditingController controller,
-    required String label,
-    required bool enabled,
-    IconData? icon,
-    TextInputType? keyboardType,
-  }) {
-    return TextField(
-      controller: controller,
-      enabled: enabled,
-      keyboardType: keyboardType,
-      textCapitalization: TextCapitalization.words,
-      onChanged: (_) => setState(() => _validationMessage = null),
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: icon == null ? null : Icon(icon),
-      ),
-    );
-  }
-}
+String _orderDate(BuildContext context, DateTime value) =>
+    context.l10n.date(value);
 
 class _ProductCard extends StatelessWidget {
   const _ProductCard({
@@ -953,7 +1569,7 @@ class _ProductCard extends StatelessWidget {
     return Semantics(
       button: true,
       label:
-          '${product.name}, ${product.price.toStringAsFixed(2)} KM, ${available ? 'in stock' : 'unavailable'}',
+          '${product.name}, ${context.l10n.number(product.price, decimalDigits: 2)} KM, ${available ? 'in stock' : 'unavailable'}',
       child: Material(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
@@ -990,7 +1606,7 @@ class _ProductCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            '${product.price.toStringAsFixed(2)} KM',
+                            '${context.l10n.number(product.price, decimalDigits: 2)} KM',
                             style: const TextStyle(
                               color: Color(0xFF1F7A63),
                               fontWeight: FontWeight.w900,
@@ -998,7 +1614,9 @@ class _ProductCard extends StatelessWidget {
                           ),
                         ),
                         IconButton.filled(
-                          tooltip: available ? 'Add to cart' : 'Unavailable',
+                          tooltip: available
+                              ? context.tr("Add to cart")
+                              : context.tr("Unavailable"),
                           onPressed: available ? onAdd : null,
                           icon: const Icon(Icons.add_shopping_cart_rounded),
                           iconSize: 18,

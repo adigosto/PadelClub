@@ -8,6 +8,7 @@
     ".NETCoreApp,Version=v8.0": {
       "PadelClub.WebAPI/1.0.0": {
         "dependencies": {
+          "EasyNetQ": "8.1.4",
           "FirebaseAdmin": "3.6.0",
           "MailKit": "4.17.0",
           "Mapster": "10.0.6",

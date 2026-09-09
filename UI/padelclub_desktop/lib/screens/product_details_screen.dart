@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:padelclub_desktop/core/localization/app_localizations.dart';
 import 'package:padelclub_desktop/layouts/master_screen.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
@@ -12,8 +13,8 @@ class ProductDetailsScreen extends StatefulWidget {
 class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   @override
   Widget build(BuildContext context) {
-    return const MasterScreen(
-      title: 'Product Details',
+    return MasterScreen(
+      title: context.tr("Product Details"),
       child: Padding(
         padding: EdgeInsets.all(24),
         child: Column(
@@ -44,7 +45,7 @@ class _DetailHeroCard extends StatelessWidget {
         ],
       ),
       child: Row(
-        children: const [
+        children: [
           CircleAvatar(
             radius: 28,
             backgroundColor: Color(0xFFE8F4EF),
@@ -60,7 +61,7 @@ class _DetailHeroCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Premium Padel Ball Pack',
+                  context.tr("Premium Padel Ball Pack"),
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
@@ -69,7 +70,9 @@ class _DetailHeroCard extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Tournament-ready balls selected for club training and weekend play.',
+                  context.tr(
+                    "Tournament-ready balls selected for club training and weekend play.",
+                  ),
                   style: TextStyle(color: Color(0xFF5C6B64)),
                 ),
               ],
@@ -95,9 +98,9 @@ class _InfoCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
+        children: [
           Text(
-            'Product details',
+            context.tr("Product details"),
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
@@ -105,10 +108,10 @@ class _InfoCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: 12),
-          _DetailRow(label: 'Price', value: '\$42.00'),
-          _DetailRow(label: 'Stock', value: '24 items'),
-          _DetailRow(label: 'Category', value: 'Equipment'),
-          _DetailRow(label: 'Status', value: 'Available'),
+          _DetailRow(label: context.tr("Price"), value: '\$42.00'),
+          _DetailRow(label: context.tr("Stock"), value: '24 items'),
+          _DetailRow(label: context.tr("Category"), value: 'Equipment'),
+          _DetailRow(label: context.tr("Status"), value: 'Available'),
         ],
       ),
     );

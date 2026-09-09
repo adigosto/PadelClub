@@ -12,7 +12,6 @@ using System.Threading.Tasks;
 using MapsterMapper;
 using PadelClub.Model.Exceptions;
 using PadelClub.Services.ProductStateMachine;
-using EasyNetQ;
 
 namespace PadelClub.Services
 {
@@ -20,11 +19,9 @@ namespace PadelClub.Services
     public class ProductService : BaseCRUDService<ProductResponse, ProductSearchObject, DbProduct, ProductInsertRequest, ProductUpdateRequest>, IProductService
     {
         protected readonly BaseProductState _baseProductState;
-         private readonly IBus _bus;
-        public ProductService(PadelClubContext dbContext, IMapper mapper, BaseProductState baseProductState, IBus bus) : base(dbContext, mapper)
+        public ProductService(PadelClubContext dbContext, IMapper mapper, BaseProductState baseProductState) : base(dbContext, mapper)
         {
             _baseProductState = baseProductState;
-            _bus = bus;
         }
 
         protected override async Task BeforeInsert(DbProduct entity, ProductInsertRequest request)
@@ -35,8 +32,7 @@ namespace PadelClub.Services
 
         protected override async Task BeforeUpdate(DbProduct entity, ProductUpdateRequest request)
         {
-            entity.ProductCategoryId = await ResolveCategoryIdAsync(request.ProductCategoryId, entity.ProductCategoryId);
-            entity.ProductTypeId = await ResolveTypeIdAsync(request.ProductTypeId, entity.ProductTypeId);
+            await NormalizeUpdateReferencesAsync(entity, request);
         }
 
         protected override IQueryable<DbProduct> ApplyFilter(IQueryable<DbProduct> query, ProductSearchObject search)
@@ -129,8 +125,28 @@ namespace PadelClub.Services
             var entity = await _dbContext.Products.FindAsync(id);
             if (entity == null)
                 return null;
+
+            // DraftProductState owns the persistence and event publication path,
+            // so it does not pass through BaseCRUDService.UpdateAsync/BeforeUpdate.
+            // Normalize the optional foreign keys before delegating to that state;
+            // otherwise Mapster maps omitted nullable IDs to zero and SQL rejects
+            // the update with a foreign-key conflict.
+            if (entity.ProductState == nameof(DraftProductState))
+            {
+                await NormalizeUpdateReferencesAsync(entity, request);
+            }
+
             var baseState = _baseProductState.GetProductState(entity.ProductState);
             return await baseState.UpdateAsync(id, request);
+        }
+
+        public override Task<bool> DeleteAsync(int id) =>
+            throw new InvalidOperationException("Product history cannot be deleted. Use the product deactivation workflow.");
+
+        private async Task NormalizeUpdateReferencesAsync(DbProduct entity, ProductUpdateRequest request)
+        {
+            request.ProductCategoryId = await ResolveCategoryIdAsync(request.ProductCategoryId, entity.ProductCategoryId);
+            request.ProductTypeId = await ResolveTypeIdAsync(request.ProductTypeId, entity.ProductTypeId);
         }
 
         public async Task<ProductResponse?> ActivateAsync(int id)

@@ -29,19 +29,11 @@ namespace PadelClub.Services
                 totalCount = await query.CountAsync();
             }
 
-            var page = search.Page.GetValueOrDefault(1);
-            var pageSize = search.PageSize.GetValueOrDefault(10);
+            var page = Math.Max(search.Page.GetValueOrDefault(1), 1);
+            var pageSize = Math.Clamp(search.PageSize.GetValueOrDefault(10), 1, 100);
 
-            if (page < 1)
-            {
-                page = 1;
-            }
-
-            if (pageSize > 0)
-            {
-                query = query.OrderBy(x => EF.Property<int>(x, "Id"));
-                query = query.Skip((page - 1) * pageSize).Take(pageSize);
-            }
+            query = query.OrderBy(x => EF.Property<int>(x, "Id"));
+            query = query.Skip((page - 1) * pageSize).Take(pageSize);
             
             var list = await query.ToListAsync();
             return new PagedResult<T>

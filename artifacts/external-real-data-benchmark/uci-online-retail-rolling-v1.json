@@ -1,0 +1,274 @@
+{
+  "evidenceKind": "external-real-transaction-benchmark",
+  "claimBoundary": "This evaluates the PadelClub ranking algorithm on an external public retail dataset. It must not be described as PadelClub operational performance, customer conversion, or customer satisfaction.",
+  "dataset": {
+    "name": "UCI Online Retail",
+    "datasetUrl": "https://archive.ics.uci.edu/dataset/352/online\u002Bretail",
+    "downloadUrl": "https://archive.ics.uci.edu/static/public/352/online%2Bretail.zip",
+    "doi": "10.24432/C5BW33",
+    "license": "CC BY 4.0",
+    "canonicalWorkbookSha256": "43465a06f2ccf7c8b5bd2892bc7defb52f97487934fe93b16ae4c3936424676d",
+    "description": "A public, de-identified transaction dataset for a UK non-store retailer. The input must match the official workbook SHA-256. Raw rows remain outside PadelClub; this report stores aggregate counts and a source-file SHA-256 only."
+  },
+  "generatedAtUtc": "2026-09-01T15:14:48.1957091+00:00",
+  "sourceSha256": "43465a06f2ccf7c8b5bd2892bc7defb52f97487934fe93b16ae4c3936424676d",
+  "algorithmVersion": "item-cf-cosine-v1",
+  "coreEvaluatorProtocol": "global-temporal-future-basket-v1",
+  "benchmarkProtocol": "rolling-temporal-matured-real-retail-v1",
+  "topK": 6,
+  "foldCount": 3,
+  "holdoutDays": 28,
+  "returnMaturityDays": 30,
+  "cleaning": {
+    "sourceRows": 541909,
+    "eligiblePurchaseRows": 396046,
+    "netRetainedSignals": 383324,
+    "distinctCustomers": 4324,
+    "distinctProducts": 3644,
+    "distinctInvoices": 18267,
+    "missingRequiredFields": 135080,
+    "cancellationRows": 8534,
+    "invalidCancellationRows": 0,
+    "negativePurchaseRows": 0,
+    "zeroOrInvalidQuantity": 0,
+    "nonPositiveOrInvalidUnitPrice": 33,
+    "nonMerchandiseStockCode": 2216,
+    "matchedCancellationQuantity": 250548,
+    "unmatchedCancellationQuantity": 18806,
+    "signalsRemovedByCancellationNetting": 2807,
+    "cleaningRule": "Rows missing InvoiceNo, StockCode, CustomerID, or InvoiceDate are removed first. Merchandise cancellation rows (InvoiceNo starts with C) are matched only to a prior retained purchase for the same customer and stock code; their absolute quantity is allocated newest-first, and unmatched quantity is disclosed rather than heuristically assigned across customers or products. Non-cancellation rows with non-positive/invalid quantity or UnitPrice, and non-merchandise StockCode values, are excluded. Remaining rows are aggregated by customer, invoice, and stock code."
+  },
+  "folds": [
+    {
+      "fold": 1,
+      "cutoffUtc": "2011-08-18T00:00:00+00:00",
+      "endUtc": "2011-09-15T00:00:00+00:00",
+      "labelMaturityEndUtc": "2011-10-15T00:00:00+00:00",
+      "trainingSignals": 207842,
+      "holdoutSignals": 27448,
+      "trainingOrders": 10698,
+      "holdoutOrders": 1316,
+      "candidateProducts": 3357,
+      "evaluatedUsers": 690,
+      "coldStartUsers": 181,
+      "usersWithoutNovelHoldout": 80,
+      "isAvailable": true,
+      "unavailableReason": null,
+      "collaborativeFiltering": {
+        "precisionAtK": 0.07971014492753613,
+        "recallAtK": 0.04054207970873259,
+        "hitRateAtK": 0.32028985507246377,
+        "meanReciprocalRankAtK": 0.18038647342995168,
+        "normalizedDiscountedCumulativeGainAtK": 0.09081963978436085,
+        "catalogCoverageAtK": 0.11230265117664581,
+        "averageRecommendationsReturned": 6,
+        "totalHits": 330,
+        "usersWithRecommendations": 690
+      },
+      "popularityBaseline": {
+        "precisionAtK": 0.03671497584541069,
+        "recallAtK": 0.015220465158831287,
+        "hitRateAtK": 0.1927536231884058,
+        "meanReciprocalRankAtK": 0.08434782608695658,
+        "normalizedDiscountedCumulativeGainAtK": 0.0378584121869525,
+        "catalogCoverageAtK": 0.011915400655347037,
+        "averageRecommendationsReturned": 6,
+        "totalHits": 152,
+        "usersWithRecommendations": 690
+      }
+    },
+    {
+      "fold": 2,
+      "cutoffUtc": "2011-09-15T00:00:00+00:00",
+      "endUtc": "2011-10-13T00:00:00+00:00",
+      "labelMaturityEndUtc": "2011-11-12T00:00:00+00:00",
+      "trainingSignals": 235238,
+      "holdoutSignals": 41250,
+      "trainingOrders": 12015,
+      "holdoutOrders": 1714,
+      "candidateProducts": 3437,
+      "evaluatedUsers": 876,
+      "coldStartUsers": 336,
+      "usersWithoutNovelHoldout": 59,
+      "isAvailable": true,
+      "unavailableReason": null,
+      "collaborativeFiltering": {
+        "precisionAtK": 0.07191780821917793,
+        "recallAtK": 0.028533199227545072,
+        "hitRateAtK": 0.2865296803652968,
+        "meanReciprocalRankAtK": 0.15726788432267885,
+        "normalizedDiscountedCumulativeGainAtK": 0.07985241792817419,
+        "catalogCoverageAtK": 0.11754437009019494,
+        "averageRecommendationsReturned": 6,
+        "totalHits": 378,
+        "usersWithRecommendations": 876
+      },
+      "popularityBaseline": {
+        "precisionAtK": 0.037671232876712354,
+        "recallAtK": 0.012951967906209918,
+        "hitRateAtK": 0.18378995433789955,
+        "meanReciprocalRankAtK": 0.08411339421613402,
+        "normalizedDiscountedCumulativeGainAtK": 0.03900606450540865,
+        "catalogCoverageAtK": 0.011638056444573755,
+        "averageRecommendationsReturned": 6,
+        "totalHits": 198,
+        "usersWithRecommendations": 876
+      }
+    },
+    {
+      "fold": 3,
+      "cutoffUtc": "2011-10-13T00:00:00+00:00",
+      "endUtc": "2011-11-10T00:00:00+00:00",
+      "labelMaturityEndUtc": "2011-12-10T00:00:00+00:00",
+      "trainingSignals": 276453,
+      "holdoutSignals": 45757,
+      "trainingOrders": 13729,
+      "holdoutOrders": 1889,
+      "candidateProducts": 3529,
+      "evaluatedUsers": 961,
+      "coldStartUsers": 321,
+      "usersWithoutNovelHoldout": 83,
+      "isAvailable": true,
+      "unavailableReason": null,
+      "collaborativeFiltering": {
+        "precisionAtK": 0.0587929240374609,
+        "recallAtK": 0.02477303654945575,
+        "hitRateAtK": 0.24765868886576484,
+        "meanReciprocalRankAtK": 0.132656954561221,
+        "normalizedDiscountedCumulativeGainAtK": 0.06596179132944655,
+        "catalogCoverageAtK": 0.11759705298951545,
+        "averageRecommendationsReturned": 6,
+        "totalHits": 339,
+        "usersWithRecommendations": 961
+      },
+      "popularityBaseline": {
+        "precisionAtK": 0.03399236906000698,
+        "recallAtK": 0.01271944588465818,
+        "hitRateAtK": 0.1675338189386056,
+        "meanReciprocalRankAtK": 0.0763961151578217,
+        "normalizedDiscountedCumulativeGainAtK": 0.03548866802659434,
+        "catalogCoverageAtK": 0.013034854066307736,
+        "averageRecommendationsReturned": 6,
+        "totalHits": 196,
+        "usersWithRecommendations": 961
+      }
+    }
+  ],
+  "aggregate": {
+    "evaluatedUserFolds": 2527,
+    "totalHitsCollaborativeFiltering": 1047,
+    "totalHitsPopularityBaseline": 546,
+    "catalogCoverageAggregation": "unweighted mean across available temporal folds",
+    "collaborativeFiltering": {
+      "precisionAtK": 0.06905421448357725,
+      "recallAtK": 0.030382273702565077,
+      "hitRateAtK": 0.2809655718242976,
+      "meanReciprocalRankAtK": 0.15422107901332283,
+      "normalizedDiscountedCumulativeGainAtK": 0.07756452355515936,
+      "catalogCoverageAtK": 0.1158146914187854,
+      "averageRecommendationsReturned": 6,
+      "totalHits": 1047,
+      "usersWithRecommendations": 2527
+    },
+    "popularityBaseline": {
+      "precisionAtK": 0.03601108033241002,
+      "recallAtK": 0.013482957000629198,
+      "hitRateAtK": 0.18005540166204986,
+      "meanReciprocalRankAtK": 0.08124258013454694,
+      "normalizedDiscountedCumulativeGainAtK": 0.037355056149304455,
+      "catalogCoverageAtK": 0.012196103722076176,
+      "averageRecommendationsReturned": 6,
+      "totalHits": 546,
+      "usersWithRecommendations": 2527
+    },
+    "collaborativeFilteringMinusPopularity": {
+      "precisionAtK": 0.03304313415116723,
+      "recallAtK": 0.01689931670193588,
+      "hitRateAtK": 0.10091017016224774,
+      "meanReciprocalRankAtK": 0.07297849887877589,
+      "normalizedDiscountedCumulativeGainAtK": 0.040209467405854904,
+      "catalogCoverageAtK": 0.10361858769670923
+    }
+  },
+  "qualityGates": [
+    {
+      "name": "retained-interactions",
+      "observed": 383324,
+      "required": 5000,
+      "passed": true,
+      "detail": "At least 5,000 cleaned, cancellation-netted customer-product-invoice interactions are required."
+    },
+    {
+      "name": "distinct-customers",
+      "observed": 4324,
+      "required": 100,
+      "passed": true,
+      "detail": "At least 100 de-identified customers are required."
+    },
+    {
+      "name": "merchandise-products",
+      "observed": 3644,
+      "required": 50,
+      "passed": true,
+      "detail": "At least 50 retained merchandise products are required."
+    },
+    {
+      "name": "pre-fold-history",
+      "observed": 259,
+      "required": 90,
+      "passed": true,
+      "detail": "At least 90 days of retained history must exist before the first holdout cutoff."
+    },
+    {
+      "name": "three-rolling-folds",
+      "observed": 3,
+      "required": 3,
+      "passed": true,
+      "detail": "The official protocol requires all three consecutive 28-day folds."
+    },
+    {
+      "name": "available-each-fold",
+      "observed": 3,
+      "required": 3,
+      "passed": true,
+      "detail": "Each fold must contain warm users with a new retained holdout product."
+    },
+    {
+      "name": "warm-users-each-fold",
+      "observed": 690,
+      "required": 50,
+      "passed": true,
+      "detail": "Every fold must evaluate at least 50 warm users."
+    },
+    {
+      "name": "holdout-signals-each-fold",
+      "observed": 27448,
+      "required": 100,
+      "passed": true,
+      "detail": "Every fold must contain at least 100 cleaned holdout interactions."
+    },
+    {
+      "name": "candidate-products-each-fold",
+      "observed": 3357,
+      "required": 20,
+      "passed": true,
+      "detail": "Every fold must contain at least 20 historical candidate products."
+    },
+    {
+      "name": "return-maturity",
+      "observed": 30,
+      "required": 30,
+      "passed": true,
+      "detail": "Each holdout end must be at least 30 days before the archive\u0027s last observed day, allowing later cancellations to be reflected in the label snapshot."
+    },
+    {
+      "name": "unmatched-cancellation-rate",
+      "observed": 698,
+      "required": 1000,
+      "passed": true,
+      "detail": "Observed and required values are basis points. At most 10.00% of cancellation quantity may remain unmatched after the conservative same-customer/same-product/prior-time allocation; unmatched returns stay disclosed rather than being imputed."
+    }
+  ],
+  "isMeaningful": true,
+  "conclusion": "The archived external dataset meets this benchmark\u0027s transparent volume, history, and rolling-fold gates. Report the metrics as external algorithm evidence only."
+}

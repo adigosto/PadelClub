@@ -1,62 +1,60 @@
-# PadelClub Desktop
+# PadelClub shared Flutter client
 
-This package is the desktop admin distribution and the shared Flutter feature
-implementation used by the separate `../padelclub_mobile` runner.
+This package is both the Windows desktop runner and the shared Flutter feature
+implementation imported by `../padelclub_mobile`. Desktop administrators see a
+denser management workspace; mobile runners use the same authenticated player
+features and API models.
 
-- Mobile players receive the branded consumer experience, including court availability, booking, personal reservations, results, and the club shop.
-- Desktop administrators receive a denser management workspace. The first implemented module is reservation management.
+Management access requires the `Administrator` role. The responsive management
+breakpoint is 900 logical pixels.
 
-The responsive management breakpoint is 900 logical pixels and management access requires the `Administrator` role.
+## Languages
 
-## Local development
+Both runners support English (`en`) and Bosnian (`bs`). Use the **EN / BS**
+tabs on the login screen or in the app header. The choice is saved on the device;
+switching languages preserves the current route and form input.
 
-Start SQL Server and the API from the repository root:
+Translations live in `assets/l10n/en.json` and `assets/l10n/bs.json`, keyed by
+English message text. Use `context.tr('Message')` for interface copy and named
+placeholders for dynamic messages. Keep API enum values, identifiers and
+user-authored content unchanged; translate their display labels separately.
+Flutter's built-in controls also use the selected locale.
 
-```powershell
-docker compose up --build
-```
-
-Run the Flutter client from this directory:
-
-```powershell
-flutter run --dart-define=baseUrl=http://localhost:5001
-```
-
-For an Android emulator, the default API address is `http://10.0.2.2:5001`.
-
-Seeded development accounts use the password `password123!`:
-
-- `admin` opens the desktop management experience on wide screens.
-- `player1` opens the mobile player experience.
-
-## Reservation rules
-
-- Active courts expose hourly slots from 07:00 until 23:00.
-- The API calculates price from the court hourly rate; clients cannot select a price or user ID.
-- Overlapping active reservations are rejected inside a serializable transaction.
-- Player cancellations close two hours before a booking. Administrators can cancel later.
-- Players can only retrieve their own reservations; administrators can retrieve the management list.
-
-Basic authentication is still used during this development phase. Replace it with a token-based session before production deployment.
-# Local API address
-
-The default desktop API URL is `http://localhost:5000`. The Android emulator uses
-`http://10.0.2.2:5000`. Start the API with its checked-in launch profile:
+After editing the catalogs, regenerate the bundled messages from this directory:
 
 ```powershell
-dotnet run --project PadelClub.WebAPI --launch-profile http
+dart tool/generate_localizations.dart
+flutter test test/localization_test.dart
 ```
 
-For the simplest complete local stack, run this from the repository root instead:
+## Run against the local Docker stack
+
+From the repository root, start the API and its dependencies:
 
 ```powershell
-docker compose up --build
+docker compose up --build --detach
 ```
 
-This exposes the containerized API at `http://localhost:5000` and starts its SQL Server dependency.
-
-Override the client URL when needed:
+Then run the desktop client from this directory:
 
 ```powershell
-flutter run -d windows --dart-define=baseUrl=https://localhost:5001
+flutter pub get
+flutter run -d windows --dart-define=baseUrl=http://localhost:5000
 ```
+
+The Android emulator must use `http://10.0.2.2:5000`. Use a reachable LAN
+address for a physical device.
+
+## Development accounts
+
+On an empty database with demo seeding enabled, both accounts use the value configured in `Database__DemoPassword`:
+
+- `admin` for the desktop administration experience.
+- `player1` for the player experience.
+
+Authentication uses JWT access and refresh tokens; this client does **not** use
+Basic Authentication.
+
+See the repository [README](../../README.md) for the authoritative setup,
+service URLs, RabbitMQ worker, configuration, testing commands, and known scope
+boundaries.

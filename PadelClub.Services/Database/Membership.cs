@@ -7,6 +7,7 @@ namespace PadelClub.Services.Database
         public int Id { get; set; }
         public int UserId { get; set; }
         public string MembershipType { get; set; } = string.Empty; // Basic, Premium, VIP
+        public int? MembershipTypeReferenceId { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public decimal Price { get; set; }
@@ -21,6 +22,7 @@ namespace PadelClub.Services.Database
 
         // Navigation properties
         public virtual User User { get; set; } = null!;
+        public virtual MembershipTypeReference? MembershipTypeReference { get; set; }
         public virtual Payment? Payment { get; set; }
         public virtual ICollection<MembershipEvent> Events { get; set; } = new List<MembershipEvent>();
     }

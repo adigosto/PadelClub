@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
 
+import 'package:padelclub_desktop/core/localization/app_localizations.dart';
 import 'package:padelclub_desktop/core/theme/app_theme.dart';
 import 'package:padelclub_desktop/core/widgets/admin_components.dart';
 import 'package:padelclub_desktop/features/users/domain/entities/user.dart';
@@ -38,7 +40,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return MasterScreen(
-      title: 'User Management',
+      title: context.tr("User Management"),
       section: AppSection.members,
       child: Consumer<UserProvider>(
         builder: (context, provider, _) {
@@ -47,12 +49,14 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AdminPageHeader(
-                title: 'User Management',
-                subtitle: 'Manage club members, roles, and account access.',
+                title: context.tr("User Management"),
+                subtitle: context.tr(
+                  "Manage club members, roles, and account access.",
+                ),
                 action: FilledButton.icon(
-                  onPressed: _showAddUserNotice,
+                  onPressed: null,
                   icon: const Icon(Icons.add_rounded, size: 18),
-                  label: const Text('Add User'),
+                  label: Text(context.tr("Add User")),
                 ),
               ),
               const Divider(height: 1),
@@ -68,9 +72,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           .map(
                             (filter) => AdminFilterChip(
                               label: switch (filter) {
-                                _UserFilter.all => 'All Users',
-                                _UserFilter.active => 'Active',
-                                _UserFilter.inactive => 'Inactive',
+                                _UserFilter.all => context.tr("All Users"),
+                                _UserFilter.active => context.tr("Active"),
+                                _UserFilter.inactive => context.tr("Inactive"),
                               },
                               selected: _filter == filter,
                               onSelected: (_) =>
@@ -87,7 +91,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       children: [
                         AdminSearchField(
                           controller: _searchController,
-                          hintText: 'Search by name, username, or email...',
+                          hintText: context.tr(
+                            "Search by name, username, or email...",
+                          ),
                           width: 320,
                           onSubmitted: (value) => setState(
                             () => _query = value.trim().toLowerCase(),
@@ -100,12 +106,12 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                 .toLowerCase(),
                           ),
                           icon: const Icon(Icons.search_rounded, size: 17),
-                          label: const Text('Search'),
+                          label: Text(context.tr("Search")),
                         ),
                         OutlinedButton.icon(
                           onPressed: provider.loadUsers,
                           icon: const Icon(Icons.refresh_rounded, size: 17),
-                          label: const Text('Refresh'),
+                          label: Text(context.tr("Refresh")),
                         ),
                       ],
                     ),
@@ -139,17 +145,17 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     if (provider.errorMessage != null) {
       return _UserMessageState(
         icon: Icons.cloud_off_rounded,
-        title: 'Users are unavailable',
+        title: context.tr("Users are unavailable"),
         message: provider.errorMessage!,
-        actionLabel: 'Try again',
+        actionLabel: context.tr("Try again"),
         onAction: provider.loadUsers,
       );
     }
     if (users.isEmpty) {
-      return const _UserMessageState(
+      return _UserMessageState(
         icon: Icons.people_outline_rounded,
-        title: 'No users found',
-        message: 'Adjust the search or status filter.',
+        title: context.tr("No users found"),
+        message: context.tr("Adjust the search or status filter."),
       );
     }
 
@@ -164,12 +170,12 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               dataRowMinHeight: 66,
               dataRowMaxHeight: 74,
               columnSpacing: 34,
-              columns: const [
-                DataColumn(label: Text('USER')),
-                DataColumn(label: Text('JOIN DATE')),
-                DataColumn(label: Text('ROLE')),
-                DataColumn(label: Text('STATUS')),
-                DataColumn(label: Text('ACTIONS')),
+              columns: [
+                DataColumn(label: Text(context.tr("USER"))),
+                DataColumn(label: Text(context.tr("JOIN DATE"))),
+                DataColumn(label: Text(context.tr("ROLE"))),
+                DataColumn(label: Text(context.tr("STATUS"))),
+                DataColumn(label: Text(context.tr("ACTIONS"))),
               ],
               rows: users.map(_buildRow).toList(growable: false),
             ),
@@ -216,13 +222,19 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             ],
           ),
         ),
-        DataCell(Text(_date(user.createdAt))),
+        DataCell(Text(_date(context, user.createdAt))),
         DataCell(
-          Text(user.roleNames.isEmpty ? 'Member' : user.roleNames.join(', ')),
+          Text(
+            user.roleNames.isEmpty
+                ? context.tr("Member")
+                : user.roleNames.join(', '),
+          ),
         ),
         DataCell(
           AdminStatusBadge(
-            label: user.isActive ? 'Active' : 'Inactive',
+            label: user.isActive
+                ? context.tr("Active")
+                : context.tr("Inactive"),
             tone: user.isActive
                 ? AdminStatusTone.success
                 : AdminStatusTone.danger,
@@ -235,7 +247,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             children: [
               AdminActionButton(
                 icon: Icons.edit_outlined,
-                tooltip: 'View user details',
+                tooltip: context.tr("View user details"),
                 onPressed: () => _showUser(user),
               ),
               const SizedBox(width: PadelSpacing.xs),
@@ -243,8 +255,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 icon: user.isActive
                     ? Icons.person_off_outlined
                     : Icons.person_add_alt_rounded,
-                tooltip: user.isActive ? 'Deactivate user' : 'Activate user',
-                onPressed: () => _showStatusNotice(user),
+                tooltip: user.isActive
+                    ? context.tr("Deactivate user")
+                    : context.tr("Activate user"),
+                onPressed: null,
                 destructive: user.isActive,
               ),
             ],
@@ -279,32 +293,20 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       builder: (context) => AlertDialog(
         title: Text(user.displayName),
         content: Text(
-          'Username: ${user.username}\nEmail: ${user.email}\nRoles: '
-          '${user.roleNames.isEmpty ? 'Member' : user.roleNames.join(', ')}',
+          context.tr("Username: {p1}\nEmail: {p2}\nRoles: {p3}", {
+            'p1': user.username,
+            'p2': user.email,
+            'p3': user.roleNames.isEmpty ? 'Member' : user.roleNames.join(', '),
+          }),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text(context.tr("Close")),
           ),
         ],
       ),
     );
-  }
-
-  void _showAddUserNotice() => _showNotice(
-    'User creation will be connected when the account form phase is added.',
-  );
-
-  void _showStatusNotice(User user) => _showNotice(
-    '${user.isActive ? 'Deactivation' : 'Activation'} requires the account '
-    'edit endpoint and will be connected with the user form.',
-  );
-
-  void _showNotice(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -357,21 +359,4 @@ String _initials(String value) {
   return parts.take(2).map((part) => part[0].toUpperCase()).join();
 }
 
-String _date(DateTime value) {
-  if (value.millisecondsSinceEpoch == 0) return '—';
-  const months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  return '${months[value.month - 1]} ${value.day}, ${value.year}';
-}
+String _date(BuildContext context, DateTime value) => context.l10n.date(value);

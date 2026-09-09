@@ -1,6 +1,7 @@
 param(
     [string]$Database = "PadelClub",
-    [string]$SqlPassword = "YourStrong!Passw0rd"
+    [Parameter(Mandatory = $true)]
+    [string]$SqlPassword
 )
 
 $ErrorActionPreference = "Stop"

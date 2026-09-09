@@ -16,6 +16,7 @@ namespace PadelClub.Services.Database
         public DateTime? UpdatedAt { get; set; }
         public Guid? SeriesId { get; set; }
         public DateTime? CancelledAt { get; set; }
+        public string? CancellationReason { get; set; }
         public bool IsNoShow { get; set; }
 
         // Navigation properties

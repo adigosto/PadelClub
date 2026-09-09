@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
 
+import 'package:padelclub_desktop/core/localization/app_localizations.dart';
 import 'package:padelclub_desktop/core/theme/app_theme.dart';
 import 'package:padelclub_desktop/features/notifications/domain/entities/club_notification.dart';
 import 'package:padelclub_desktop/features/notifications/presentation/providers/notification_provider.dart';
@@ -45,7 +47,9 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
     final reservationProvider = context.watch<ReservationProvider>();
     final reviewProvider = context.watch<ClubReviewProvider>();
     final firstName = auth.firstName?.trim();
-    final greetingName = firstName?.isNotEmpty == true ? firstName! : 'Player';
+    final greetingName = firstName?.isNotEmpty == true
+        ? firstName!
+        : context.tr("Player");
     final upcoming = _nextReservation(reservationProvider.reservations);
 
     return MasterScreen(
@@ -65,12 +69,12 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
             ),
             SliverToBoxAdapter(
               child: _SectionHeader(
-                title: 'Club updates',
+                title: context.tr("Club updates"),
                 actionLabel:
                     notificationProvider.notifications.any(
                       (item) => item.isRead == false,
                     )
-                    ? 'Mark all read'
+                    ? context.tr("Mark all read")
                     : null,
                 onAction: () => notificationProvider.markAllRead(),
               ),
@@ -80,20 +84,20 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
             ),
             SliverToBoxAdapter(
               child: _SectionHeader(
-                title: 'Club reviews',
+                title: context.tr("Club reviews"),
                 actionLabel:
                     reviewProvider.reviews.any(
                       (review) => review.userId == auth.userId,
                     )
-                    ? 'Edit mine'
-                    : 'Add review',
+                    ? context.tr("Edit mine")
+                    : context.tr("Add review"),
                 onAction: () =>
                     _showReviewEditor(context, reviewProvider, auth.userId),
               ),
             ),
             SliverToBoxAdapter(child: _ReviewStrip(provider: reviewProvider)),
-            const SliverToBoxAdapter(
-              child: _SectionHeader(title: 'Quick actions'),
+            SliverToBoxAdapter(
+              child: _SectionHeader(title: context.tr("Quick actions")),
             ),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
@@ -104,29 +108,29 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
                 childAspectRatio: 1.12,
                 children: [
                   _ShortcutCard(
-                    title: 'Book a court',
-                    subtitle: 'View available times',
+                    title: context.tr("Book a court"),
+                    subtitle: context.tr("View available times"),
                     icon: Icons.calendar_month_rounded,
                     color: PadelColors.greenDark,
                     onTap: () => Navigator.pushNamed(context, '/reservations'),
                   ),
                   _ShortcutCard(
-                    title: 'Find players',
-                    subtitle: 'Browse matches and rankings',
+                    title: context.tr("Find players"),
+                    subtitle: context.tr("Browse matches and rankings"),
                     icon: Icons.groups_2_rounded,
                     color: PadelColors.blue,
                     onTap: () => Navigator.pushNamed(context, '/search'),
                   ),
                   _ShortcutCard(
-                    title: 'Club shop',
-                    subtitle: 'Browse equipment',
+                    title: context.tr("Club shop"),
+                    subtitle: context.tr("Browse equipment"),
                     icon: Icons.shopping_bag_rounded,
                     color: const Color(0xFF276A57),
                     onTap: () => Navigator.pushNamed(context, '/products'),
                   ),
                   _ShortcutCard(
-                    title: 'My profile',
-                    subtitle: 'Account and activity',
+                    title: context.tr("My profile"),
+                    subtitle: context.tr("Account and activity"),
                     icon: Icons.workspace_premium_rounded,
                     color: const Color(0xFF315CA8),
                     onTap: () => Navigator.pushNamed(context, '/profile'),
@@ -172,17 +176,21 @@ Future<void> _showReviewEditor(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                existing == null ? 'Add club review' : 'Edit your review',
+                existing == null
+                    ? context.tr("Add club review")
+                    : context.tr("Edit your review"),
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 6),
-              const Text(
-                'Share a short, useful note for other club members.',
+              Text(
+                context.tr(
+                  "Share a short, useful note for other club members.",
+                ),
                 style: TextStyle(color: PadelColors.textMuted),
               ),
               const SizedBox(height: 20),
               Text(
-                '$rating out of 5',
+                context.tr("{p1} out of 5", {'p1': rating}),
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 4),
@@ -190,7 +198,7 @@ Future<void> _showReviewEditor(
                 children: List.generate(
                   5,
                   (index) => IconButton(
-                    tooltip: '${index + 1} stars',
+                    tooltip: context.tr("{p1} stars", {'p1': index + 1}),
                     onPressed: isSaving
                         ? null
                         : () => setSheetState(() => rating = index + 1),
@@ -217,18 +225,13 @@ Future<void> _showReviewEditor(
                     setSheetState(() => validationMessage = null);
                   }
                 },
-                decoration: const InputDecoration(
-                  labelText: 'Review',
-                  hintText: 'Describe your experience at the club',
+                decoration: InputDecoration(
+                  errorText: validationMessage,
+                  labelText: context.tr("Review"),
+                  hintText: context.tr("Describe your experience at the club"),
                 ),
               ),
-              if (validationMessage != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  validationMessage!,
-                  style: const TextStyle(color: PadelColors.danger),
-                ),
-              ],
+
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -237,7 +240,7 @@ Future<void> _showReviewEditor(
                       onPressed: isSaving
                           ? null
                           : () => Navigator.pop(sheetContext, false),
-                      child: const Text('Cancel'),
+                      child: Text(context.tr("Cancel")),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -249,8 +252,9 @@ Future<void> _showReviewEditor(
                               final comment = controller.text.trim();
                               if (comment.length < 10) {
                                 setSheetState(
-                                  () => validationMessage =
-                                      'Enter at least 10 characters.',
+                                  () => validationMessage = context.tr(
+                                    "Enter at least 10 characters.",
+                                  ),
                                 );
                                 return;
                               }
@@ -267,7 +271,9 @@ Future<void> _showReviewEditor(
                                   isSaving = false;
                                   validationMessage =
                                       provider.errorMessage ??
-                                      'Your review could not be saved.';
+                                      context.tr(
+                                        "Your review could not be saved.",
+                                      );
                                 });
                               }
                             },
@@ -279,7 +285,7 @@ Future<void> _showReviewEditor(
                                 color: Colors.white,
                               ),
                             )
-                          : const Text('Save review'),
+                          : Text(context.tr("Save review")),
                     ),
                   ),
                 ],
@@ -292,9 +298,9 @@ Future<void> _showReviewEditor(
   );
   controller.dispose();
   if (saved == true && context.mounted) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Your review was saved.')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.tr("Your review was saved."))),
+    );
   }
 }
 
@@ -342,7 +348,7 @@ class _GreetingCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Welcome back, $name',
+                      context.tr("Welcome back, {p1}", {'p1': name}),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 23,
@@ -353,8 +359,8 @@ class _GreetingCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       upcoming == null
-                          ? 'No upcoming court booked.'
-                          : 'Next reservation',
+                          ? context.tr("No upcoming court booked.")
+                          : context.tr("Next reservation"),
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.8),
                       ),
@@ -391,8 +397,8 @@ class _GreetingCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     upcoming == null
-                        ? 'No upcoming reservation'
-                        : '${_dateLabel(upcoming!.startTime)} · ${_timeLabel(upcoming!.startTime)}',
+                        ? context.tr("No upcoming reservation")
+                        : '${_dateLabel(context, upcoming!.startTime)} · ${_timeLabel(upcoming!.startTime)}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -403,7 +409,9 @@ class _GreetingCard extends StatelessWidget {
                   onPressed: () =>
                       Navigator.pushNamed(context, '/reservations'),
                   style: TextButton.styleFrom(foregroundColor: Colors.white),
-                  child: Text(upcoming == null ? 'Book' : 'View'),
+                  child: Text(
+                    upcoming == null ? context.tr("Book") : context.tr("View"),
+                  ),
                 ),
               ],
             ),
@@ -461,14 +469,14 @@ class _NotificationStrip extends StatelessWidget {
     if (provider.errorMessage != null && provider.notifications.isEmpty) {
       return _InlineState(
         icon: Icons.cloud_off_rounded,
-        message: 'Club updates are temporarily unavailable.',
+        message: context.tr("Club updates are temporarily unavailable."),
         onRetry: provider.loadMine,
       );
     }
     if (provider.notifications.isEmpty) {
-      return const _InlineState(
+      return _InlineState(
         icon: Icons.notifications_none_rounded,
-        message: 'You are all caught up.',
+        message: context.tr("You are all caught up."),
       );
     }
     final items = provider.notifications.take(5).toList(growable: false);
@@ -550,7 +558,7 @@ class _NotificationCard extends StatelessWidget {
                       ),
                       const Spacer(),
                       Text(
-                        _dateLabel(notification.createdAt),
+                        _dateLabel(context, notification.createdAt),
                         style: const TextStyle(
                           color: PadelColors.textMuted,
                           fontSize: 11,
@@ -593,7 +601,7 @@ class _InlineState extends StatelessWidget {
           Expanded(child: Text(message)),
           if (onRetry != null)
             IconButton(
-              tooltip: 'Retry',
+              tooltip: context.tr("Retry"),
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
             ),
@@ -619,14 +627,14 @@ class _ReviewStrip extends StatelessWidget {
     if (provider.errorMessage != null && provider.reviews.isEmpty) {
       return _InlineState(
         icon: Icons.cloud_off_rounded,
-        message: 'Club reviews are temporarily unavailable.',
+        message: context.tr("Club reviews are temporarily unavailable."),
         onRetry: provider.loadPublished,
       );
     }
     if (provider.reviews.isEmpty) {
-      return const _InlineState(
+      return _InlineState(
         icon: Icons.rate_review_outlined,
-        message: 'No published club reviews yet.',
+        message: context.tr("No published club reviews yet."),
       );
     }
     return SizedBox(
@@ -778,13 +786,13 @@ IconData _notificationIcon(String type) {
   };
 }
 
-String _dateLabel(DateTime value) {
+String _dateLabel(BuildContext context, DateTime value) {
   final local = value.toLocal();
   final now = DateTime.now();
   if (local.year == now.year &&
       local.month == now.month &&
       local.day == now.day) {
-    return 'Today';
+    return context.tr("Today");
   }
   return '${local.day}.${local.month}.${local.year}';
 }

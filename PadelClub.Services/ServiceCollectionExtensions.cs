@@ -24,7 +24,7 @@ namespace PadelClub.Services
 
             // Register DbContext with SQL Server provider
             services.AddDbContext<PadelClubContext>(options =>
-                options.UseSqlServer(connectionString)
+                options.UseSqlServer(connectionString, sql => sql.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
             );
 
             return services;
@@ -42,7 +42,7 @@ namespace PadelClub.Services
         {
             // Register DbContext with SQL Server provider
             services.AddDbContext<PadelClubContext>(options =>
-                options.UseSqlServer(connectionString)
+                options.UseSqlServer(connectionString, sql => sql.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
             );
 
             return services;

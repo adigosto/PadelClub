@@ -52,7 +52,9 @@ namespace PadelClub.Services.Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ReservationId");
+                    b.HasIndex("ReservationId")
+                        .IsUnique()
+                        .HasFilter("[ReservationId] IS NOT NULL");
 
                     b.HasIndex("UserId");
 
@@ -109,6 +111,10 @@ namespace PadelClub.Services.Database.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
+                    b.Property<string>("Action")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("CorrelationId")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -120,6 +126,13 @@ namespace PadelClub.Services.Database.Migrations
                     b.Property<long>("DurationMs")
                         .HasColumnType("bigint");
 
+                    b.Property<int?>("EntityId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EntityType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("IpAddress")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -130,10 +143,22 @@ namespace PadelClub.Services.Database.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
+                    b.Property<string>("NewState")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<string>("Path")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("PreviousState")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<int>("StatusCode")
                         .HasColumnType("int");
@@ -146,6 +171,8 @@ namespace PadelClub.Services.Database.Migrations
                     b.HasIndex("CreatedAt");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("EntityType", "EntityId", "CreatedAt");
 
                     b.ToTable("AuditLogs");
                 });
@@ -200,6 +227,74 @@ namespace PadelClub.Services.Database.Migrations
                     b.HasIndex("UserId", "Purpose", "ExpiresAt");
 
                     b.ToTable("AuthTokens", (string)null);
+                });
+
+            modelBuilder.Entity("PadelClub.Services.Database.City", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Cities");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            IsActive = true,
+                            Name = "Sarajevo"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            IsActive = true,
+                            Name = "Mostar"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            IsActive = true,
+                            Name = "Tuzla"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            IsActive = true,
+                            Name = "Zenica"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            IsActive = true,
+                            Name = "Banja Luka"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            IsActive = true,
+                            Name = "Bihać"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            IsActive = true,
+                            Name = "Čapljina"
+                        });
                 });
 
             modelBuilder.Entity("PadelClub.Services.Database.ClubReview", b =>
@@ -377,6 +472,42 @@ namespace PadelClub.Services.Database.Migrations
                     b.HasIndex("Name");
 
                     b.ToTable("Courts", (string)null);
+                });
+
+            modelBuilder.Entity("PadelClub.Services.Database.InboxMessage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Consumer")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("MessageType")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<DateTime>("ReceivedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReceivedAtUtc");
+
+                    b.HasIndex("Consumer", "EventId")
+                        .IsUnique();
+
+                    b.ToTable("InboxMessages");
                 });
 
             modelBuilder.Entity("PadelClub.Services.Database.InventoryMovement", b =>
@@ -639,6 +770,9 @@ namespace PadelClub.Services.Database.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int?>("MembershipTypeReferenceId")
+                        .HasColumnType("int");
+
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
 
@@ -662,6 +796,8 @@ namespace PadelClub.Services.Database.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("MembershipTypeReferenceId");
 
                     b.HasIndex("UserId");
 
@@ -704,6 +840,50 @@ namespace PadelClub.Services.Database.Migrations
                     b.HasIndex("MembershipId", "CreatedAt");
 
                     b.ToTable("MembershipEvents");
+                });
+
+            modelBuilder.Entity("PadelClub.Services.Database.MembershipTypeReference", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("MembershipTypeReferences", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            IsActive = true,
+                            Name = "Basic"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            IsActive = true,
+                            Name = "Premium"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            IsActive = true,
+                            Name = "VIP"
+                        });
                 });
 
             modelBuilder.Entity("PadelClub.Services.Database.Notification", b =>
@@ -895,6 +1075,15 @@ namespace PadelClub.Services.Database.Migrations
                     b.Property<decimal>("DiscountAmount")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsSeededForDemo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
@@ -903,6 +1092,11 @@ namespace PadelClub.Services.Database.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Origin")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
@@ -952,6 +1146,14 @@ namespace PadelClub.Services.Database.Migrations
 
                     b.HasIndex("UserId");
 
+                    b.HasIndex("UserId", "IdempotencyKey")
+                        .IsUnique()
+                        .HasFilter("[IdempotencyKey] IS NOT NULL");
+
+                    b.HasIndex("Status", "IsSeededForDemo", "DeliveredAt");
+
+                    b.HasIndex("Status", "Origin", "DeliveredAt");
+
                     b.ToTable("Orders", (string)null);
                 });
 
@@ -990,6 +1192,54 @@ namespace PadelClub.Services.Database.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("OrderItems", (string)null);
+                });
+
+            modelBuilder.Entity("PadelClub.Services.Database.OutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime?>("LeaseExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("LeaseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("NextAttemptAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("PublishedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OccurredAtUtc");
+
+                    b.HasIndex("PublishedAtUtc", "NextAttemptAtUtc");
+
+                    b.HasIndex("PublishedAtUtc", "NextAttemptAtUtc", "LeaseExpiresAtUtc");
+
+                    b.ToTable("OutboxMessages");
                 });
 
             modelBuilder.Entity("PadelClub.Services.Database.PartnerInvitation", b =>
@@ -1158,10 +1408,8 @@ namespace PadelClub.Services.Database.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<string>("City")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<int>("CityId")
+                        .HasColumnType("int");
 
                     b.Property<bool>("IsDiscoverable")
                         .HasColumnType("bit");
@@ -1187,10 +1435,12 @@ namespace PadelClub.Services.Database.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CityId");
+
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.HasIndex("IsDiscoverable", "SkillLevel", "City");
+                    b.HasIndex("IsDiscoverable", "SkillLevel", "CityId");
 
                     b.ToTable("PlayerProfiles");
                 });
@@ -1374,6 +1624,167 @@ namespace PadelClub.Services.Database.Migrations
                     b.ToTable("ProductTypes", (string)null);
                 });
 
+            modelBuilder.Entity("PadelClub.Services.Database.ProviderRefundOperation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("AttemptCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
+                    b.Property<decimal>("ExpectedRefundedAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTime?>("LastAttemptAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime?>("LeaseExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("LeaseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("NextAttemptAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<int>("PaymentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PaymentIntentId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime?>("ProviderAcceptedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ProviderRefundId")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("RequestedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ReturnRequestId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasDefaultValue("Pending");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique();
+
+                    b.HasIndex("RequestedByUserId");
+
+                    b.HasIndex("ReturnRequestId")
+                        .IsUnique()
+                        .HasFilter("[ReturnRequestId] IS NOT NULL");
+
+                    b.HasIndex("PaymentId", "Status");
+
+                    b.HasIndex("Status", "NextAttemptAtUtc", "LeaseExpiresAtUtc");
+
+                    b.ToTable("ProviderRefundOperations");
+                });
+
+            modelBuilder.Entity("PadelClub.Services.Database.ProviderVerificationAttempt", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("OutcomeCategory")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("RequestedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("VerificationKind")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CorrelationId")
+                        .IsUnique();
+
+                    b.HasIndex("RequestedByUserId");
+
+                    b.HasIndex("Provider", "StartedAtUtc");
+
+                    b.ToTable("ProviderVerificationAttempts");
+                });
+
             modelBuilder.Entity("PadelClub.Services.Database.PushDevice", b =>
                 {
                     b.Property<int>("Id")
@@ -1414,6 +1825,354 @@ namespace PadelClub.Services.Database.Migrations
                     b.ToTable("PushDevices");
                 });
 
+            modelBuilder.Entity("PadelClub.Services.Database.RecommendationAnalyticsConsent", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("GrantedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PolicyVersion")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<DateTime?>("RevokedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("RecommendationAnalyticsConsents");
+                });
+
+            modelBuilder.Entity("PadelClub.Services.Database.RecommendationEvaluationRun", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("AlgorithmVersion")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<int>("CandidateProducts")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ConfigurationSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime>("CutoffUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("EligibleDeliveredOrders")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("EndUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("EvaluatedUsers")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EvidenceSource")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("EvidenceTier")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("ExecutedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ExecutedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("HoldoutSignals")
+                        .HasColumnType("int");
+
+                    b.Property<string>("InputFingerprintSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int>("K")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Protocol")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("ReportJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ReturnMaturityDays")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("RunId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("TrainingSignals")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExecutedAtUtc");
+
+                    b.HasIndex("ExecutedByUserId");
+
+                    b.HasIndex("RunId")
+                        .IsUnique();
+
+                    b.HasIndex("EvidenceSource", "ExecutedAtUtc");
+
+                    b.ToTable("RecommendationEvaluationRuns");
+                });
+
+            modelBuilder.Entity("PadelClub.Services.Database.RecommendationExperiment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AttributionWindowDays")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ClosedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ConfigurationSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("ControlAlgorithmVersion")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("ControlStrategy")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CreatedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ExperimentKey")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("Protocol")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<int>("RecommendationLimit")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ReturnMaturityDays")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("StartedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("TreatmentAlgorithmVersion")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<int>("TreatmentAllocationPercent")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TreatmentStrategy")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("ExperimentKey")
+                        .IsUnique();
+
+                    b.HasIndex("Status")
+                        .IsUnique()
+                        .HasFilter("[Status] = N'Running'");
+
+                    b.ToTable("RecommendationExperiments");
+                });
+
+            modelBuilder.Entity("PadelClub.Services.Database.RecommendationExperimentAnalysisRun", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ConfigurationSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("EvidenceTier")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime>("ExecutedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ExecutedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ExperimentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("InputFingerprintSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("Protocol")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("ReportJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("RunId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExecutedByUserId");
+
+                    b.HasIndex("RunId")
+                        .IsUnique();
+
+                    b.HasIndex("ExperimentId", "ExecutedAtUtc");
+
+                    b.ToTable("RecommendationExperimentAnalysisRuns");
+                });
+
+            modelBuilder.Entity("PadelClub.Services.Database.RecommendationExperimentAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AssignedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ExperimentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Variant")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ExperimentId", "UserId")
+                        .IsUnique();
+
+                    b.HasIndex("ExperimentId", "Variant", "AssignedAtUtc");
+
+                    b.ToTable("RecommendationExperimentAssignments");
+                });
+
+            modelBuilder.Entity("PadelClub.Services.Database.RecommendationExposure", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AlgorithmVersion")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<DateTime?>("ClickedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ExperimentAssignmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("PurchasedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("PurchasedOrderId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Rank")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ServedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Strategy")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<int>("TelemetrySource")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PurchasedOrderId");
+
+                    b.HasIndex("ExperimentAssignmentId", "ServedAtUtc");
+
+                    b.HasIndex("ProductId", "ServedAtUtc");
+
+                    b.HasIndex("TelemetrySource", "ServedAtUtc");
+
+                    b.HasIndex("UserId", "ServedAtUtc");
+
+                    b.ToTable("RecommendationExposures");
+                });
+
             modelBuilder.Entity("PadelClub.Services.Database.Reservation", b =>
                 {
                     b.Property<int>("Id")
@@ -1421,6 +2180,9 @@ namespace PadelClub.Services.Database.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CancellationReason")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("CancelledAt")
                         .HasColumnType("datetime2");
@@ -2003,11 +2765,18 @@ namespace PadelClub.Services.Database.Migrations
 
             modelBuilder.Entity("PadelClub.Services.Database.Membership", b =>
                 {
+                    b.HasOne("PadelClub.Services.Database.MembershipTypeReference", "MembershipTypeReference")
+                        .WithMany()
+                        .HasForeignKey("MembershipTypeReferenceId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("PadelClub.Services.Database.User", "User")
                         .WithMany("Memberships")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("MembershipTypeReference");
 
                     b.Navigation("User");
                 });
@@ -2155,11 +2924,19 @@ namespace PadelClub.Services.Database.Migrations
 
             modelBuilder.Entity("PadelClub.Services.Database.PlayerProfile", b =>
                 {
+                    b.HasOne("PadelClub.Services.Database.City", "City")
+                        .WithMany()
+                        .HasForeignKey("CityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("PadelClub.Services.Database.User", "User")
                         .WithOne("PlayerProfile")
                         .HasForeignKey("PadelClub.Services.Database.PlayerProfile", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("City");
 
                     b.Navigation("User");
                 });
@@ -2194,6 +2971,43 @@ namespace PadelClub.Services.Database.Migrations
                     b.Navigation("ProductType");
                 });
 
+            modelBuilder.Entity("PadelClub.Services.Database.ProviderRefundOperation", b =>
+                {
+                    b.HasOne("PadelClub.Services.Database.Payment", "Payment")
+                        .WithMany("ProviderRefundOperations")
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PadelClub.Services.Database.User", "RequestedByUser")
+                        .WithMany("RequestedProviderRefundOperations")
+                        .HasForeignKey("RequestedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PadelClub.Services.Database.ReturnRequest", "ReturnRequest")
+                        .WithMany("ProviderRefundOperations")
+                        .HasForeignKey("ReturnRequestId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Payment");
+
+                    b.Navigation("RequestedByUser");
+
+                    b.Navigation("ReturnRequest");
+                });
+
+            modelBuilder.Entity("PadelClub.Services.Database.ProviderVerificationAttempt", b =>
+                {
+                    b.HasOne("PadelClub.Services.Database.User", "RequestedByUser")
+                        .WithMany()
+                        .HasForeignKey("RequestedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("RequestedByUser");
+                });
+
             modelBuilder.Entity("PadelClub.Services.Database.PushDevice", b =>
                 {
                     b.HasOne("PadelClub.Services.Database.User", "User")
@@ -2201,6 +3015,110 @@ namespace PadelClub.Services.Database.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("PadelClub.Services.Database.RecommendationAnalyticsConsent", b =>
+                {
+                    b.HasOne("PadelClub.Services.Database.User", "User")
+                        .WithOne("RecommendationAnalyticsConsent")
+                        .HasForeignKey("PadelClub.Services.Database.RecommendationAnalyticsConsent", "UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("PadelClub.Services.Database.RecommendationEvaluationRun", b =>
+                {
+                    b.HasOne("PadelClub.Services.Database.User", "ExecutedByUser")
+                        .WithMany()
+                        .HasForeignKey("ExecutedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ExecutedByUser");
+                });
+
+            modelBuilder.Entity("PadelClub.Services.Database.RecommendationExperiment", b =>
+                {
+                    b.HasOne("PadelClub.Services.Database.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedByUser");
+                });
+
+            modelBuilder.Entity("PadelClub.Services.Database.RecommendationExperimentAnalysisRun", b =>
+                {
+                    b.HasOne("PadelClub.Services.Database.User", "ExecutedByUser")
+                        .WithMany()
+                        .HasForeignKey("ExecutedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PadelClub.Services.Database.RecommendationExperiment", "Experiment")
+                        .WithMany("AnalysisRuns")
+                        .HasForeignKey("ExperimentId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("ExecutedByUser");
+
+                    b.Navigation("Experiment");
+                });
+
+            modelBuilder.Entity("PadelClub.Services.Database.RecommendationExperimentAssignment", b =>
+                {
+                    b.HasOne("PadelClub.Services.Database.RecommendationExperiment", "Experiment")
+                        .WithMany("Assignments")
+                        .HasForeignKey("ExperimentId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("PadelClub.Services.Database.User", "User")
+                        .WithMany("RecommendationExperimentAssignments")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Experiment");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("PadelClub.Services.Database.RecommendationExposure", b =>
+                {
+                    b.HasOne("PadelClub.Services.Database.RecommendationExperimentAssignment", "ExperimentAssignment")
+                        .WithMany("Exposures")
+                        .HasForeignKey("ExperimentAssignmentId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("PadelClub.Services.Database.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PadelClub.Services.Database.Order", "PurchasedOrder")
+                        .WithMany()
+                        .HasForeignKey("PurchasedOrderId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("PadelClub.Services.Database.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ExperimentAssignment");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("PurchasedOrder");
 
                     b.Navigation("User");
                 });
@@ -2355,6 +3273,11 @@ namespace PadelClub.Services.Database.Migrations
                     b.Navigation("ReturnRequests");
                 });
 
+            modelBuilder.Entity("PadelClub.Services.Database.Payment", b =>
+                {
+                    b.Navigation("ProviderRefundOperations");
+                });
+
             modelBuilder.Entity("PadelClub.Services.Database.Product", b =>
                 {
                     b.Navigation("Assets");
@@ -2374,6 +3297,18 @@ namespace PadelClub.Services.Database.Migrations
                     b.Navigation("Products");
                 });
 
+            modelBuilder.Entity("PadelClub.Services.Database.RecommendationExperiment", b =>
+                {
+                    b.Navigation("AnalysisRuns");
+
+                    b.Navigation("Assignments");
+                });
+
+            modelBuilder.Entity("PadelClub.Services.Database.RecommendationExperimentAssignment", b =>
+                {
+                    b.Navigation("Exposures");
+                });
+
             modelBuilder.Entity("PadelClub.Services.Database.Reservation", b =>
                 {
                     b.Navigation("Credits");
@@ -2384,6 +3319,8 @@ namespace PadelClub.Services.Database.Migrations
             modelBuilder.Entity("PadelClub.Services.Database.ReturnRequest", b =>
                 {
                     b.Navigation("Items");
+
+                    b.Navigation("ProviderRefundOperations");
                 });
 
             modelBuilder.Entity("PadelClub.Services.Database.Role", b =>
@@ -2427,6 +3364,12 @@ namespace PadelClub.Services.Database.Migrations
                     b.Navigation("PushDevices");
 
                     b.Navigation("ReceivedPartnerInvitations");
+
+                    b.Navigation("RecommendationAnalyticsConsent");
+
+                    b.Navigation("RecommendationExperimentAssignments");
+
+                    b.Navigation("RequestedProviderRefundOperations");
 
                     b.Navigation("Reservations");
 

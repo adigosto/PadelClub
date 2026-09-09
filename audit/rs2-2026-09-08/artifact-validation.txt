@@ -1,0 +1,8 @@
+{
+  "findings": 37,
+  "brokenLocations": [],
+  "canvasSyntaxErrors": 0,
+  "forbiddenCanvasPatterns": [],
+  "reproducedProbes": 11,
+  "limits": "Syntax/transpile and source-link checks only; host rendering and full SDK type checking were not available."
+}

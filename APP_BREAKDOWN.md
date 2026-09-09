@@ -29,9 +29,10 @@
 
 ### Must-have before release
 
-1. Replace Basic Authentication and stored passwords with short-lived access tokens,
-   refresh-token rotation, password reset, email verification, logout/revocation, and
-   server-side authorization policies for every admin operation.
+1. Keep the existing JWT access tokens, refresh-token rotation, password reset,
+   email verification, logout/revocation, and server-side authorization policies
+   configured through environment-specific secrets. Add production secret storage,
+   monitoring, and a security review before release.
 2. Integrate a real payment provider. Make checkout idempotent, verify payment webhooks,
    support refunds, invoices/receipts, taxes, failed payments, and reconciliation.
 3. Add booking lifecycle rules: configurable opening hours and slot length, maintenance

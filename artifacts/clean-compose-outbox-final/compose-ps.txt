@@ -1,0 +1,6 @@
+NAME                                           IMAGE                                        COMMAND                  SERVICE                CREATED          STATUS                    PORTS
+padelclub-clean-final-padelclub-api-1          padelclub-clean-final-padelclub-api          "dotnet PadelClub.WeÔÇŽ"   padelclub-api          29 seconds ago   Up 10 seconds             0.0.0.0:5100->5001/tcp, [::]:5100->5001/tcp
+padelclub-clean-final-padelclub-mailpit-1      axllent/mailpit:latest                       "/mailpit"               padelclub-mailpit      29 seconds ago   Up 28 seconds (healthy)   1025/tcp, 1110/tcp, 8025/tcp
+padelclub-clean-final-padelclub-rabbitmq-1     rabbitmq:3.13-management                     "docker-entrypoint.sÔÇŽ"   padelclub-rabbitmq     29 seconds ago   Up 28 seconds (healthy)   4369/tcp, 5671-5672/tcp, 15671-15672/tcp, 15691-15692/tcp, 25672/tcp
+padelclub-clean-final-padelclub-sql-1          mcr.microsoft.com/mssql/server:2022-latest   "/opt/mssql/bin/launÔÇŽ"   padelclub-sql          29 seconds ago   Up 28 seconds (healthy)   1433/tcp
+padelclub-clean-final-padelclub-subscriber-1   padelclub-clean-final-padelclub-subscriber   "dotnet PadelClub.SuÔÇŽ"   padelclub-subscriber   29 seconds ago   Up 10 seconds             

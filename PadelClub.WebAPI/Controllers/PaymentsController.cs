@@ -23,11 +23,11 @@ namespace PadelClub.WebAPI.Controllers
         [Authorize(Policy = "AdminOnly")]
         public override Task<PaymentResponse?> GetById(int id) => base.GetById(id);
 
-        [HttpPost, Authorize(Policy = "AdminOnly")]
+        [NonAction, Authorize(Policy = "AdminOnly")]
         public override Task<ActionResult<PaymentResponse>> Create([FromBody] PaymentInsertRequest request) => base.Create(request);
-        [HttpPut("{id:int}"), Authorize(Policy = "AdminOnly")]
+        [NonAction, Authorize(Policy = "AdminOnly")]
         public override Task<ActionResult<PaymentResponse?>> Update(int id, [FromBody] PaymentUpdateRequest request) => base.Update(id, request);
-        [HttpDelete("{id:int}"), Authorize(Policy = "AdminOnly")]
+        [NonAction, Authorize(Policy = "AdminOnly")]
         public override Task<ActionResult<bool>> Delete(int id) => base.Delete(id);
 
         [HttpGet("mine")]

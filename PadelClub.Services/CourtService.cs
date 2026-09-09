@@ -20,6 +20,9 @@ namespace PadelClub.Services
             
         }
 
+        public override Task<bool> DeleteAsync(int id) =>
+            throw new InvalidOperationException("Court history cannot be deleted. Deactivate the court instead.");
+
         protected override IQueryable<Court> ApplyFilter(IQueryable<Court> query, CourtSearchObject search)
         {
             if (!string.IsNullOrWhiteSpace(search.Name))

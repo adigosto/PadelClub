@@ -1,0 +1,12 @@
+const fs = require('node:fs');
+const ts = require('C:/Users/User/AppData/Local/Programs/Microsoft VS Code/a44adf7f53/resources/app/extensions/node_modules/typescript/lib/typescript.js');
+const filename = 'C:/Users/User/.cursor/projects/c-Users-User-Desktop-PadelClub/canvases/RS2-current-review.canvas.tsx';
+const program = ts.createProgram([filename], { noEmit: true, strict: true, skipLibCheck: true, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2021, module: ts.ModuleKind.ESNext, moduleResolution: ts.ModuleResolutionKind.Bundler });
+const diagnostics = ts.getPreEmitDiagnostics(program);
+const errors = diagnostics.map(d => ({ code: d.code, file: d.file?.fileName, message: ts.flattenDiagnosticMessageText(d.messageText, '\n') }));
+const source = fs.readFileSync(filename, 'utf8');
+const forbidden = [/linear-gradient/, /radial-gradient/, /boxShadow/, /fetch\(/, /#[0-9a-f]{6}\b/i].filter(p => p.test(source)).map(String);
+const result = { typeErrors: errors, forbiddenPatterns: forbidden, limitations: 'Local SDK TypeScript check; actual host rendering was not exercised.' };
+fs.writeFileSync(__dirname + '/canvas-validation.json', JSON.stringify(result, null, 2));
+console.log(JSON.stringify(result, null, 2));
+process.exitCode = errors.length || forbidden.length ? 1 : 0;
