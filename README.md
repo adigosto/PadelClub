@@ -184,20 +184,19 @@ used or enabled in a production deployment.
 
 ## One-command local stack
 
-Copy the local-only environment template, set a local signing key, then start the stack
-from the repository root:
+Use the local `.env` file for the complete development configuration, then start the stack
+from the repository root. If `.env` does not exist, create it from the safe template first:
 
 ```powershell
-Copy-Item .env.example .env
-$env:AUTH_SIGNING_KEY = "local-development-signing-key-at-least-32-chars"
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 docker compose up --build --detach
 docker compose ps
 ```
 
-The key must be supplied through `.env` or the current process environment because Compose
-requires `AUTH_SIGNING_KEY` and will stop startup when it is missing or shorter than 32
-characters. Use a different random value for every environment. The `.env` file is local-only
-and must not be committed.
+The `.env` file contains environment-specific credentials and must remain local. Use a unique
+authentication signing key for every environment; do not place its value in this README or in
+any other source-controlled file. The safe `.env.example` file contains variable names and
+non-sensitive defaults only.
 
 The local Compose stack exposes:
 
