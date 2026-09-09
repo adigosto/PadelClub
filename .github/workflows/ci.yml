@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
@@ -36,7 +36,7 @@ jobs:
       run:
         working-directory: UI/padelclub_desktop
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -53,7 +53,7 @@ jobs:
       run:
         working-directory: UI/padelclub_mobile
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -68,7 +68,7 @@ jobs:
   container:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - run: docker compose config --quiet
       - run: docker build --tag padelclub-api:ci .
       - run: docker build --file PadelClub.WebAPI/PadelClub.Subscriber/Dockerfile --tag padelclub-subscriber:ci .
@@ -81,7 +81,7 @@ jobs:
       SMOKE_PROJECT: padelclub-clean-ci-${{ github.run_id }}-${{ github.run_attempt }}
       SMOKE_EVIDENCE_DIRECTORY: artifacts/clean-compose-smoke
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Show container runtime versions
         shell: bash
         run: |
